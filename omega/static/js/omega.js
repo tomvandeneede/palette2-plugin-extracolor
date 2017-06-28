@@ -18,11 +18,18 @@ $(function() {
 	self.activeDrive = ko.observable();
         self.omegaCommand = ko.observable();
         self.omegaPort = ko.observable();
+        self.currentSplice = ko.observable();
+        self.nSplices = ko.observable();
+        self.loadingDrive = ko.observable();
+        self.loadingColor = ko.observable();
+        self.connectionStateMsg = ko.observable();
+
+        self.spliceNumber = 0;
 
         self.connectOmega = function() {
 		var payload = {
 			command: "connectOmega",
-			port: self.omegaPort()
+			port: ""
 		}
                 $.ajax({
                     url: API_BASEURL + "plugin/omega",
@@ -50,6 +57,21 @@ $(function() {
         	
         }
      
+        self.sendSDWPrinterStart = function() {
+		var payload = {
+			command: "sdwpStart"
+		}
+                $.ajax({
+                    url: API_BASEURL + "plugin/omega",
+                    type: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(payload),
+                    contentType: "application/json; charset=UTF-8",
+                    success: self.fromResponse
+                });
+
+        }
+
         self.sendPrintStart = function() {
 		var payload = {
 			command: "printStart",
@@ -75,16 +97,20 @@ $(function() {
 	}
 
         self.onAllBound = function(allViewModels) {
-            // do something with them
 		console.log(allViewModels);
 		
         }
 	self.onEventPrintStarted = function(payload) {
-		self.showOmegaDialog();
-		
+		//self.showOmegaDialog();
+		console.log(payload.filename);
+		if (payload.filename.includes(".oem")) {
+			self.showOmegaDialog();
+		}
 	}
 
 	self.showOmegaDialog = function() {
+		//self.currentSplice(self.spliceNumber);
+		self.loadingColor("Blue");
 		self.omegaDialog.modal({
                	 	minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
             	}).css({
@@ -115,13 +141,79 @@ $(function() {
 
 	self.onDataUpdaterPluginMessage = function (pluginIdent, message) {
 		console.log("Message from " + pluginIdent + ": " + message);
+		if (message.includes("UI:S=")) {
+		    var num = message.substring(5);
+		    console.log("Current splice " + num);
+		    self.currentSplice(num);
+		}
+		else if (message.includes("UI:Load")) {
+			var colors = ["", "filament", "Red", "Orange", "Yellow", "Green", "Blue", 
+				"Pink", "Purple", "Brown", "Transparent", "White", 
+				"Grey", "Black", "User 1", "User 2" ];
+
+			var drive = message.substring(9, 10);
+			var colorHex = message.substring(11, 12);
+			var colorDec = parseInt("0x" + colorHex);
+			var color = colors[colorDec];
+			console.log("loading drive #:" + drive + " with " + color);
+
+			if ($('#loading-span').hasClass("hide")) {
+				$('#loading-span').removeClass("hide");
+			}
+
+			self.loadingDrive(drive);
+			self.loadingColor(color);
+		}
+		else if (message.includes("UI:FINISHED LOADING")) {
+			$('#loading-span').addClass("hide");
+		}
+		else if (message.includes("UI:nSplices")) {
+			var ns = message.substring(12);
+			self.nSplices(ns);
+		}
+		else if (message.includes("UI:Ponging")) {
+			self.updatePongMsg(true);
+		}
+		else if (message.includes("UI:Finished Pong")) {
+			self.updatePongMsg(false);
+		}
+		else if (message.includes("UI:Con=")) {
+			if (message.includes("True")) {
+				$('#connection-state-msg').removeClass("text-muted");
+				$('#connection-state-msg').addClass("text-success");
+				self.connectionStateMsg("Connected");
+			}
+			else {
+				$('#connection-state-msg').removeClass("text-success");
+				$('#connection-state-msg').addClass("text-muted");
+				self.connectionStateMsg("Not Connected");
+			}
+		}
 	}
 
-//        self.onAfterBinding = function() {
-//		console.log("AFTER BINDING");
-//		self.activeDrive("1");
-//		console.log(self.activeDrive());
-//	}
+	self.updatePongMsg = function(isPonging) {
+		if (isPonging) {
+			$('#ponging-span').removeClass("hide");
+		}
+		else {
+			$('#ponging-span').addClass("hide");
+		}
+	}
+
+	self.onAfterBinding = function() {
+		var payload = {
+			command: "uiUpdate",
+		}
+                $.ajax({
+                    url: API_BASEURL + "plugin/omega",
+                    type: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(payload),
+                    contentType: "application/json; charset=UTF-8",
+                    success: self.fromResponse
+                });
+
+	}
 
 	self.startSpliceDemo = function() {
 		console.log("Starting Splice Demo");
@@ -140,25 +232,16 @@ $(function() {
 
 	}
 
-        // this will be called when the user clicks the "Go" button and set the iframe's URL to
-        // the entered URL
-        self.goToUrl = function() {
-            //self.currentUrl(self.newUrl());
-            $.ajax({
-                url: API_BASEURL + "plugin/omega",
-                type: "GET",
-                dataType: "json",
-                success: self.fromResponse
-            });
-        };
-
-        // This will get called before the HelloWorldViewModel gets bound to the DOM, but after its
+        // This will get called before the ViewModel gets bound to the DOM, but after its
         // dependencies have already been initialized. It is especially guaranteed that this method
         // gets called _after_ the settings have been retrieved from the OctoPrint backend and thus
         // the SettingsViewModel been properly populated.
         self.onBeforeBinding = function() {
-            self.newUrl(self.settings.settings.plugins.omega.url());
-            self.goToUrl();
+	    self.currentSplice("0");
+	    self.nSplices("0");
+	    self.loadingDrive("0");
+	    self.loadingColor("Black");
+	    self.connectionStateMsg("Not Connected");
         }
     }
 
