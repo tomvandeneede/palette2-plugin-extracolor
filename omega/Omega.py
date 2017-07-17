@@ -58,12 +58,21 @@ class Omega():
             self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Ponging")
         else:
             self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Finished Pong")       
+
+    def resetPrintValues(self):
+        self._logger.info("Omega: Resetting print values")
+        self.sentCounter = 0
+        self.msfCU = ""
+        self.msfNS = "0"
+        self.currentSplice = "0"
+        self.inPong = False
+        self.splices = []
         
     def startSingleColor(self):
         self._logger.info("Omega: start Single Color Mode with drive %s" % self.activeDrive)
         cmdStr = "O4 D%s\n" % self.activeDrive
-        self._logger.info("Omega: Sending %s" % cmdStr)
-        self.omegaSerial.write(cmdStr)
+        self.omegaSerial.write(cmdStr.encode())
+        self._logger.info("Omega: Sent %s" % cmdStr)
 
     def startSpliceDemo(self, withPrinter):
         f = open(self.currentFilepath)
@@ -95,6 +104,18 @@ class Omega():
         self._logger.info("Omega toggle pause")
         self._plugin._printer.toggle_pause_print()
 
+    def jog(self, drive, dist):
+        distBinary = bin(int(dist) & "0xffff")
+        distHex = "%04X" % int(distBinary, 2)
+        # figure out the drive number
+        jogCmd = "O%s D%s" % (drive, distHex)
+        self._logger.info(jogCmd)
+        self.gotOmegaCmd(jogCmd)
+
+    def cut(self):
+        self._logger.info("Omega: Sending Cut command") 
+        self.gotOmegaCmd("O19")
+
     def gotOmegaCmd(self, cmd):
         if "O25" in cmd:
             self.msfCU = cmd[5:]
@@ -106,13 +127,28 @@ class Omega():
             splice = (int(cmd[2:3]) - 1, cmd[5:13])
             self.splices.append(splice)
             self._logger.info("Omega: Got splice D: %s, dist: %s" % (splice[0], splice[1]))
+        elif "O9" in cmd and "O99" not in cmd:
+            #reset values
+            self.resetPrintValues()
+            if self.connected:
+                self.sendCmd(cmd)
         else:
+            self._logger.info("Omega: Got an Omega command '%s'" % cmd)
             if self.connected:
                 self.sendCmd(cmd)
 
     def sendCmd(self, cmd):
         self._logger.info("Omega: Sending '%s'" % cmd)
-        self.omegaSerial.write(cmd.strip() + "\n")
+        try:
+            self.omegaSerial.write(cmd.encode() + "\n")
+        except:
+            self.omegaSerial.close()
+
+    def sendAutoloadOn(self):
+        self.omegaSerial.write("O38\n")
+
+    def sendAutoloadOff(self):
+        self.omegaSerial.write("O37\n")
 
     def printerTest(self):
         self._plugin._logger.info("Sending commands from Omega")
@@ -123,26 +159,31 @@ class Omega():
     def sendNextData(self):
         if self.sentCounter == 0:
             cmdStr = "O25 D%s\n" % self.msfCU
-            self.omegaSerial.write(cmdStr)
+            self.omegaSerial.write(cmdStr.encode())
+            self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
         elif self.sentCounter == 1:
             cmdStr = "O26 D%s\n" % self.msfNS
-            self.omegaSerial.write(cmdStr)
+            self.omegaSerial.write(cmdStr.encode())
+            self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
         elif self.sentCounter > 1:
             splice = self.splices[self.sentCounter - 2]
             cmdStr = "O2%d D%s\n" % ((int(splice[0]) + 1), splice[1])
-            self.omegaSerial.write(cmdStr)
+            self.omegaSerial.write(cmdStr.encode())
+            self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
 
     def omegaReadThread(self, ser):
         self._logger.info("Omega Read Thread: Starting thread")
         while self.stop is not True:
             line = ser.readline()
-            self._logger.info("Omega: %s" % line.strip())
-            if "O20" in line:
+            line = line.strip()
+            self._logger.info("Omega: read in line: %s" % line)
+            if 'O20' in line:
+                self._logger.info("need to send next line")
                 self.sendNextData()
-            elif "O30" in line:
+            elif 'O30' in line:
                 #send gcode command
                 dist = line.strip()[5:]
                 extrudeCmd = "G1 E%s F200" % dist

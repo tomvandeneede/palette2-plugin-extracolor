@@ -39,7 +39,11 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             sendOmegaCmd = ["cmd"],
             printStart = [],
             uiUpdate = [],
-            sdwpStart = []
+            sdwpStart = [],
+            sendJogCmd = ["drive", "dist"],
+            sendCutCmd = [],
+            cancelPalette2 = [],
+            clearPalette2 = []
         )
 
     def on_api_command(self, command, data):
@@ -66,13 +70,22 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             #self._logger.info("Sending a G28")
             #self._printer.commands(["G28", "G1 X150 Y150 Z10 F6000"])
         elif command == "sendOmegaCmd":
-            self.omega.sendCmd(data["cmd"])
+            self.omega.gotOmegaCmd(data["cmd"])
         elif command == "printStart":
             self.omega.sendPrintStart()
         elif command == "sdwpStart":
             self.omega.startSpliceDemo(withPrinter = True)
         elif command == "uiUpdate":
             self.omega.sendUIUpdate()
+        elif command == "sendJogCmd":
+            self.omega.jog(data["drive"], data["dist"])
+        elif command == "sendCutCmd":
+            self.omega.cut()
+        elif command == "cancelPalette2":
+            self._logger.info("Cancelling print")
+            self.omega.gotOmegaCmd("O0")
+        elif command == "clearPalette2":
+            self.omega.clear()
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -80,20 +93,21 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
         return flask.jsonify(foo="bar") 
 
     def on_event(self, event, payload):
-        self._logger.info("Got event: %s" % event)
         if "ClientOpened" in event:
             self.omega.sendUIUpdate()
 
     def on_shutdown(self):
         self.omega.shutdown()
     
-    def sending_gcode(self, comm_instance, cmd, cmd_type):
-        if cmd and "O27 " in cmd:
+    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode):
+        if "O27 " in cmd:
             self.omega.sendCmd(cmd)
             self._logger.info("got a ping %s", cmd.strip())
-        elif cmd and cmd[0] is 'O':
+            return None
+        elif 'O' in cmd[0]:
             self.omega.gotOmegaCmd(cmd.strip())
-        return cmd
+            return None
+        #return gcode
 
 __plugin_name__ = "Omega"
 __plugin_version__ = "0.1.0"

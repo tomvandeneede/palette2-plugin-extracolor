@@ -6,6 +6,9 @@
         <div class="row">
         	<button class="btn btn-primary" data-bind="click: connectOmega">Connect to Omega</button>
     	</div>
+    	<div class="row" style="margin-top: 10px">
+	       	<button type="button" class="btn btn-primary" data-bind="click: showOmegaDialog">Disconnect</button>
+    	</div>
         <div class="row" style="margin-top: 10px">
 		<div class="btn-group" data-toggle="buttons-radio" id="omega-mod-ad">
 			<button type="button" id="omega-mod-ad-1" class="btn active" value="1" data-bind="click: activeDriveTest">1</button>
@@ -17,6 +20,39 @@
     	</div>
     	<div class="row" style="margin-top: 10px">
 	       	<button type="button" class="btn btn-primary" data-bind="click: showOmegaDialog">Show Dialog</button>
+    	</div>
+	<div class="row" style="margin-top: 10px">
+		<input type="text" data-bind="value: omegaCommand">
+		<button class="btn btn-primary" data-bind="click: sendOmegaCmd">Send Command</button>	
+		<button class="btn btn-primary" data-bind="click: sendFilamentLoaded">Send Loaded</button>	
+	</div>
+    	<div class="row" style="margin-top: 10px">
+	       	<button type="button" class="btn btn-primary" data-bind="click: showOmegaDialog">Cancel Print</button>
+    	</div>
+	<div class="row">
+		<p>Manual Controls</p>
+		<p>Drive:</p>
+		<div class="btn-group" data-toggle="buttons-radio" id="omega-mod-jd">
+			<button type="button" id="omega-mod-jd-1" class="btn active" data-bind="click: setJogDrive">1</button>
+			<button type="button" id="omega-mod-jd-2" class="btn" data-bind="click: setJogDrive">2</button>
+			<button type="button" id="omega-mod-jd-3" class="btn" data-bind="click: setJogDrive">3</button>
+			<button type="button" id="omega-mod-jd-4" class="btn" data-bind="click: setJogDrive">4</button>
+			<button type="button" id="omega-mod-jd-o" class="btn" data-bind="click: setJogDrive">Out</button>
+		</div>
+		<div class="checkbox">
+			<label><input type="checkbox" data-bind-"checked: jogWithOutgoing">With Outgoing</label>
+		</div>
+		<div class="row" style="margin-top: 10px">
+			<input type="text" data-bind="value: jogDistance" placeholder="Jog Distance (mm)">
+			<button class="btn btn-primary" data-bind="click: sendJogCmd">Jog</button>	
+		</div>
+
+	</div>
+    	<div class="row" style="margin-top: 10px">
+	       	<button type="button" class="btn btn-primary" data-bind="click: showOmegaDialog">Cut</button>
+    	</div>
+    	<div class="row" style="margin-top: 10px">
+	       	<button type="button" class="btn btn-primary" data-bind="click: showOmegaDialog">Clear Palette 2</button>
     	</div>
 
 </div>

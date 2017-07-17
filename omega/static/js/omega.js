@@ -23,7 +23,10 @@ $(function() {
         self.loadingDrive = ko.observable();
         self.loadingColor = ko.observable();
         self.connectionStateMsg = ko.observable();
+        self.jogDistance = ko.observable();
+        self.jogWithOutgoing = ko.observable(false);
 
+	self.jogDrive = 0;
         self.spliceNumber = 0;
 
         self.connectOmega = function() {
@@ -57,6 +60,32 @@ $(function() {
         	
         }
      
+	self.sendJogCmd = function () {
+		var distance = self.jogDistance();
+		
+		var drive = 0;
+		if (self.jogWithOutgoing()) {
+			drive += 14;
+		}
+		else {
+			drive += 10;
+		}
+		console.log("drive: " + drive);
+		var payload = {
+			command: "sendOmegaCmd",
+			cmd: self.omegaCommand()
+		}
+                $.ajax({
+                    url: API_BASEURL + "plugin/omega",
+                    type: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(payload),
+                    contentType: "application/json; charset=UTF-8",
+                    success: self.fromResponse
+                });
+
+	}
+
         self.sendSDWPrinterStart = function() {
 		var payload = {
 			command: "sdwpStart"
@@ -86,6 +115,16 @@ $(function() {
                 });
 
         }	
+
+	self.setJogDrive = function () {
+		self.jogDrive = $("#omega-mod-jd button.active")[0].innerHTML;
+		console.log(self.jogDrive);	
+	}
+
+	self.sendFilamentLoaded = function () {
+		self.omegaCommand("O39");
+        	self.sendOmegaCmd();
+	} 
 
         self.setAD = function() {
 		var activeDrive = $("#omega-ad button.active").innerHTML;
@@ -122,6 +161,7 @@ $(function() {
 
         self.startSingleColor = function() {
 		var activeDrive = $("#omega-mod-ad button.active")[0].innerHTML;
+                activeDrive = activeDrive - 1;
 		console.log(activeDrive);
 		var payload = {
 			command: "startSingleColor",
