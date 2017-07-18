@@ -35,6 +35,7 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             startSingleColor = [],
             startSpliceDemo = [],
             connectOmega = ["port"],
+            disconnectPalette2 = [],
             testPrinterCommands = [],
             sendOmegaCmd = ["cmd"],
             printStart = [],
@@ -65,6 +66,8 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             self.omega.startSpliceDemo(withPrinter = False)
         elif command == "connectOmega":
             self.omega.connectOmega(data["port"])
+        elif command == "disconnectPalette2":
+            self.omega.disconnect()
         elif command == "testPrinterCommands":
             self.omega.printerTest()
             #self._logger.info("Sending a G28")

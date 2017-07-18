@@ -27,12 +27,30 @@ $(function() {
         self.jogWithOutgoing = ko.observable(false);
 
 	self.jogDrive = 0;
+	self.jogDriveObs = ko.observable("1");
         self.spliceNumber = 0;
+
+	self.jogDrives = ko.observableArray(['1', '2', '3', '4', 'Out']);
+	self.jogDists = ko.observableArray(['1', '10', '100', '-1', '-10', '-100']);
 
         self.connectOmega = function() {
 		var payload = {
 			command: "connectOmega",
 			port: ""
+		}
+                $.ajax({
+                    url: API_BASEURL + "plugin/omega",
+                    type: "POST",
+                    dataType: "json",
+                    data: JSON.stringify(payload),
+                    contentType: "application/json; charset=UTF-8",
+                    success: self.fromResponse
+                });
+	}
+
+        self.disconnectPalette2 = function() {
+		var payload = {
+			command: "disconnectPalette2",
 		}
                 $.ajax({
                     url: API_BASEURL + "plugin/omega",
@@ -63,17 +81,42 @@ $(function() {
 	self.sendJogCmd = function () {
 		var distance = self.jogDistance();
 		
-		var drive = 0;
-		if (self.jogWithOutgoing()) {
-			drive += 14;
+
+		var drive = parseInt(self.jogDriveObs());
+		var dist = parseInt(self.jogDistance());
+
+		if (self.jogDriveObs().includes('Out')) {
+			drive = 18;
+		}
+		else if (self.jogWithOutgoing()) {
+			drive += 13;
 		}
 		else {
-			drive += 10;
+			drive += 9;
 		}
-		console.log("drive: " + drive);
+		console.log(drive);
+		console.log(dist);
+		if (dist) {
+			var payload = {
+				command: "sendJogCmd",
+				drive: drive,
+				dist: dist 
+			}
+                	$.ajax({
+                    	url: API_BASEURL + "plugin/omega",
+                    	type: "POST",
+                    	dataType: "json",
+                    	data: JSON.stringify(payload),
+                    	contentType: "application/json; charset=UTF-8",
+                    	success: self.fromResponse
+                	});
+		}
+	}
+
+	self.sendCutCmd = function () {
+		console.log("Sending cut command");
 		var payload = {
-			command: "sendOmegaCmd",
-			cmd: self.omegaCommand()
+			command: "sendCutCmd",
 		}
                 $.ajax({
                     url: API_BASEURL + "plugin/omega",
@@ -83,7 +126,30 @@ $(function() {
                     contentType: "application/json; charset=UTF-8",
                     success: self.fromResponse
                 });
+		
+	}
 
+	self.sendClearOutCmd = function () {
+		
+		var payload = {
+			command: "sendJogCmd",
+			drive: 18,
+			dist: 150 
+		}
+               	$.ajax({
+                   	url: API_BASEURL + "plugin/omega",
+                   	type: "POST",
+                    	dataType: "json",
+                    	data: JSON.stringify(payload),
+                    	contentType: "application/json; charset=UTF-8",
+                    	success: self.fromResponse
+               	});
+	}
+
+	self.sendCancelCmd = function () {
+		self.omegaCommand("O0");
+		self.sendOmegaCmd();
+		self.omegaCommand("");
 	}
 
         self.sendSDWPrinterStart = function() {
@@ -117,8 +183,9 @@ $(function() {
         }	
 
 	self.setJogDrive = function () {
-		self.jogDrive = $("#omega-mod-jd button.active")[0].innerHTML;
-		console.log(self.jogDrive);	
+		//self.jogDrive = $("#omega-mod-jd button.active")[0].innerHTML;
+		 
+		console.log(self.jogDriveObs());	
 	}
 
 	self.sendFilamentLoaded = function () {

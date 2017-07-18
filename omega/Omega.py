@@ -11,7 +11,7 @@ class Omega():
         self.activeDrive = "1"
         self.currentFilepath = "/home/s1/mcor.msf"
 
-        #self.omegaSerial = serial.Serial("/dev/ttyACM1", 9600)
+        self.omegaSerial = None 
         self.sentCounter = 0
 
         self.msfCU = ""
@@ -41,6 +41,13 @@ class Omega():
         thread = Thread(target=self.omegaReadThread, args=(self.omegaSerial,))
         thread.daemon = True
         thread.start()
+
+    def disconnect(self):
+        self.omegaSerial.close()
+        self.stop = True
+        self.connected = False
+        self._logger.info("Disconnected from Omega")
+        self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Con=%s" % self.connected)
 
     def setActiveDrive(self, drive):
         self.activeDrive = drive
@@ -105,7 +112,7 @@ class Omega():
         self._plugin._printer.toggle_pause_print()
 
     def jog(self, drive, dist):
-        distBinary = bin(int(dist) & "0xffff")
+        distBinary = bin(int(dist) & 0xffff)
         distHex = "%04X" % int(distBinary, 2)
         # figure out the drive number
         jogCmd = "O%s D%s" % (drive, distHex)
@@ -142,6 +149,7 @@ class Omega():
         try:
             self.omegaSerial.write(cmd.encode() + "\n")
         except:
+            self._logger.info("Omega: Error sending cmd")
             self.omegaSerial.close()
 
     def sendAutoloadOn(self):
