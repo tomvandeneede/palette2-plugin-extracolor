@@ -1,6 +1,7 @@
 import serial
 import glob
 from threading import Thread
+from Queue import Queue
 
 class Omega():
     def __init__(self, plugin):
@@ -21,6 +22,9 @@ class Omega():
         self.splices = []
 
         self.connected = False
+        self.writeQueue = None
+        self.readThread = None
+        self.writeThread = None
 
         omegaPort = glob.glob('/dev/serial/by-id/*STMicro*')
         if len(omegaPort) > 0:
@@ -34,13 +38,24 @@ class Omega():
         #thread.start()
 
     def connectOmega(self, port):
-        port = glob.glob('/dev/serial/by-id/*STMicro*')
-        self.omegaSerial = serial.Serial(port[0], 9600)
-        #self.connected = True
-        self.omegaSerial.write("O99\n")
-        thread = Thread(target=self.omegaReadThread, args=(self.omegaSerial,))
-        thread.daemon = True
-        thread.start()
+        if self.connected is not True:
+            port = glob.glob('/dev/serial/by-id/*STMicro*')
+            self.omegaSerial = serial.Serial(port[0], 9600)
+            #self.connected = True
+        
+        if self.readThread is None:
+            self.readThread = Thread(target=self.omegaReadThread, args=(self.omegaSerial,))
+            self.readThread.daemon = True
+            self.readThread.start()
+        if self.writeThread is None:
+            self.writeThread = Thread(target=self.omegaWriteThread, args=(self.omegaSerial,))
+            self.writeThread.daemon = True
+            self.writeThread.start()
+        while self.writeQueue is None:
+            pass
+
+        self.enqueueLine("O99\n")
+        
 
     def disconnect(self):
         self.omegaSerial.close()
@@ -137,12 +152,10 @@ class Omega():
         elif "O9" in cmd and "O99" not in cmd:
             #reset values
             self.resetPrintValues()
-            if self.connected:
-                self.sendCmd(cmd)
+            self.enqueueLine(cmd)
         else:
             self._logger.info("Omega: Got an Omega command '%s'" % cmd)
-            if self.connected:
-                self.sendCmd(cmd)
+            self.enqueueLine(cmd)
 
     def sendCmd(self, cmd):
         self._logger.info("Omega: Sending '%s'" % cmd)
@@ -167,18 +180,21 @@ class Omega():
     def sendNextData(self):
         if self.sentCounter == 0:
             cmdStr = "O25 D%s\n" % self.msfCU
-            self.omegaSerial.write(cmdStr.encode())
+            #self.omegaSerial.write(cmdStr.encode())
+            self.enqueueLine(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
         elif self.sentCounter == 1:
             cmdStr = "O26 D%s\n" % self.msfNS
-            self.omegaSerial.write(cmdStr.encode())
+            #self.omegaSerial.write(cmdStr.encode())
+            self.enqueueLine(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
         elif self.sentCounter > 1:
             splice = self.splices[self.sentCounter - 2]
             cmdStr = "O2%d D%s\n" % ((int(splice[0]) + 1), splice[1])
-            self.omegaSerial.write(cmdStr.encode())
+            #self.omegaSerial.write(cmdStr.encode())
+            self.enqueueLine(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
 
@@ -216,6 +232,20 @@ class Omega():
 		self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Con=%s" % self.connected)
 
         ser.close()
+
+    def enqueueLine(self, line):
+	if self.writeThread is not None and self.writeQueue is not None:
+            self.writeQueue.put(line)
+
+    def omegaWriteThread(self, ser):
+        self._logger.info("Omega Write Thread: Starting Thread")
+        self.writeQueue = Queue()
+        while self.stop is not True:
+            line = self.writeQueue.get()
+            line = line.strip()
+            line = line + "\n"
+            self._logger.info("Omega Write Thread: Sending: %s" % line)
+            self.omegaSerial.write(line.encode())
 
     def shutdown(self):
         self.stop = True

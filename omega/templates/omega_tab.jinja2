@@ -57,5 +57,13 @@
        	<span class="span4">Splices: <span data-bind="text: currentSplice">0</span>/<span data-bind="text: nSplices">100</span></span>
        	<span id="loading-span" class="span4 hide">Loading Drive <span data-bind="text: loadingDrive">1</span> with <span data-bind="text: loadingColor">Green</span></span>
        	<span id="ponging-span" class="span4 hide">Ponging</span>
+        <div class="row">
+    	<div class="row" style="margin-top: 10px">
+		<button class="btn btn-primary" data-bind="click: sendFilamentLoaded">Send Loaded</button>	
+    	</div>
+    	<div class="row" style="margin-top: 10px">
+	       	<button type="button" class="btn btn-primary" data-bind="click: sendCancelCmd">Cancel Print</button>
+    	</div>
+        </div>
     </div>
 </div>

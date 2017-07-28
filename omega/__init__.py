@@ -103,13 +103,12 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
         self.omega.shutdown()
     
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode):
-        if "O27 " in cmd:
-            self.omega.sendCmd(cmd)
-            self._logger.info("got a ping %s", cmd.strip())
-            return None
+        if "O27" in cmd:
+            self.omega.enqueueLine(cmd.strip())
+            return "G4 P10",
         elif 'O' in cmd[0]:
             self.omega.gotOmegaCmd(cmd.strip())
-            return None
+            return None,
         #return gcode
 
 __plugin_name__ = "Omega"
@@ -121,5 +120,5 @@ def __plugin_load__():
     
     global __plugin_hooks__
     __plugin_hooks__ = {
-        "octoprint.comm.protocol.gcode.sent": __plugin_implementation__.sending_gcode
+        "octoprint.comm.protocol.gcode.sending": __plugin_implementation__.sending_gcode
     }
