@@ -17,9 +17,12 @@ class Omega():
 
         self.msfCU = ""
         self.msfNS = "0"
+        self.msfNA = "0"
+        self.nAlgorithms = 0
         self.currentSplice = "0"
         self.inPong = False
         self.splices = []
+        self.algorithms = []
 
         self.connected = False
         self.writeQueue = None
@@ -86,9 +89,12 @@ class Omega():
         self.sentCounter = 0
         self.msfCU = ""
         self.msfNS = "0"
+        self.msfNA = "0"
         self.currentSplice = "0"
         self.inPong = False
         self.splices = []
+        self.algorithms = []
+        self.nAlgorithms = 0
         
     def startSingleColor(self):
         self._logger.info("Omega: start Single Color Mode with drive %s" % self.activeDrive)
@@ -141,10 +147,18 @@ class Omega():
     def gotOmegaCmd(self, cmd):
         if "O25" in cmd:
             self.msfCU = cmd[5:]
+            #self.msfCU = cmd
             self._logger.info("Omega: Got CU: %s" % self.msfCU) 
         elif "O26" in cmd:
             self.msfNS = cmd[5:]
             self._logger.info("Omega: Got NS: %s" % self.msfNS)
+        elif "O28" in cmd:
+            self.msfNA = cmd[5:]
+            self.nAlgorithms = int(self.msfNA)
+            self._logger.info("Omega: Got NA: %d" % self.nAlgorithms)
+        elif "O29" in cmd:
+            self.algorithms.append(cmd)
+            self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
         elif "O21" in cmd or "O22" in cmd or "O23" in cmd or "O24" in cmd:
             splice = (int(cmd[2:3]) - 1, cmd[5:13])
             self.splices.append(splice)
@@ -179,8 +193,12 @@ class Omega():
 
     def sendNextData(self):
         if self.sentCounter == 0:
-            cmdStr = "O25 D%s\n" % self.msfCU
+            #cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
+            cmdStr = "O25 K%s\n" % self.msfCU.replace(':', ';')
             #self.omegaSerial.write(cmdStr.encode())
+            #self.enqueueLine("%s\n" % self.msfCU)
+            #self.enqueueLine("O25 D1111\n")
+            #self.enqueueLine("O25 K1;")
             self.enqueueLine(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
@@ -190,8 +208,19 @@ class Omega():
             self.enqueueLine(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
-        elif self.sentCounter > 1:
-            splice = self.splices[self.sentCounter - 2]
+        elif self.sentCounter == 2:
+            cmdStr = "O28 D%s\n" % self.msfNA
+            self.enqueueLine(cmdStr)
+            self._logger.info("Omega: Sent '%s'" % cmdStr)
+            self.sentCounter = self.sentCounter + 1
+        elif self.sentCounter <= (2 + self.nAlgorithms):
+            self._logger.info("Omega: send algo")
+            self.enqueueLine(self.algorithms[self.sentCounter - 3])
+            self._logger.info("Omega: Sent '%s'" % self.algorithms[self.sendCounter - 3])
+            self.sentCounter = self.sentCounter + 1
+        elif self.sentCounter > (2 + self.nAlgorithms):
+            self._logger.info("Omega: send splice")
+            splice = self.splices[self.sentCounter - 3 - self.nAlgorithms]
             cmdStr = "O2%d D%s\n" % ((int(splice[0]) + 1), splice[1])
             #self.omegaSerial.write(cmdStr.encode())
             self.enqueueLine(cmdStr)
@@ -210,7 +239,7 @@ class Omega():
             elif 'O30' in line:
                 #send gcode command
                 dist = line.strip()[5:]
-                extrudeCmd = "G1 E%s F200" % dist
+                extrudeCmd = "G1 X1 E%s F10" % dist
                 self._plugin._printer.commands(["G91", extrudeCmd, "G90", "G92 E0"])
                 #self._plugin._printer.commands(["M109 S220", "M83", "G1 E50.00 F2000"])
             elif "O32" in line:

@@ -107,7 +107,9 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             self.omega.enqueueLine(cmd.strip())
             return "G4 P10",
         elif 'O' in cmd[0]:
-            self.omega.gotOmegaCmd(cmd.strip())
+            self.omega.gotOmegaCmd(cmd)
+            return None,
+        elif 'M0' in cmd[0]:
             return None,
         #return gcode
 
