@@ -98,11 +98,15 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
     def on_event(self, event, payload):
         if "ClientOpened" in event:
             self.omega.sendUIUpdate()
+        elif "PrintStarted" in event:
+            if ".oem" in payload["filename"]:
+                self.omega.setFilename(payload["filename"].split('.')[0])
+                self._logger.info("Filename: %s" % payload["filename"].split('.')[0])
 
     def on_shutdown(self):
         self.omega.shutdown()
     
-    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode):
+    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode, tags):
         if "O27" in cmd:
             self.omega.enqueueLine(cmd.strip())
             return "G4 P10",

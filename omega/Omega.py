@@ -24,6 +24,8 @@ class Omega():
         self.splices = []
         self.algorithms = []
 
+        self.filename = ""
+
         self.connected = False
         self.writeQueue = None
         self.readThread = None
@@ -43,6 +45,7 @@ class Omega():
     def connectOmega(self, port):
         if self.connected is not True:
             port = glob.glob('/dev/serial/by-id/*STMicro*')
+            port += glob.glob('/dev/serial/by-id/*FTDI*')
             self.omegaSerial = serial.Serial(port[0], 9600)
             #self.connected = True
         
@@ -70,6 +73,9 @@ class Omega():
     def setActiveDrive(self, drive):
         self.activeDrive = drive
         self._logger.info("Omega: active drive set to: %s" % self.activeDrive)
+
+    def setFilename(self, name):
+        self.filename = name
 
     def setFilepath(self, filepath):
         self.currentFilepath = filepath
@@ -167,6 +173,8 @@ class Omega():
             #reset values
             self.resetPrintValues()
             self.enqueueLine(cmd)
+        elif "O1" in cmd:
+            self.enqueueLine("O1 D%s D0001 D0001" % self.filename)
         else:
             self._logger.info("Omega: Got an Omega command '%s'" % cmd)
             self.enqueueLine(cmd)
@@ -191,8 +199,8 @@ class Omega():
         #self._plugin._printer.commands(["M109 S220", "M83", "G1 E50.00"])
         self._plugin._printer.commands(["M83", "G1 E50.00 F200"])
 
-    def sendNextData(self):
-        if self.sentCounter == 0:
+    def sendNextData(self, dataNum):
+        if self.sentCounter == 0 and dataNum == 0:
             #cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
             cmdStr = "O25 K%s\n" % self.msfCU.replace(':', ';')
             #self.omegaSerial.write(cmdStr.encode())
@@ -202,23 +210,23 @@ class Omega():
             self.enqueueLine(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
-        elif self.sentCounter == 1:
+        elif self.sentCounter == 1 and dataNum == 0:
             cmdStr = "O26 D%s\n" % self.msfNS
             #self.omegaSerial.write(cmdStr.encode())
             self.enqueueLine(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
-        elif self.sentCounter == 2:
+        elif self.sentCounter == 2 and dataNum == 0:
             cmdStr = "O28 D%s\n" % self.msfNA
             self.enqueueLine(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
-        elif self.sentCounter <= (2 + self.nAlgorithms):
+        elif dataNum == 4:
             self._logger.info("Omega: send algo")
             self.enqueueLine(self.algorithms[self.sentCounter - 3])
             self._logger.info("Omega: Sent '%s'" % self.algorithms[self.sendCounter - 3])
             self.sentCounter = self.sentCounter + 1
-        elif self.sentCounter > (2 + self.nAlgorithms):
+        elif dataNum == 1:
             self._logger.info("Omega: send splice")
             splice = self.splices[self.sentCounter - 3 - self.nAlgorithms]
             cmdStr = "O2%d D%s\n" % ((int(splice[0]) + 1), splice[1])
@@ -235,7 +243,7 @@ class Omega():
             self._logger.info("Omega: read in line: %s" % line)
             if 'O20' in line:
                 self._logger.info("need to send next line")
-                self.sendNextData()
+                self.sendNextData(int(line[5]))
             elif 'O30' in line:
                 #send gcode command
                 dist = line.strip()[5:]
