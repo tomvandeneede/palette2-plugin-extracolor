@@ -106,7 +106,7 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
     def on_shutdown(self):
         self.omega.shutdown()
     
-    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode, tags):
+    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode, tags=None):
         if "O27" in cmd:
             self.omega.enqueueLine(cmd.strip())
             return "G4 P10",

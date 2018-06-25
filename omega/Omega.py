@@ -46,7 +46,7 @@ class Omega():
         if self.connected is not True:
             port = glob.glob('/dev/serial/by-id/*STMicro*')
             port += glob.glob('/dev/serial/by-id/*FTDI*')
-            self.omegaSerial = serial.Serial(port[0], 9600)
+            self.omegaSerial = serial.Serial(port[0], 115200)
             #self.connected = True
         
         if self.readThread is None:
@@ -174,7 +174,7 @@ class Omega():
             self.resetPrintValues()
             self.enqueueLine(cmd)
         elif "O1" in cmd:
-            self.enqueueLine("O1 D%s D0001 D0001" % self.filename)
+            self.enqueueLine("O1 D%s D0007 D0001" % self.filename)
         else:
             self._logger.info("Omega: Got an Omega command '%s'" % cmd)
             self.enqueueLine(cmd)
