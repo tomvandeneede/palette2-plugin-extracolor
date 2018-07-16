@@ -65,6 +65,7 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             #self.omega.setFilepath(data["filepath"]) 
             self.omega.startSpliceDemo(withPrinter = False)
         elif command == "connectOmega":
+            self._logger.info("Command recieved")
             self.omega.connectOmega(data["port"])
         elif command == "disconnectPalette2":
             self.omega.disconnect()

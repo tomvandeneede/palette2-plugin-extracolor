@@ -4,79 +4,81 @@ $(function() {
 
         self.settings = parameters[0];
 
-	self.omegaDialog = $('#omega_dialog');
+		self.omegaDialog = $('#omega_dialog');
 
         // this will hold the URL currently displayed by the iframe
         self.currentUrl = ko.observable();
 
-	self.activeDriveTest = function(param) {
+		self.activeDriveTest = function(param) {
 		console.log(param);
 	}
 
         // this will hold the URL entered in the text field
-        self.newUrl = ko.observable();
+	self.newUrl = ko.observable();
 	self.activeDrive = ko.observable();
-        self.omegaCommand = ko.observable();
-        self.omegaPort = ko.observable();
-        self.currentSplice = ko.observable();
-        self.nSplices = ko.observable();
-        self.loadingDrive = ko.observable();
-        self.loadingColor = ko.observable();
-        self.connectionStateMsg = ko.observable();
-        self.jogDistance = ko.observable();
-        self.jogWithOutgoing = ko.observable(false);
+	self.omegaCommand = ko.observable();
+	self.omegaPort = ko.observable();
+	self.currentSplice = ko.observable();
+	self.nSplices = ko.observable();
+	self.loadingDrive = ko.observable();
+	self.loadingColor = ko.observable();
+	self.connectionStateMsg = ko.observable();
+	self.jogDistance = ko.observable();
+	self.jogWithOutgoing = ko.observable(false);
 
 	self.jogDrive = 0;
 	self.jogDriveObs = ko.observable("1");
-        self.spliceNumber = 0;
+    self.spliceNumber = 0;
 
 	self.jogDrives = ko.observableArray(['1', '2', '3', '4', 'Out']);
 	self.jogDists = ko.observableArray(['1', '10', '100', '-1', '-10', '-100']);
 
-        self.connectOmega = function() {
+    self.connectOmega = function() {
+		console.log("Connect omega")
 		var payload = {
 			command: "connectOmega",
 			port: ""
 		}
-                $.ajax({
-                    url: API_BASEURL + "plugin/omega",
-                    type: "POST",
-                    dataType: "json",
-                    data: JSON.stringify(payload),
-                    contentType: "application/json; charset=UTF-8",
-                    success: self.fromResponse
-                });
+
+		$.ajax({
+			url: API_BASEURL + "plugin/omega",
+			type: "POST",
+			dataType: "json",
+			data: JSON.stringify(payload),
+			contentType: "application/json; charset=UTF-8",
+			success: self.fromResponse
+		});
 	}
 
-        self.disconnectPalette2 = function() {
+    self.disconnectPalette2 = function() {
 		var payload = {
 			command: "disconnectPalette2",
 		}
-                $.ajax({
-                    url: API_BASEURL + "plugin/omega",
-                    type: "POST",
-                    dataType: "json",
-                    data: JSON.stringify(payload),
-                    contentType: "application/json; charset=UTF-8",
-                    success: self.fromResponse
-                });
+			$.ajax({
+				url: API_BASEURL + "plugin/omega",
+				type: "POST",
+				dataType: "json",
+				data: JSON.stringify(payload),
+				contentType: "application/json; charset=UTF-8",
+				success: self.fromResponse
+			});
 	}
 
-        self.sendOmegaCmd = function() {
+	self.sendOmegaCmd = function() {
 		var payload = {
 			command: "sendOmegaCmd",
 			cmd: self.omegaCommand()
 		}
-                $.ajax({
-                    url: API_BASEURL + "plugin/omega",
-                    type: "POST",
-                    dataType: "json",
-                    data: JSON.stringify(payload),
-                    contentType: "application/json; charset=UTF-8",
-                    success: self.fromResponse
-                });
-        	
-        }
+			$.ajax({
+				url: API_BASEURL + "plugin/omega",
+				type: "POST",
+				dataType: "json",
+				data: JSON.stringify(payload),
+				contentType: "application/json; charset=UTF-8",
+				success: self.fromResponse
+			});
+		
+	}
      
 	self.sendJogCmd = function () {
 		var distance = self.jogDistance();
@@ -285,6 +287,7 @@ $(function() {
 			self.updatePongMsg(false);
 		}
 		else if (message.includes("UI:Con=")) {
+			console.log("Checking connection state")
 			if (message.includes("True")) {
 				$('#connection-state-msg').removeClass("text-muted");
 				$('#connection-state-msg').addClass("text-success");
@@ -311,31 +314,31 @@ $(function() {
 		var payload = {
 			command: "uiUpdate",
 		}
-                $.ajax({
-                    url: API_BASEURL + "plugin/omega",
-                    type: "POST",
-                    dataType: "json",
-                    data: JSON.stringify(payload),
-                    contentType: "application/json; charset=UTF-8",
-                    success: self.fromResponse
-                });
 
+		$.ajax({
+			url: API_BASEURL + "plugin/omega",
+			type: "POST",
+			dataType: "json",
+			data: JSON.stringify(payload),
+			contentType: "application/json; charset=UTF-8",
+			success: self.fromResponse
+		});
 	}
 
 	self.startSpliceDemo = function() {
 		console.log("Starting Splice Demo");
 		var payload = {
 			command: "startSpliceDemo"
-			};
+		};
 
-                $.ajax({
-                    url: API_BASEURL + "plugin/omega",
-                    type: "POST",
-                    dataType: "json",
-                    data: JSON.stringify(payload),
-                    contentType: "application/json; charset=UTF-8",
-                    success: self.fromResponse
-                });
+        $.ajax({
+			url: API_BASEURL + "plugin/omega",
+			type: "POST",
+			dataType: "json",
+			data: JSON.stringify(payload),
+			contentType: "application/json; charset=UTF-8",
+			success: self.fromResponse
+        });
 
 	}
 
@@ -343,7 +346,7 @@ $(function() {
         // dependencies have already been initialized. It is especially guaranteed that this method
         // gets called _after_ the settings have been retrieved from the OctoPrint backend and thus
         // the SettingsViewModel been properly populated.
-        self.onBeforeBinding = function() {
+    self.onBeforeBinding = function() {
 	    self.currentSplice("0");
 	    self.nSplices("0");
 	    self.loadingDrive("0");

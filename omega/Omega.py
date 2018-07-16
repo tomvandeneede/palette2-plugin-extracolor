@@ -1,5 +1,6 @@
 import serial
 import glob
+import time
 from threading import Thread
 from Queue import Queue
 
@@ -30,25 +31,59 @@ class Omega():
         self.writeQueue = None
         self.readThread = None
         self.writeThread = None
-
-        omegaPort = glob.glob('/dev/serial/by-id/*STMicro*')
-        if len(omegaPort) > 0:
-            self.connectOmega(omegaPort[0])
-            self._logger.info("Connected to Omega")
-        else:
-            self._logger.info("Could not connect to Omega")
-
         self.stop = False
-
-        #thread.start()
-
-    def connectOmega(self, port):
-        if self.connected is not True:
-            port = glob.glob('/dev/serial/by-id/*STMicro*')
-            port += glob.glob('/dev/serial/by-id/*FTDI*')
-            self.omegaSerial = serial.Serial(port[0], 115200)
-            #self.connected = True
         
+        # self.port_controller = Thread(target=self.check_status, args=(self,))
+        # self.port_controller.setDaemon(True)
+        # self.port_controller.start()
+        self.connectOmega()
+        # omegaPort = glob.glob('/dev/*cu.usbserial*D*')
+        # if len(omegaPort) > 0:
+        #     self._logger.info("Connected to Omega")
+        #     self.omegaSerial = serial.Serial(omegaPort[0], 115200)
+        #     self.connected = True
+        # else:
+        #     self._logger.info(omegaPort)
+        #     self._logger.info("Unable to connect to Omega")
+
+
+
+        
+    # def check_status(self,interval=0.1):
+    #     self._logger.info("Status thread started")
+    #     previous = False
+    #     while True:
+    #         self._logger.info("Hello")
+    #         if self.omegaSerial != None:
+    #             try:
+    #                 if self.omegaSerial.read():
+    #                     self._logger.info("Connected")
+    #             except serial.serialutil.SerialException:
+    #                 self._logger.info("Not Connected")
+
+            
+    #         time.sleep(1)
+    #     self.connected = False
+
+    def connectOmega(self, port = 300):
+        self._logger.info("Trying to connect to Omega")
+        if self.connected is False:
+            omegaPort = glob.glob('/dev/*cu.usbserial*D*')
+            if len(omegaPort) > 0:
+                try:
+                    self._logger.info("Connected to Omega")
+                    self.omegaSerial = serial.Serial(omegaPort[0], 115200)
+                    self.connected = True
+                except:
+                    self._logger.info("Another resource is connected to Palette")
+            else:
+                self._logger.info(omegaPort)
+                self._logger.info("Unable to connect to Omega")
+        else:
+            self._logger.info("Already Connected")
+
+        self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Con=%s" % self.connected)
+
         if self.readThread is None:
             self.readThread = Thread(target=self.omegaReadThread, args=(self.omegaSerial,))
             self.readThread.daemon = True
@@ -60,14 +95,15 @@ class Omega():
         while self.writeQueue is None:
             pass
 
-        self.enqueueLine("O99\n")
-        
-
     def disconnect(self):
+        #Close the serial port and remove it
         self.omegaSerial.close()
+        self.omegaSerial = None
+
         self.stop = True
         self.connected = False
         self._logger.info("Disconnected from Omega")
+
         self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Con=%s" % self.connected)
 
     def setActiveDrive(self, drive):
@@ -82,6 +118,8 @@ class Omega():
         self._logger.info("Omega: current file set to: %s" % self.currentFilepath)
 
     def sendUIUpdate(self):
+        self._logger.info("Send UIUpdate")
+        self._logger.info(self.connected)
         self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:nSplices=%s" % int(self.msfNS, 16))
         self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:S=%s" % self.currentSplice)
         self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Con=%s" % self.connected)
@@ -264,8 +302,6 @@ class Omega():
                 elif "S=" in line:
                     self.currentSplice = line[5:]
                 self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, line)
-            elif "Connection Okay" in line:
-                self.connected = True
 		self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Con=%s" % self.connected)
 
         ser.close()
