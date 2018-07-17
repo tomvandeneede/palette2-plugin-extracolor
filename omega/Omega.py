@@ -177,6 +177,7 @@ class Omega():
         self._plugin._printer.toggle_pause_print()
 
     def jog(self, drive, dist):
+        self._logger.info("Jog command received")
         distBinary = bin(int(dist) & 0xffff)
         distHex = "%04X" % int(distBinary, 2)
         # figure out the drive number

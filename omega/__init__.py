@@ -82,6 +82,7 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
         elif command == "uiUpdate":
             self.omega.sendUIUpdate()
         elif command == "sendJogCmd":
+            self._logger.info("Sending jog command")
             self.omega.jog(data["drive"], data["dist"])
         elif command == "sendCutCmd":
             self.omega.cut()
