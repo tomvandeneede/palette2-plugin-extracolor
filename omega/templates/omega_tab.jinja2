@@ -30,8 +30,8 @@
 	<div class="row">
 		<h4>Manual Controls</h4>
 		<p>Jog Drive:</p>
-		<select data-bind="options: jogDrives, value: jogDriveObs"></select>
-		<select data-bind="options: jogDists, value: jogDistance, optionsCaption: 'Distance (mm)'"></select>
+		<select data-bind="options: jogDrives, value: selectedJogDriveObs"></select>
+		<select data-bind="options: jogDists, value: selectedJogDistance, optionsText: 'distance', optionsValue: 'dvalue' "></select>
 		<div class="checkbox">
 			<label><input type="checkbox" data-bind="checked: jogWithOutgoing">With Outgoing</label>
 		</div>

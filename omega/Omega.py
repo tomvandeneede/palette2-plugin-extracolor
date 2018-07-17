@@ -72,7 +72,7 @@ class Omega():
             if len(omegaPort) > 0:
                 try:
                     self._logger.info("Connected to Omega")
-                    self.omegaSerial = serial.Serial(omegaPort[0], 115200)
+                    self.omegaSerial = serial.Serial(omegaPort[0], 9600)
                     self.connected = True
                 except:
                     self._logger.info("Another resource is connected to Palette")
@@ -178,12 +178,23 @@ class Omega():
 
     def jog(self, drive, dist):
         self._logger.info("Jog command received")
+
+        jogCmd = ""
+
         distBinary = bin(int(dist) & 0xffff)
         distHex = "%04X" % int(distBinary, 2)
+
+        if dist == 999:
+            jogCmd = "O%s D1 D1" % (drive)
+        elif dist == -999:
+            jogCmd = "O%s D1 D0" % (drive)
+        else:
+            jogCmd = "O%s D0 D%s" % (drive, distHex)
+
+
         # figure out the drive number
-        jogCmd = "O%s D%s" % (drive, distHex)
         self._logger.info(jogCmd)
-        self.gotOmegaCmd(jogCmd)
+        self.enqueueLine(jogCmd)
 
     def cut(self):
         self._logger.info("Omega: Sending Cut command") 
@@ -308,7 +319,9 @@ class Omega():
         ser.close()
 
     def enqueueLine(self, line):
-	if self.writeThread is not None and self.writeQueue is not None:
+        self._logger.info("Sending command")
+        if self.writeThread is not None and self.writeQueue is not None:
+            self._logger.info("Sending to write queue")
             self.writeQueue.put(line)
 
     def omegaWriteThread(self, ser):

@@ -2,6 +2,11 @@ $(function() {
     function OmegaViewModel(parameters) {
         var self = this;
 
+		function JogDistance(dvalue, distance) {
+			this.dvalue = dvalue;
+			this.distance = distance;
+		};
+
         self.settings = parameters[0];
 
 		self.omegaDialog = $('#omega_dialog');
@@ -23,16 +28,28 @@ $(function() {
 		self.loadingDrive = ko.observable();
 		self.loadingColor = ko.observable();
 		self.connectionStateMsg = ko.observable();
-		self.jogDistance = ko.observable();
+		//self.jogDistance = ko.observable();
 		self.jogWithOutgoing = ko.observable(false);
 
 		self.jogDrive = 0;
-		self.jogDriveObs = ko.observable("1");
+		self.selectedJogDriveObs = ko.observable("1");
 		self.spliceNumber = 0;
 
 		self.jogDrives = ko.observableArray(['1', '2', '3', '4', 'Out']);
-		self.jogDists = ko.observableArray(['1', '10', '100', '-1', '-10', '-100']);
-
+		//self.jogDists = ko.observableArray(['1', '10', '100', '-1', '-10', '-100']);
+		self.jogDists = ko.observableArray([
+			new JogDistance(999, "∞"),
+			new JogDistance(100, "100"),
+			new JogDistance(10, "10"),
+			new JogDistance(1, "1"),
+			new JogDistance(null, "Distance (mm)"),
+			new JogDistance(-1, "-1"),
+			new JogDistance(-10, "-10"),
+			new JogDistance(-100, "-100"),
+			new JogDistance(-999, "-∞")]);
+		
+		self.selectedJogDistance = ko.observable(null);
+		
 		self.connectOmega = function() {
 			console.log("Connect omega")
 			var payload = {
@@ -81,11 +98,10 @@ $(function() {
      
 		self.sendJogCmd = function () {
 			console.log("Send jog command called")
-			var distance = self.jogDistance();
-			var drive = parseInt(self.jogDriveObs());
-			var dist = parseInt(self.jogDistance());
+			var drive = parseInt(self.selectedJogDriveObs());
+			var dist = parseInt(self.selectedJogDistance());
 
-			if (self.jogDriveObs().includes('Out')) {
+			if (self.selectedJogDriveObs().includes('Out')) {
 				drive = 18;
 			}
 			else if (self.jogWithOutgoing()) {
@@ -94,8 +110,10 @@ $(function() {
 			else {
 				drive += 9;
 			}
+
 			console.log(drive);
 			console.log(dist);
+
 			if (dist) {
 				var payload = {
 					command: "sendJogCmd",
@@ -181,7 +199,7 @@ $(function() {
         }	
 
 		self.setJogDrive = function () {
-			console.log(self.jogDriveObs());	
+			console.log(self.selectedJogDriveObs());	
 		}
 
 		self.sendFilamentLoaded = function () {
