@@ -122,6 +122,13 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             return None,
         #return gcode
 
+    def support_msf_machinecode(*args, **kwargs):
+        return dict(
+            machinecode=dict(
+                msf=["msf"]
+            )
+        )
+
 __plugin_name__ = "Omega"
 __plugin_version__ = "0.1.0"
 __plugin_description__ = "A Palette-2i plugin for OctoPrint (Beta)"
@@ -131,5 +138,6 @@ def __plugin_load__():
     
     global __plugin_hooks__
     __plugin_hooks__ = {
-        "octoprint.comm.protocol.gcode.sending": __plugin_implementation__.sending_gcode
+        "octoprint.comm.protocol.gcode.sending": __plugin_implementation__.sending_gcode,
+        "octoprint.filemanager.extension_tree":  __plugin_implementation__.support_msf_machinecode
     }
