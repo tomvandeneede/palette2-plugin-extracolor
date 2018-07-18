@@ -30,7 +30,6 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
 
     def get_api_commands(self):
         return dict (
-            command1= [],
             setActiveDrive = ["drive"],
             startSingleColor = [],
             startSpliceDemo = [],
@@ -42,6 +41,7 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             uiUpdate = [],
             sdwpStart = [],
             sendJogCmd = ["drive", "dist"],
+            stopIndefJog = [],
             sendCutCmd = [],
             cancelPalette2 = [],
             clearPalette2 = []
@@ -74,7 +74,7 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             #self._logger.info("Sending a G28")
             #self._printer.commands(["G28", "G1 X150 Y150 Z10 F6000"])
         elif command == "sendOmegaCmd":
-            self.omega.gotOmegaCmd(data["cmd"])
+            self.omega.enqueueLine(data["cmd"])
         elif command == "printStart":
             self.omega.sendPrintStart()
         elif command == "sdwpStart":
@@ -91,6 +91,9 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             self.omega.gotOmegaCmd("O0")
         elif command == "clearPalette2":
             self.omega.clear()
+        elif command == "stopIndefJog":
+            self._logger.info("Stopping indef jog")
+            self.omega.stopIndefJog()
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):

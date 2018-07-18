@@ -196,9 +196,15 @@ class Omega():
         self._logger.info(jogCmd)
         self.enqueueLine(jogCmd)
 
+    def stopIndefJog(self):
+        self._logger.info("Stop indef jog")
+        jogCmd = "O10 D1 D2"
+        self.enqueueLine(jogCmd)
+
     def cut(self):
         self._logger.info("Omega: Sending Cut command") 
-        self.gotOmegaCmd("O19")
+        cutCmd = "O19"
+        self.enqueueLine(cutCmd)
 
     def gotOmegaCmd(self, cmd):
         if "O25" in cmd:
@@ -232,7 +238,7 @@ class Omega():
     def sendCmd(self, cmd):
         self._logger.info("Omega: Sending '%s'" % cmd)
         try:
-            self.omegaSerial.write(cmd.encode() + "\n")
+            self.enqueueLine(cmd)
         except:
             self._logger.info("Omega: Error sending cmd")
             self.omegaSerial.close()

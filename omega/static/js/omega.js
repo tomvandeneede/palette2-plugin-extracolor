@@ -131,6 +131,21 @@ $(function() {
 			}
 		}
 
+		self.sendStopIndefJogCmd = function () {
+			console.log("Send stop indef jog command")
+			var payload = {
+				command: "stopIndefJog",
+			}
+			$.ajax({
+				url: API_BASEURL + "plugin/omega",
+				type: "POST",
+				dataType: "json",
+				data: JSON.stringify(payload),
+				contentType: "application/json; charset=UTF-8",
+				success: self.fromResponse
+			});
+		}
+
 		self.sendCutCmd = function () {
 			console.log("Sending cut command");
 			var payload = {

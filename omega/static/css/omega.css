@@ -1,4 +1,6 @@
-#omega-ad.btn-group {
-    border: 1px solid #ccc;
-    border-radius: 6px;
-}
+/*Stop Button*/
+.btn-stop { 
+    color: #ffffff; 
+    background-color: #C92626; 
+    border-color: #940505; 
+  } 
