@@ -2,20 +2,23 @@
 from __future__ import absolute_import
 
 import octoprint.plugin
+import octoprint.filemanager
 import flask
 from . import Omega
 
-class OmegaPlugin(octoprint.plugin.StartupPlugin, 
-                       octoprint.plugin.TemplatePlugin, 
-                       octoprint.plugin.SettingsPlugin, 
-                       octoprint.plugin.AssetPlugin, 
-                       octoprint.plugin.SimpleApiPlugin, 
-                       octoprint.plugin.EventHandlerPlugin,
-                       octoprint.plugin.ShutdownPlugin):
+
+class OmegaPlugin(  octoprint.plugin.StartupPlugin, 
+                    octoprint.plugin.TemplatePlugin, 
+                    octoprint.plugin.SettingsPlugin, 
+                    octoprint.plugin.AssetPlugin, 
+                    octoprint.plugin.SimpleApiPlugin, 
+                    octoprint.plugin.EventHandlerPlugin,
+                    octoprint.plugin.ShutdownPlugin):
 
     def on_after_startup(self):
         self.omega = Omega.Omega(self)
-
+        self._upload_storage = octoprint.filemanager.LocalFileStorage("/Users/max/Library/Application Support/OctoPrint/uploads")
+        self._file = octoprint.filemanager.util.DiskFileWrapper("test.msf", "/Users/max/Library/Application Support/OctoPrint/uploads/test.msf")
     def get_settings_defaults(self):
         pass
 
@@ -74,7 +77,17 @@ class OmegaPlugin(octoprint.plugin.StartupPlugin,
             #self._logger.info("Sending a G28")
             #self._printer.commands(["G28", "G1 X150 Y150 Z10 F6000"])
         elif command == "sendOmegaCmd":
-            self.omega.enqueueLine(data["cmd"])
+            uploadPath = self._settings.getBaseFolder("uploads")
+            self._logger.info(uploadPath)
+            #self._logger.info(filemanager.storage.StorageInterface.file_exists("/Users/max/Library/Application Support/OctoPrint/uploads/test.msf"))
+            #storage.file_exists(self._settings.getBaseFolder("uploads") + "*msf"))
+            self._logger.info(self._upload_storage.file_exists("/Users/max/Library/Application Support/OctoPrint/uploads/test.msf"))
+            self._logger.info(self._file.stream().readline())
+            self._logger.info(self._file.stream().readline())
+
+
+            #self._logger.info(self._storage(destination).file_exists("/Users/max/Library/Application Support/OctoPrint/uploads/test.msf"))
+            #self.omega.enqueueLine(data["cmd"])
         elif command == "printStart":
             self.omega.sendPrintStart()
         elif command == "sdwpStart":

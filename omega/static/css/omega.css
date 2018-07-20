@@ -1,6 +1,4 @@
 /*Stop Button*/
-.btn-stop { 
-    color: #ffffff; 
-    background-color: #C92626; 
-    border-color: #940505; 
-  } 
+select, input[type="text"] {
+    margin-bottom: 0;
+}
