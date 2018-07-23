@@ -35,7 +35,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
         return dict (
             setActiveDrive = ["drive"],
             startSingleColor = [],
-            startSpliceDemo = [],
+            startSpliceDemo = ["file"],
             connectOmega = ["port"],
             disconnectPalette2 = [],
             testPrinterCommands = [],
@@ -47,7 +47,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             stopIndefJog = [],
             sendCutCmd = [],
             cancelPalette2 = [],
-            clearPalette2 = []
+            clearPalette2 = [],
         )
 
     def on_api_command(self, command, data):
@@ -65,8 +65,9 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
         elif command == "startSpliceDemo":
             self._logger.info("Starting a splice demo")
             # pass the file path to Omega
-            #self.omega.setFilepath(data["filepath"]) 
-            self.omega.startSpliceDemo(withPrinter = False)
+            path = self._settings.getBaseFolder("uploads") + "/" + data["file"]
+            #self.omega.setFilepath(data["file"]) 
+            self.omega.startSpliceDemo(path ,withPrinter = False)
         elif command == "connectOmega":
             self._logger.info("Command recieved")
             self.omega.connectOmega(data["port"])
@@ -77,17 +78,15 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             #self._logger.info("Sending a G28")
             #self._printer.commands(["G28", "G1 X150 Y150 Z10 F6000"])
         elif command == "sendOmegaCmd":
-            uploadPath = self._settings.getBaseFolder("uploads")
-            self._logger.info(uploadPath)
+            # uploadPath = self._settings.getBaseFolder("uploads")
+            # self._logger.info(uploadPath)
             #self._logger.info(filemanager.storage.StorageInterface.file_exists("/Users/max/Library/Application Support/OctoPrint/uploads/test.msf"))
             #storage.file_exists(self._settings.getBaseFolder("uploads") + "*msf"))
-            self._logger.info(self._upload_storage.file_exists("/Users/max/Library/Application Support/OctoPrint/uploads/test.msf"))
-            self._logger.info(self._file.stream().readline())
-            self._logger.info(self._file.stream().readline())
-
-
+            # self._logger.info(self._upload_storage.file_exists("/Users/max/Library/Application Support/OctoPrint/uploads/test.msf"))
+            # self._logger.info(self._file.stream().readline())
+            # self._logger.info(self._file.stream().readline())
             #self._logger.info(self._storage(destination).file_exists("/Users/max/Library/Application Support/OctoPrint/uploads/test.msf"))
-            #self.omega.enqueueLine(data["cmd"])
+            self.omega.enqueueLine(data["cmd"])
         elif command == "printStart":
             self.omega.sendPrintStart()
         elif command == "sdwpStart":
@@ -107,6 +106,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
         elif command == "stopIndefJog":
             self._logger.info("Stopping indef jog")
             self.omega.stopIndefJog()
+
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -120,6 +120,12 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             if ".oem" in payload["filename"]:
                 self.omega.setFilename(payload["filename"].split('.')[0])
                 self._logger.info("Filename: %s" % payload["filename"].split('.')[0])
+        elif "FileAdded" in event:
+            self._logger.info("File Uploaded")
+            self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
+        elif "FileRemoved" in event:
+            self._logger.info("File Removed")
+            self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
 
     def on_shutdown(self):
         self.omega.shutdown()

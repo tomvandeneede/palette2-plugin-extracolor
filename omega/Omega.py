@@ -146,8 +146,15 @@ class Omega():
         self.omegaSerial.write(cmdStr.encode())
         self._logger.info("Omega: Sent %s" % cmdStr)
 
-    def startSpliceDemo(self, withPrinter):
-        f = open(self.currentFilepath)
+    def startUploadedDemo(self, fileName):
+        uploadPath = self._plugin._settings.getBaseFolder("uploads")
+        file = fileName
+        self._logger.info("UPLOADING ... " + uploadPath)
+        self.currentFilepath = uploadPath + "/" + file
+        self.startSpliceDemo(False)
+
+    def startSpliceDemo(self, path, withPrinter):
+        f = open(path)
         for line in f:
             if "cu" in line:
                 self.msfCU = line[3:7]

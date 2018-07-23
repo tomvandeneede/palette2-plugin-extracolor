@@ -50,11 +50,12 @@
 		<div class="row">
 			<h4> Splice Demo </h4>
 			<p> Demo file: </p>
-			<select data-bind="options: jogDrives, value: selectedJogDriveObs"></select>
-			<button type="button" class="btn btn-success" data-bind="click: sendCutCmd">Start Demo</button>			
+			<select data-bind="options: files, value: selectedDemoFile"></select>
+			<button type="button" class="btn btn-success" data-bind="click: startUploadedDemo"> Start Demo </button>
 		</div>
 	</div>
 </div>
+
 <div id="omega_dialog" class="modal hide fade large">
     <div class="modal-body" style="margin-left: 50px">
     	<div class="row" style="padding-left: 20px">

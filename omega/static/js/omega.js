@@ -7,8 +7,7 @@ $(function() {
 			this.distance = distance;
 		};
 
-        self.settings = parameters[0];
-
+		self.settings = parameters[0];
 		self.omegaDialog = $('#omega_dialog');
 
         // this will hold the URL currently displayed by the iframe
@@ -36,6 +35,8 @@ $(function() {
 		self.spliceNumber = 0;
 
 		self.jogDrives = ko.observableArray(['1', '2', '3', '4', 'Out']);
+		self.files = ko.observableArray([]);
+
 		//self.jogDists = ko.observableArray(['1', '10', '100', '-1', '-10', '-100']);
 		self.jogDists = ko.observableArray([
 			new JogDistance(999, "∞"),
@@ -48,7 +49,35 @@ $(function() {
 			new JogDistance(-100, "-100"),
 			new JogDistance(-999, "-∞")]);
 		
-		self.selectedJogDistance = ko.observable(null);
+		self.selectedJogDistance = ko.observable();
+		self.selectedDemoFile = ko.observable();
+
+		window.onload = function() {
+			self.refreshDemoList()
+		}
+
+		self.refreshDemoList = function() {
+			console.log("API KEY", UI_API_KEY)
+			var payload = {}
+			$.ajax({
+				headers: {
+					"X-Api-Key":UI_API_KEY,
+	   			},
+				url: API_BASEURL + "files",
+				type: "GET",
+				dataType: "json",
+				data: JSON.stringify(payload),
+				contentType: "application/json; charset=UTF-8",
+				success: function(d){
+					console.log("SUCCESS ~~~", d)
+					self.files(d.files.map(function(file, index) {
+						console.log(index, file)
+						return file.name;
+					}));
+					console.log(self.files)
+				}
+			});
+		}
 		
 		self.connectOmega = function() {
 			console.log("Connect omega")
@@ -82,6 +111,7 @@ $(function() {
 		}
 
 		self.sendOmegaCmd = function() {
+			console.log("Sending omega command")
 			var payload = {
 				command: "sendOmegaCmd",
 				cmd: self.omegaCommand()
@@ -324,6 +354,9 @@ $(function() {
 					self.connectionStateMsg("Not Connected");
 				}
 			}
+			else if (message.includes("UI:Refresh Demo List")) {
+				self.refreshDemoList()
+			}
 		}
 
 		self.updatePongMsg = function(isPonging) {
@@ -365,6 +398,36 @@ $(function() {
 				success: self.fromResponse
 			});
 
+		}
+
+		self.startUploadedDemo = function() {
+			// console.log("Starting Uploaded Demo");
+			// var payload = {
+			// 	command: "startUploadedDemo"
+			// };
+
+			// $.ajax({
+			// 	url: API_BASEURL + "plugin/omega",
+			// 	type: "POST",
+			// 	dataType: "json",
+			// 	data: JSON.stringify(payload),
+			// 	contentType: "application/json; charset=UTF-8",
+			// 	success: self.fromResponse
+			// });
+			console.log("Start Uploaded Demo")
+			var payload = {
+				command: "startSpliceDemo",
+				file: self.selectedDemoFile()
+			}
+
+			$.ajax({
+				url: API_BASEURL + "plugin/omega",
+				type: "POST",
+				dataType: "json",
+				data: JSON.stringify(payload),
+				contentType: "application/json; charset=UTF-8",
+				success: self.fromResponse
+			});
 		}
 
         // This will get called before the ViewModel gets bound to the DOM, but after its
