@@ -27,9 +27,8 @@ $(function() {
 		self.loadingDrive = ko.observable();
 		self.loadingColor = ko.observable();
 		self.connectionStateMsg = ko.observable();
-		//self.jogDistance = ko.observable();
+		self.connected = ko.observable(false);
 		self.jogWithOutgoing = ko.observable(false);
-
 		self.jogDrive = 0;
 		self.selectedJogDriveObs = ko.observable("1");
 		self.spliceNumber = 0;
@@ -347,11 +346,13 @@ $(function() {
 					$('#connection-state-msg').removeClass("text-muted");
 					$('#connection-state-msg').addClass("text-success");
 					self.connectionStateMsg("Connected");
+					self.connected(true);
 				}
 				else {
 					$('#connection-state-msg').removeClass("text-success");
 					$('#connection-state-msg').addClass("text-muted");
 					self.connectionStateMsg("Not Connected");
+					self.connected(false)
 				}
 			}
 			else if (message.includes("UI:Refresh Demo List")) {
@@ -384,50 +385,22 @@ $(function() {
 		}
 
 		self.startSpliceDemo = function() {
-			console.log("Starting Splice Demo");
-			var payload = {
-				command: "startSpliceDemo"
-			};
-
-			$.ajax({
-				url: API_BASEURL + "plugin/omega",
-				type: "POST",
-				dataType: "json",
-				data: JSON.stringify(payload),
-				contentType: "application/json; charset=UTF-8",
-				success: self.fromResponse
-			});
-
-		}
-
-		self.startUploadedDemo = function() {
-			// console.log("Starting Uploaded Demo");
-			// var payload = {
-			// 	command: "startUploadedDemo"
-			// };
-
-			// $.ajax({
-			// 	url: API_BASEURL + "plugin/omega",
-			// 	type: "POST",
-			// 	dataType: "json",
-			// 	data: JSON.stringify(payload),
-			// 	contentType: "application/json; charset=UTF-8",
-			// 	success: self.fromResponse
-			// });
-			console.log("Start Uploaded Demo")
-			var payload = {
-				command: "startSpliceDemo",
-				file: self.selectedDemoFile()
+			if (self.selectedDemoFile()) {
+				console.log("Starting Splice Demo");
+				var payload = {
+					command: "startSpliceDemo",
+					file: self.selectedDemoFile()
+				}
+	
+				$.ajax({
+					url: API_BASEURL + "plugin/omega",
+					type: "POST",
+					dataType: "json",
+					data: JSON.stringify(payload),
+					contentType: "application/json; charset=UTF-8",
+					success: self.fromResponse
+				});
 			}
-
-			$.ajax({
-				url: API_BASEURL + "plugin/omega",
-				type: "POST",
-				dataType: "json",
-				data: JSON.stringify(payload),
-				contentType: "application/json; charset=UTF-8",
-				success: self.fromResponse
-			});
 		}
 
         // This will get called before the ViewModel gets bound to the DOM, but after its
@@ -440,6 +413,7 @@ $(function() {
 			self.loadingDrive("0");
 			self.loadingColor("Black");
 			self.connectionStateMsg("Not Connected");
+			self.connected(false)
         }
     }
 

@@ -6,52 +6,52 @@
 		</div>
 		<div class="row">
 			<button class="btn btn-primary" data-bind="click: connectOmega">Connect to Omega</button>
-			<button type="button" class="btn btn-primary" data-bind="click: disconnectPalette2">Disconnect</button>
+			<button type="button" class="btn btn-primary" data-bind="click: disconnectPalette2, enable: connected">Disconnect</button>
 		</div>
 		<div class="row" style="margin-top: 10px">
-			<button class="btn btn-primary" data-bind="click: sendFilamentLoaded">Send Loaded</button>	
+			<button class="btn btn-primary" data-bind="click: sendFilamentLoaded, enable: connected">Send Loaded</button>	
 		</div>
 		<div class="row" style="margin-top: 10px">
 			<div class="btn-group" data-toggle="buttons-radio" id="omega-mod-ad">
-				<button type="button" id="omega-mod-ad-1" class="btn active" value="1" data-bind="click: activeDriveTest">1</button>
-				<button type="button" id="omega-mod-ad-2" class="btn" value="2" data-bind="click: activeDriveTest">2</button>
-				<button type="button" id="omega-mod-ad-3" class="btn" data-bind="click: activeDriveTest">3</button>
-				<button type="button" id="omega-mod-ad-4" class="btn" data-bind="click: activeDriveTest">4</button>
+				<button type="button" id="omega-mod-ad-1" class="btn active" value="1" data-bind="click: activeDriveTest, enable: connected">1</button>
+				<button type="button" id="omega-mod-ad-2" class="btn" value="2" data-bind="click: activeDriveTest, enable: connected">2</button>
+				<button type="button" id="omega-mod-ad-3" class="btn" data-bind="click: activeDriveTest, enable: connected">3</button>
+				<button type="button" id="omega-mod-ad-4" class="btn" data-bind="click: activeDriveTest, enable: connected">4</button>
 			</div>
-			<button class="btn btn-primary" data-bind="click: startSingleColor">Start Single Color</button>
+			<button class="btn btn-primary" data-bind="click: startSingleColor, enable: connected">Start Single Color</button>
 		</div>
 			<div class="row" style="margin-top: 10px">
-				<button type="button" class="btn btn-primary" data-bind="click: showOmegaDialog">Show Dialog</button>
+				<button type="button" class="btn btn-primary" data-bind="click: showOmegaDialog, enable: connected">Show Dialog</button>
 			</div>
 			<div class="row" style="margin-top: 10px">
-				<button type="button" class="btn btn-primary" data-bind="click: sendCancelCmd">Cancel Print</button>
+				<button type="button" class="btn btn-primary" data-bind="click: sendCancelCmd, enable: connected">Cancel Print</button>
 			</div>
 		<hr>
 		<div class="row">
 			<h4>Manual Controls</h4>
 			<p>Jog Drive:</p>
-			<select data-bind="options: jogDrives, value: selectedJogDriveObs"></select>
-			<select data-bind="options: jogDists, value: selectedJogDistance, optionsText: 'distance', optionsValue: 'dvalue' "></select>
+			<select data-bind="options: jogDrives, value: selectedJogDriveObs , enable: connected"></select>
+			<select data-bind="options: jogDists, value: selectedJogDistance, optionsText: 'distance', optionsValue: 'dvalue', enable: connected"></select>
 			<div class="checkbox">
-				<label><input type="checkbox" data-bind="checked: jogWithOutgoing">With Outgoing</label>
+				<label><input type="checkbox" data-bind="checked: jogWithOutgoing, enable: connected">With Outgoing</label>
 			</div>
-			<button class="btn btn-primary" data-bind="click: sendJogCmd">Jog</button>
-			<button class="btn btn-danger" data-bind="click: sendStopIndefJogCmd">Stop</button>	
+			<button class="btn btn-primary" data-bind="click: sendJogCmd, enable: connected">Jog</button>
+			<button class="btn btn-danger" data-bind="click: sendStopIndefJogCmd, enable: connected">Stop</button>	
 		</div>
 		<div class="row" style="margin-top: 10px">
-			<button type="button" class="btn btn-primary" data-bind="click: sendCutCmd">Cut</button>
-			<button type="button" class="btn btn-primary" data-bind="click: sendClearOutCmd">Clear Outgoing</button>
+			<button type="button" class="btn btn-primary" data-bind="click: sendCutCmd, enable: connected">Cut</button>
+			<button type="button" class="btn btn-primary" data-bind="click: sendClearOutCmd, enable: connected">Clear Outgoing</button>
 		</div>
 		<div class="row" style="margin-top: 10px">
-			<input type="text" data-bind="value: omegaCommand">
-			<button class="btn btn-primary" data-bind="click: sendOmegaCmd">Send Command</button>	
+			<input type="text" data-bind="value: omegaCommand, enable: connected">
+			<button class="btn btn-primary" data-bind="click: sendOmegaCmd, enable: connected">Send Command</button>	
 		</div>
 		<hr>
 		<div class="row">
 			<h4> Splice Demo </h4>
 			<p> Demo file: </p>
-			<select data-bind="options: files, value: selectedDemoFile"></select>
-			<button type="button" class="btn btn-success" data-bind="click: startUploadedDemo"> Start Demo </button>
+			<select data-bind="options: files, value: selectedDemoFile, enable: connected"></select>
+			<button type="button" class="btn btn-success" data-bind="click: startSpliceDemo, enable: connected"> Start Demo </button>
 		</div>
 	</div>
 </div>

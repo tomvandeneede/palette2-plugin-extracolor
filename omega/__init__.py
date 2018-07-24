@@ -17,8 +17,6 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
 
     def on_after_startup(self):
         self.omega = Omega.Omega(self)
-        self._upload_storage = octoprint.filemanager.LocalFileStorage("/Users/max/Library/Application Support/OctoPrint/uploads")
-        self._file = octoprint.filemanager.util.DiskFileWrapper("test.msf", "/Users/max/Library/Application Support/OctoPrint/uploads/test.msf")
     def get_settings_defaults(self):
         pass
 
@@ -33,26 +31,48 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
 
     def get_api_commands(self):
         return dict (
+            cancelPalette2 = [],
+            clearPalette2 = [],
+            connectOmega = ["port"],
+            disconnectPalette2 = [],
+            printStart = [],
+            sdwpStart = [],
+            sendCutCmd = [],
+            sendOmegaCmd = ["cmd"],
+            sendJogCmd = ["drive", "dist"],
             setActiveDrive = ["drive"],
             startSingleColor = [],
             startSpliceDemo = ["file"],
-            connectOmega = ["port"],
-            disconnectPalette2 = [],
-            testPrinterCommands = [],
-            sendOmegaCmd = ["cmd"],
-            printStart = [],
-            uiUpdate = [],
-            sdwpStart = [],
-            sendJogCmd = ["drive", "dist"],
             stopIndefJog = [],
-            sendCutCmd = [],
-            cancelPalette2 = [],
-            clearPalette2 = [],
+            testPrinterCommands = [],
+            uiUpdate = [],
         )
 
     def on_api_command(self, command, data):
         self._logger.info("Got a command %s" % command)
-        if command == "setActiveDrive":
+
+        if command == "cancelPalette2":
+            self._logger.info("Cancelling print")
+            self.omega.gotOmegaCmd("O0")
+        elif command == "clearPalette2":
+            self.omega.clear()
+        elif command == "connectOmega":
+            self._logger.info("Command recieved")
+            self.omega.connectOmega(data["port"])
+        elif command == "disconnectPalette2":
+            self.omega.disconnect()
+        elif command == "printStart":
+            self.omega.sendPrintStart()
+        elif command == "sdwpStart":
+            self.omega.startSpliceDemo(withPrinter = True)
+        elif command == "sendCutCmd":
+            self.omega.cut()
+        elif command == "sendOmegaCmd":
+            self.omega.enqueueLine(data["cmd"])
+        elif command == "sendJogCmd":
+            self._logger.info("Sending jog command")
+            self.omega.sendJogCmd(data["drive"], data["dist"])
+        elif command == "setActiveDrive":
             self._logger.info("Setting active drive to %s" % data["drive"])
             #set the active drive in the Omega class to the drive that was passed
             self.omega.setActiveDrive(data["drive"])
@@ -67,45 +87,14 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             # pass the file path to Omega
             path = self._settings.getBaseFolder("uploads") + "/" + data["file"]
             #self.omega.setFilepath(data["file"]) 
-            self.omega.startSpliceDemo(path ,withPrinter = False)
-        elif command == "connectOmega":
-            self._logger.info("Command recieved")
-            self.omega.connectOmega(data["port"])
-        elif command == "disconnectPalette2":
-            self.omega.disconnect()
-        elif command == "testPrinterCommands":
-            self.omega.printerTest()
-            #self._logger.info("Sending a G28")
-            #self._printer.commands(["G28", "G1 X150 Y150 Z10 F6000"])
-        elif command == "sendOmegaCmd":
-            # uploadPath = self._settings.getBaseFolder("uploads")
-            # self._logger.info(uploadPath)
-            #self._logger.info(filemanager.storage.StorageInterface.file_exists("/Users/max/Library/Application Support/OctoPrint/uploads/test.msf"))
-            #storage.file_exists(self._settings.getBaseFolder("uploads") + "*msf"))
-            # self._logger.info(self._upload_storage.file_exists("/Users/max/Library/Application Support/OctoPrint/uploads/test.msf"))
-            # self._logger.info(self._file.stream().readline())
-            # self._logger.info(self._file.stream().readline())
-            #self._logger.info(self._storage(destination).file_exists("/Users/max/Library/Application Support/OctoPrint/uploads/test.msf"))
-            self.omega.enqueueLine(data["cmd"])
-        elif command == "printStart":
-            self.omega.sendPrintStart()
-        elif command == "sdwpStart":
-            self.omega.startSpliceDemo(withPrinter = True)
-        elif command == "uiUpdate":
-            self.omega.sendUIUpdate()
-        elif command == "sendJogCmd":
-            self._logger.info("Sending jog command")
-            self.omega.jog(data["drive"], data["dist"])
-        elif command == "sendCutCmd":
-            self.omega.cut()
-        elif command == "cancelPalette2":
-            self._logger.info("Cancelling print")
-            self.omega.gotOmegaCmd("O0")
-        elif command == "clearPalette2":
-            self.omega.clear()
+            self.omega.startSpliceDemo(data["file"], path ,withPrinter = False)
         elif command == "stopIndefJog":
             self._logger.info("Stopping indef jog")
             self.omega.stopIndefJog()
+        elif command == "testPrinterCommands":
+            self.omega.printerTest()
+        elif command == "uiUpdate":
+            self.omega.sendUIUpdate()
 
         return flask.jsonify(foo="bar")
 
@@ -121,10 +110,10 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
                 self.omega.setFilename(payload["filename"].split('.')[0])
                 self._logger.info("Filename: %s" % payload["filename"].split('.')[0])
         elif "FileAdded" in event:
-            self._logger.info("File Uploaded")
+            #User uploads a new file to Octoprint, we should update the demo list of files
             self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "FileRemoved" in event:
-            self._logger.info("File Removed")
+            #User removed a file from Octoprint, we should update the demo list of files
             self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
 
     def on_shutdown(self):
