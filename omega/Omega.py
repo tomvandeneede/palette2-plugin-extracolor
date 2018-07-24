@@ -1,21 +1,28 @@
 import serial
 import glob
 import time
-from threading import Thread
+import threading
 from Queue import Queue
 
 class Omega():
     def __init__(self, plugin):
-        self._plugin = plugin
+        plugin._logger.info("Hello from Omega!")
         self._logger = plugin._logger
-        self._logger.info("Hello from Omega") 
+        self._printer = plugin._printer
+        self._plugin_manager = plugin._plugin_manager
+        self._identifier = plugin._identifier
 
-        self.activeDrive = "1"
-        self.currentFilepath = "/home/s1/mcor.msf"
+        #Connection setup
+        self.omegaSerial = None
+        self.readThread = None
+        self.writeThread = None
+        self.connected = False
 
-        self.omegaSerial = None 
+        self.writeQueue = Queue()
+
         self.sentCounter = 0
 
+        #Header and data setup
         self.msfCU = ""
         self.msfNS = "0"
         self.msfNA = "0"
@@ -25,13 +32,7 @@ class Omega():
         self.splices = []
         self.algorithms = []
 
-        self.filename = ""
-
-        self.connected = False
-        self.writeQueue = None
-        self.readThread = None
-        self.writeThread = None
-        self.stop = False
+        self.connectionStop = False
         
         #Trys to automatically connect to palette first
         self.connectOmega()
@@ -48,93 +49,81 @@ class Omega():
                 except:
                     self._logger.info("Another resource is connected to Palette")
             else:
-                self._logger.info(omegaPort)
-                self._logger.info("Unable to connect to Omega")
+                self._logger.info("Unable to find Omega port")
         else:
             self._logger.info("Already Connected")
 
         #Tells plugin to update UI
-        self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Con=%s" % self.connected)
+        self._plugin_manager.send_plugin_message(self._identifier, "UI:Con=%s" % self.connected)
 
+        if self.connected:
+            self.startReadThread()
+            self.startWriteThread()
+
+    def startReadThread(self):
         if self.readThread is None:
-            self.readThread = Thread(target=self.omegaReadThread, args=(self.omegaSerial,))
+            self.readThread = threading.Thread(target=self.omegaReadThread, args=(self.omegaSerial,))
             self.readThread.daemon = True
             self.readThread.start()
+
+    def startWriteThread(self):
         if self.writeThread is None:
-            self.writeThread = Thread(target=self.omegaWriteThread, args=(self.omegaSerial,))
+            self.writeThread = threading.Thread(target=self.omegaWriteThread, args=(self.omegaSerial,))
             self.writeThread.daemon = True
             self.writeThread.start()
-        while self.writeQueue is None:
-            pass
 
-    def disconnect(self):
-        #Close the serial port and remove it
-        self.stop = True
-        self.readThread.join()
-        self.writeThread.join()
-        self.omegaSerial.close()
-        self.omegaSerial = None
-        self.resetPrintValues()
-        self._logger.info("Disconnected from Omega")
+    def omegaReadThread(self, serialConnection):
+        self._logger.info("Omega Read Thread: Starting thread")
+        try:
+            while self.connectionStop is False:
+                line = serialConnection.readline()
+                line = line.strip()
+                if line:
+                    self._logger.info("Omega: read in line: %s" % line)
+                if 'O20' in line:
+                    #send next line of data
+                    self.sendNextData(int(line[5]))
+                elif 'O30' in line:
+                    #send gcode command
+                    dist = line.strip()[5:]
+                    extrudeCmd = "G1 X1 E%s F10" % dist
+                    self._printer.commands(["G91", extrudeCmd, "G90", "G92 E0"])
+                elif "O32" in line:
+                    #resume print
+                    self._printer.toggle_pause_print()
+                elif "UI:" in line:
+                    #send a message to the front end
+                    self._logger.info(line)
+                    if "Ponging" in line:
+                        self.inPong = True
+                    elif "Finished Pong" in line:
+                        self.inPong = False
+                    elif "S=" in line:
+                        self.currentSplice = line[5:]
+                    self.updateUI()
+            serialConnection.close()
+        except:
+            #Something went wrong with the connection to Palette2
+            self.disconnect()
 
-        self.sendUIUpdate()
-
-    def setActiveDrive(self, drive):
-        self.activeDrive = drive
-        self._logger.info("Omega: active drive set to: %s" % self.activeDrive)
-
-    def setFilename(self, name):
-        self.filename = name
-
-    def setFilepath(self, filepath):
-        self.currentFilepath = filepath
-        self._logger.info("Omega: current file set to: %s" % self.currentFilepath)
-
-    def sendUIUpdate(self):
-        self._logger.info("Send UIUpdate")
-        self._logger.info(self.connected)
-        self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:nSplices=%s" % int(self.msfNS, 16))
-        self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:S=%s" % self.currentSplice)
-        self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Con=%s" % self.connected)
-        if self.inPong:
-            self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Ponging")
-        else:
-            self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Finished Pong")       
-
-    def resetPrintValues(self):
-        self._logger.info("Omega: Resetting print values")
-        self.activeDrive = "1"
-        self.currentFilepath = "/home/s1/mcor.msf"
-
-        self.omegaSerial = None 
-        self.sentCounter = 0
-
-        self.msfCU = ""
-        self.msfNS = "0"
-        self.msfNA = "0"
-        self.nAlgorithms = 0
-        self.currentSplice = "0"
-        self.inPong = False
-        self.splices = []
-        self.algorithms = []
-
-        self.filename = ""
-
-        self.connected = False
-        self.writeQueue = None
-        self.readThread = None
+    def omegaWriteThread(self, serialConnection):
+        self._logger.info("Omega Write Thread: Starting Thread")
+        while self.connectionStop is False:
+            try:
+                line = self.writeQueue.get(True, 0.5)
+                line = line.strip()
+                line = line + "\n"
+                self._logger.info("Omega Write Thread: Sending: %s" % line)
+                serialConnection.write(line.encode())
+            except:
+                pass
         self.writeThread = None
-        self.stop = False
-        
-    def startSingleColor(self):
-        self._logger.info("Omega: start Single Color Mode with drive %s" % self.activeDrive)
-        cmdStr = "O4 D%s\n" % self.activeDrive
-        self.omegaSerial.write(cmdStr.encode())
-        self._logger.info("Omega: Sent %s" % cmdStr)
+
+    def enqueueCmd(self, line):
+        self.writeQueue.put(line)
 
     def startSpliceDemo(self,fileName, path, withPrinter):
         self._logger.info("Starting splice demo")
-        self._logger.info(path)
         f = open(path, "r")
         for line in f:
             if "cu" in line:
@@ -153,48 +142,174 @@ class Omega():
             self._logger.info("Omega: start Splice Demo w/ Printer")
             if self.connected:
                 cmd = "O2\n"
-                self.enqueueLine(cmd.encode())
+                self.enqueueCmd(cmd)
         else:
             self._logger.info("Omega: start Splice Demo w/o printer")
             if self.connected:
                 cmd = "O3 D" + fileName + "\n"
-                self.enqueueLine(cmd.encode())
+                self.enqueueCmd(cmd)
 
-    def sendPrintStart(self):
-        self._logger.info("Omega toggle pause")
-        self._plugin._printer.toggle_pause_print()
-
-    def sendJogCmd(self, drive, dist):
+    def startJog(self, drive, dist):
         self._logger.info("Jog command received")
 
-        jogCmd = ""
+        jogCmd = None
 
         distBinary = bin(int(dist) & 0xffff)
         distHex = "%04X" % int(distBinary, 2)
 
-        if dist == 999:
-            #Drive indef inwards
+        if dist == 999: # drive indef inwards
             jogCmd = "O%s D1 D1" % (drive)
-        elif dist == -999:
-            #Drive indef outwards
+        elif dist == -999: # drive indef outwards
             jogCmd = "O%s D1 D0" % (drive)
-        else:
-            #Drive a certain distance
+        else: # drive a certain distance
             jogCmd = "O%s D0 D%s" % (drive, distHex)
 
-        # figure out the drive number
-        self._logger.info(jogCmd)
-        self.enqueueLine(jogCmd)
+        self.enqueueCmd(jogCmd)
 
     def stopIndefJog(self):
         self._logger.info("Stop indef jog")
         jogCmd = "O10 D1 D2"
-        self.enqueueLine(jogCmd)
+        self.enqueueCmd(jogCmd)
 
     def cut(self):
         self._logger.info("Omega: Sending Cut command") 
         cutCmd = "O19"
-        self.enqueueLine(cutCmd)
+        self.enqueueCmd(cutCmd)
+
+    def sendCmd(self, cmd):
+        self._logger.info("Omega: Sending '%s'" % cmd)
+        try:
+            self.enqueueCmd(cmd)
+        except:
+            self._logger.info("Omega: Error sending cmd")
+            self.omegaSerial.close()
+
+    def updateUI(self):
+        self._logger.info("Sending UIUpdate")
+        self._plugin_manager.send_plugin_message(self._identifier, "UI:nSplices=%s" % int(self.msfNS, 16))
+        self._plugin_manager.send_plugin_message(self._identifier, "UI:S=%s" % self.currentSplice)
+        self._plugin_manager.send_plugin_message(self._identifier, "UI:Con=%s" % self.connected)
+        if self.inPong:
+            self._plugin_manager.send_plugin_message(self._identifier, "UI:Ponging")
+        else:
+            self._plugin_manager.send_plugin_message(self._identifier, "UI:Finished Pong")
+
+    def sendNextData(self, dataNum):
+        self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
+        self._logger.info(self.sentCounter)
+        if self.sentCounter == 0 and dataNum == 0:
+            self._logger.info("breakpoint 1")
+            cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
+            self.enqueueCmd(cmdStr)
+            self._logger.info("Omega: Sent '%s'" % cmdStr)
+            self.sentCounter = self.sentCounter + 1
+        elif self.sentCounter == 1 and dataNum == 0:
+            self._logger.info("breakpoint 2")
+            cmdStr = "O26 D%s\n" % self.msfNS
+            self.enqueueCmd(cmdStr)
+            self._logger.info("Omega: Sent '%s'" % cmdStr)
+            self.sentCounter = self.sentCounter + 1
+        elif self.sentCounter == 2 and dataNum == 0:
+            self._logger.info("breakpoint 3")
+            cmdStr = "O28 D%s\n" % self.msfNA
+            self.enqueueCmd(cmdStr)
+            self._logger.info("Omega: Sent '%s'" % cmdStr)
+            self.sentCounter = self.sentCounter + 1
+        elif dataNum == 4:
+            self._logger.info("breakpoint 4")
+            self._logger.info("Omega: send algo")
+            self.enqueueCmd(self.algorithms[self.sentCounter - 3])
+            self._logger.info("Omega: Sent '%s'" % self.algorithms[self.sendCounter - 3])
+            self.sentCounter = self.sentCounter + 1
+        elif dataNum == 1:
+            self._logger.info("breakpoint 5")
+            self._logger.info("Omega: send splice")
+            splice = self.splices[self.sentCounter - 3 - self.nAlgorithms]
+            cmdStr = "O2%d D%s\n" % ((int(splice[0]) + 1), splice[1])
+            self.enqueueCmd(cmdStr)
+            self._logger.info("Omega: Sent '%s'" % cmdStr)
+            self.sentCounter = self.sentCounter + 1
+
+    def resetConnection(self):
+        self._logger.info("Resetting read and write threads")
+        # stop read and write threads
+        self.connectionStop = True
+        if self.readThread and threading.current_thread() != self.readThread:
+            self.readThread.join()
+
+        if self.writeThread and threading.current_thread() != self.writeThread:
+            self.writeThread.join()
+        
+        self.writeThread = None
+        self.readThread = None
+
+        if self.omegaSerial:
+            self.omegaSerial.close()
+            self.omegaSerial = None
+        self.connectionStop = False
+
+        # clear command queue
+        while not self.writeQueue.empty():
+            self.writeQueue.get()
+    
+    def resetVariables(self):
+        self._logger.info("Omega: Resetting print values")
+        self.activeDrive = "1"
+        self.currentFilepath = "/home/s1/mcor.msf"
+
+        self.omegaSerial = None 
+        self.sentCounter = 0
+
+        self.msfCU = ""
+        self.msfNS = "0"
+        self.msfNA = "0"
+        self.nAlgorithms = 0
+        self.currentSplice = "0"
+        self.inPong = False
+        self.splices = []
+        self.algorithms = []
+
+        self.connected = False
+        self.readThread = None
+        self.writeThread = None
+        self.connectionStop = False
+
+    def resetOmega(self):
+        self.resetConnection()
+        self.resetVariables()
+
+    def shutdown(self):
+        self.connectionStop = True
+        self.omegaSerial.close()
+
+    def disconnect(self):
+        self._logger.info("Disconnecting from Palette")
+        self.resetOmega()
+        self.updateUI()
+
+    def setActiveDrive(self, drive):
+        self.activeDrive = drive
+        self._logger.info("Omega: active drive set to: %s" % self.activeDrive)
+
+    def startSingleColor(self):
+        self._logger.info("Omega: start Single Color Mode with drive %s" % self.activeDrive)
+        cmdStr = "O4 D%s\n" % self.activeDrive
+        self.omegaSerial.write(cmdStr.encode())
+        self._logger.info("Omega: Sent %s" % cmdStr)
+
+    def sendPrintStart(self):
+        self._logger.info("Omega toggle pause")
+        self._printer.toggle_pause_print()
+    
+    def sendAutoloadOn(self):
+        self.omegaSerial.write("O38\n")
+
+    def sendAutoloadOff(self):
+        self.omegaSerial.write("O37\n")
+
+    def printerTest(self):
+        self._logger.info("Sending commands from Omega")
+        self._printer.commands(["M83", "G1 E50.00 F200"])
 
     def gotOmegaCmd(self, cmd):
         if "O25" in cmd:
@@ -217,129 +332,10 @@ class Omega():
             self._logger.info("Omega: Got splice D: %s, dist: %s" % (splice[0], splice[1]))
         elif "O9" in cmd and "O99" not in cmd:
             #reset values
-            self.resetPrintValues()
-            self.enqueueLine(cmd)
+            self.resetOmega()
+            self.enqueueCmd(cmd)
         elif "O1" in cmd:
-            self.enqueueLine("O1 D%s D0007 D0001" % self.filename)
+            self.enqueueCmd("O1 D%s D0007 D0001" % self.filename)
         else:
             self._logger.info("Omega: Got an Omega command '%s'" % cmd)
-            self.enqueueLine(cmd)
-
-    def sendCmd(self, cmd):
-        self._logger.info("Omega: Sending '%s'" % cmd)
-        try:
-            self.enqueueLine(cmd)
-        except:
-            self._logger.info("Omega: Error sending cmd")
-            self.omegaSerial.close()
-
-    def sendAutoloadOn(self):
-        self.omegaSerial.write("O38\n")
-
-    def sendAutoloadOff(self):
-        self.omegaSerial.write("O37\n")
-
-    def printerTest(self):
-        self._plugin._logger.info("Sending commands from Omega")
-        #self._plugin._printer.commands(["G28", "G1 X150 Y150 Z10 F6000"])
-        #self._plugin._printer.commands(["M109 S220", "M83", "G1 E50.00"])
-        self._plugin._printer.commands(["M83", "G1 E50.00 F200"])
-
-    def sendNextData(self, dataNum):
-        self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
-        self._logger.info(self.sentCounter)
-        if self.sentCounter == 0 and dataNum == 0:
-            self._logger.info("breakpoint 1")
-            #cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
-            cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
-            #self.omegaSerial.write(cmdStr.encode())
-            #self.enqueueLine("%s\n" % self.msfCU)
-            #self.enqueueLine("O25 D1111\n")
-            #self.enqueueLine("O25 K1;")
-            self.enqueueLine(cmdStr)
-            self._logger.info("Omega: Sent '%s'" % cmdStr)
-            self.sentCounter = self.sentCounter + 1
-        elif self.sentCounter == 1 and dataNum == 0:
-            self._logger.info("breakpoint 2")
-            cmdStr = "O26 D%s\n" % self.msfNS
-            #self.omegaSerial.write(cmdStr.encode())
-            self.enqueueLine(cmdStr)
-            self._logger.info("Omega: Sent '%s'" % cmdStr)
-            self.sentCounter = self.sentCounter + 1
-        elif self.sentCounter == 2 and dataNum == 0:
-            self._logger.info("breakpoint 3")
-            cmdStr = "O28 D%s\n" % self.msfNA
-            self.enqueueLine(cmdStr)
-            self._logger.info("Omega: Sent '%s'" % cmdStr)
-            self.sentCounter = self.sentCounter + 1
-        elif dataNum == 4:
-            self._logger.info("breakpoint 4")
-            self._logger.info("Omega: send algo")
-            self.enqueueLine(self.algorithms[self.sentCounter - 3])
-            self._logger.info("Omega: Sent '%s'" % self.algorithms[self.sendCounter - 3])
-            self.sentCounter = self.sentCounter + 1
-        elif dataNum == 1:
-            self._logger.info("breakpoint 5")
-            self._logger.info("Omega: send splice")
-            splice = self.splices[self.sentCounter - 3 - self.nAlgorithms]
-            cmdStr = "O2%d D%s\n" % ((int(splice[0]) + 1), splice[1])
-            #self.omegaSerial.write(cmdStr.encode())
-            self.enqueueLine(cmdStr)
-            self._logger.info("Omega: Sent '%s'" % cmdStr)
-            self.sentCounter = self.sentCounter + 1
-
-    def omegaReadThread(self, ser):
-        self._logger.info("Omega Read Thread: Starting thread")
-        while self.stop is not True:
-            line = ser.readline()
-            line = line.strip()
-            self._logger.info("Omega: read in line: %s" % line)
-            if 'O20' in line:
-                self._logger.info("need to send next line")
-                self.sendNextData(int(line[5]))
-            elif 'O30' in line:
-                #send gcode command
-                dist = line.strip()[5:]
-                extrudeCmd = "G1 X1 E%s F10" % dist
-                self._plugin._printer.commands(["G91", extrudeCmd, "G90", "G92 E0"])
-                #self._plugin._printer.commands(["M109 S220", "M83", "G1 E50.00 F2000"])
-            elif "O32" in line:
-                #resume print
-                self._logger.info("Omega: resuming print")
-                self._plugin._printer.toggle_pause_print()
-            elif "UI:" in line:
-                #send a message to the front end
-                self._logger.info(line)
-                if "Ponging" in line:
-                    self.inPong = True
-                elif "Finished Pong" in line:
-                    self.inPong = False
-                elif "S=" in line:
-                    self.currentSplice = line[5:]
-                self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, line)
-		self._plugin._plugin_manager.send_plugin_message(self._plugin._identifier, "UI:Con=%s" % self.connected)
-
-        ser.close()
-
-    def omegaWriteThread(self, ser):
-        self._logger.info("Omega Write Thread: Starting Thread")
-        self.writeQueue = Queue()
-        while self.stop is not True:
-            try:
-                line = self.writeQueue.get(True, 0.5)
-                line = line.strip()
-                line = line + "\n"
-                self._logger.info("Omega Write Thread: Sending: %s" % line)
-                self.omegaSerial.write(line.encode())
-            except:
-                pass
-
-    def enqueueLine(self, line):
-        self._logger.info("Sending command")
-        if self.writeThread is not None and self.writeQueue is not None:
-            self._logger.info("Sending to write queue")
-            self.writeQueue.put(line)
-
-    def shutdown(self):
-        self.stop = True
-        self.omegaSerial.close()
+            self.enqueueCmd(cmd)

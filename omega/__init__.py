@@ -17,9 +17,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
 
     def on_after_startup(self):
         self.omega = Omega.Omega(self)
-    def get_settings_defaults(self):
-        pass
-
+        
     def get_template_configs(self):
         return [ dict(type="navbar", custom_bindings=False), dict(type="settings", custom_bindings=False) ]
 
@@ -68,10 +66,10 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
         elif command == "sendCutCmd":
             self.omega.cut()
         elif command == "sendOmegaCmd":
-            self.omega.enqueueLine(data["cmd"])
+            self.omega.enqueueCmd(data["cmd"])
         elif command == "sendJogCmd":
             self._logger.info("Sending jog command")
-            self.omega.sendJogCmd(data["drive"], data["dist"])
+            self.omega.startJog(data["drive"], data["dist"])
         elif command == "setActiveDrive":
             self._logger.info("Setting active drive to %s" % data["drive"])
             #set the active drive in the Omega class to the drive that was passed
@@ -94,7 +92,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
         elif command == "testPrinterCommands":
             self.omega.printerTest()
         elif command == "uiUpdate":
-            self.omega.sendUIUpdate()
+            self.omega.updateUI()
 
         return flask.jsonify(foo="bar")
 
@@ -104,7 +102,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
 
     def on_event(self, event, payload):
         if "ClientOpened" in event:
-            self.omega.sendUIUpdate()
+            self.omega.updateUI()
         elif "PrintStarted" in event:
             if ".oem" in payload["filename"]:
                 self.omega.setFilename(payload["filename"].split('.')[0])
