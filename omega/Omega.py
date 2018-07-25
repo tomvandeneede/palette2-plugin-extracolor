@@ -16,6 +16,7 @@ class Omega():
         self.omegaSerial = None
         self.readThread = None
         self.writeThread = None
+        self.connectionThread = None
         self.connected = False
 
         self.writeQueue = Queue()
@@ -35,7 +36,8 @@ class Omega():
         self.connectionStop = False
         
         #Trys to automatically connect to palette first
-        self.connectOmega()
+        self.startConnectionThread()
+        
 
     def connectOmega(self, port = 300):
         self._logger.info("Trying to connect to Omega")
@@ -71,6 +73,12 @@ class Omega():
             self.writeThread = threading.Thread(target=self.omegaWriteThread, args=(self.omegaSerial,))
             self.writeThread.daemon = True
             self.writeThread.start()
+    
+    def startConnectionThread(self):
+        if self.connectionThread is None:
+            self.connectionThread = threading.Thread(target=self.omegaConnectionThread)
+            self.connectionThread.daemon = True
+            self.connectionThread.start()
 
     def omegaReadThread(self, serialConnection):
         self._logger.info("Omega Read Thread: Starting thread")
@@ -118,6 +126,12 @@ class Omega():
             except:
                 pass
         self.writeThread = None
+
+    def omegaConnectionThread(self):
+        while True:
+            if self.connected is False:
+                self.connectOmega()
+            time.sleep(1)
 
     def enqueueCmd(self, line):
         self.writeQueue.put(line)

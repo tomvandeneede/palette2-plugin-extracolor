@@ -93,7 +93,6 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             self.omega.printerTest()
         elif command == "uiUpdate":
             self.omega.updateUI()
-
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
