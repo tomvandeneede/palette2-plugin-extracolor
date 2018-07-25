@@ -40,7 +40,7 @@ class Omega():
     def connectOmega(self, port = 300):
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
-            omegaPort = glob.glob('/dev/*cu.usbserial*D*')
+            omegaPort = glob.glob('/dev/serial/by-id/*D*')
             if len(omegaPort) > 0:
                 try:
                     self.omegaSerial = serial.Serial(omegaPort[0], 115200, timeout=0.5)
@@ -198,31 +198,26 @@ class Omega():
         self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
         self._logger.info(self.sentCounter)
         if self.sentCounter == 0 and dataNum == 0:
-            self._logger.info("breakpoint 1")
             cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
             self.enqueueCmd(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
         elif self.sentCounter == 1 and dataNum == 0:
-            self._logger.info("breakpoint 2")
             cmdStr = "O26 D%s\n" % self.msfNS
             self.enqueueCmd(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
         elif self.sentCounter == 2 and dataNum == 0:
-            self._logger.info("breakpoint 3")
             cmdStr = "O28 D%s\n" % self.msfNA
             self.enqueueCmd(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.sentCounter = self.sentCounter + 1
         elif dataNum == 4:
-            self._logger.info("breakpoint 4")
             self._logger.info("Omega: send algo")
             self.enqueueCmd(self.algorithms[self.sentCounter - 3])
             self._logger.info("Omega: Sent '%s'" % self.algorithms[self.sendCounter - 3])
             self.sentCounter = self.sentCounter + 1
         elif dataNum == 1:
-            self._logger.info("breakpoint 5")
             self._logger.info("Omega: send splice")
             splice = self.splices[self.sentCounter - 3 - self.nAlgorithms]
             cmdStr = "O2%d D%s\n" % ((int(splice[0]) + 1), splice[1])
