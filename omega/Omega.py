@@ -248,7 +248,8 @@ class Omega():
         
         self.stopReadThread()
         self.stopWriteThread()
-        self.stopConnectionThread()
+        if not self._settings.get(["autoconnect"]):
+            self.stopConnectionThread()
 
         if self.omegaSerial:
             self.omegaSerial.close()
