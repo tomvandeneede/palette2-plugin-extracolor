@@ -11,33 +11,16 @@ class Omega():
         self._printer = plugin._printer
         self._plugin_manager = plugin._plugin_manager
         self._identifier = plugin._identifier
-
-        #Connection setup
-        self.omegaSerial = None
-        self.readThread = None
-        self.writeThread = None
-        self.connectionThread = None
-        self.connected = False
+        self._settings = plugin._settings
 
         self.writeQueue = Queue()
 
-        self.sentCounter = 0
-
-        #Header and data setup
-        self.msfCU = ""
-        self.msfNS = "0"
-        self.msfNA = "0"
-        self.nAlgorithms = 0
-        self.currentSplice = "0"
-        self.inPong = False
-        self.splices = []
-        self.algorithms = []
-
-        self.connectionStop = False
+        self.resetVariables()
+        self.resetConnection()
         
         #Trys to automatically connect to palette first
-        self.startConnectionThread()
-        
+        if self._settings.get(["autoconnect"]):
+            self.startConnectionThread()
 
     def connectOmega(self, port = 300):
         self._logger.info("Trying to connect to Omega")
@@ -48,6 +31,8 @@ class Omega():
                     self.omegaSerial = serial.Serial(omegaPort[0], 115200, timeout=0.5)
                     self.connected = True
                     self._logger.info("Connected to Omega")
+                    #Tells plugin to update UI
+                    self._plugin_manager.send_plugin_message(self._identifier, "UI:Con=%s" % self.connected)
                 except:
                     self._logger.info("Another resource is connected to Palette")
             else:
@@ -55,35 +40,53 @@ class Omega():
         else:
             self._logger.info("Already Connected")
 
-        #Tells plugin to update UI
-        self._plugin_manager.send_plugin_message(self._identifier, "UI:Con=%s" % self.connected)
-
         if self.connected:
             self.startReadThread()
             self.startWriteThread()
 
     def startReadThread(self):
         if self.readThread is None:
+            self.readThreadStop = False
             self.readThread = threading.Thread(target=self.omegaReadThread, args=(self.omegaSerial,))
             self.readThread.daemon = True
             self.readThread.start()
 
     def startWriteThread(self):
         if self.writeThread is None:
+            self.writeThreadStop = False
             self.writeThread = threading.Thread(target=self.omegaWriteThread, args=(self.omegaSerial,))
             self.writeThread.daemon = True
             self.writeThread.start()
     
     def startConnectionThread(self):
         if self.connectionThread is None:
+            self.connectionThreadStop = False
             self.connectionThread = threading.Thread(target=self.omegaConnectionThread)
             self.connectionThread.daemon = True
             self.connectionThread.start()
+    
+    def stopReadThread(self):
+        self.readThreadStop = True
+        if self.readThread and threading.current_thread() != self.readThread:
+            self.readThread.join()
+        self.readThread = None
+    
+    def stopWriteThread(self):
+        self.writeThreadStop = True
+        if self.writeThread and threading.current_thread() != self.writeThread:
+            self.writeThread.join()
+        self.writeThread = None
+
+    def stopConnectionThread(self):
+        self.connectionThreadStop = True
+        if self.connectionThread and threading.current_thread() != self.connectionThread:
+            self.connectionThread.join()
+        self.connectionThread = None
 
     def omegaReadThread(self, serialConnection):
         self._logger.info("Omega Read Thread: Starting thread")
         try:
-            while self.connectionStop is False:
+            while self.readThreadStop is False:
                 line = serialConnection.readline()
                 line = line.strip()
                 if line:
@@ -116,7 +119,7 @@ class Omega():
 
     def omegaWriteThread(self, serialConnection):
         self._logger.info("Omega Write Thread: Starting Thread")
-        while self.connectionStop is False:
+        while self.writeThreadStop is False:
             try:
                 line = self.writeQueue.get(True, 0.5)
                 line = line.strip()
@@ -128,7 +131,7 @@ class Omega():
         self.writeThread = None
 
     def omegaConnectionThread(self):
-        while True:
+        while self.connectionThreadStop is False:
             if self.connected is False:
                 self.connectOmega()
             time.sleep(1)
@@ -200,13 +203,13 @@ class Omega():
 
     def updateUI(self):
         self._logger.info("Sending UIUpdate")
-        self._plugin_manager.send_plugin_message(self._identifier, "UI:nSplices=%s" % int(self.msfNS, 16))
-        self._plugin_manager.send_plugin_message(self._identifier, "UI:S=%s" % self.currentSplice)
+        #self._plugin_manager.send_plugin_message(self._identifier, "UI:nSplices=%s" % int(self.msfNS, 16))
+        #self._plugin_manager.send_plugin_message(self._identifier, "UI:S=%s" % self.currentSplice)
         self._plugin_manager.send_plugin_message(self._identifier, "UI:Con=%s" % self.connected)
-        if self.inPong:
-            self._plugin_manager.send_plugin_message(self._identifier, "UI:Ponging")
-        else:
-            self._plugin_manager.send_plugin_message(self._identifier, "UI:Finished Pong")
+        #if self.inPong:
+            #self._plugin_manager.send_plugin_message(self._identifier, "UI:Ponging")
+        #else:
+            #self._plugin_manager.send_plugin_message(self._identifier, "UI:Finished Pong")
 
     def sendNextData(self, dataNum):
         self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
@@ -242,15 +245,10 @@ class Omega():
     def resetConnection(self):
         self._logger.info("Resetting read and write threads")
         # stop read and write threads
-        self.connectionStop = True
-        if self.readThread and threading.current_thread() != self.readThread:
-            self.readThread.join()
-
-        if self.writeThread and threading.current_thread() != self.writeThread:
-            self.writeThread.join()
         
-        self.writeThread = None
-        self.readThread = None
+        self.stopReadThread()
+        self.stopWriteThread()
+        self.stopConnectionThread()
 
         if self.omegaSerial:
             self.omegaSerial.close()
@@ -281,6 +279,7 @@ class Omega():
         self.connected = False
         self.readThread = None
         self.writeThread = None
+        self.connectionThread = None
         self.connectionStop = False
 
     def resetOmega(self):
@@ -288,8 +287,7 @@ class Omega():
         self.resetVariables()
 
     def shutdown(self):
-        self.connectionStop = True
-        self.omegaSerial.close()
+        self.disconnect()
 
     def disconnect(self):
         self._logger.info("Disconnecting from Palette")

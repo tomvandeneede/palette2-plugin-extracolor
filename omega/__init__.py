@@ -17,7 +17,6 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
 
     def on_after_startup(self):
         self.omega = Omega.Omega(self)
-        self._logger.info("Hello World! (more: %s)" % self._settings.get(["autoconnect"]))
     
     def get_settings_defaults(self):
         return dict(autoconnect=0)
@@ -119,6 +118,11 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
         elif "FileRemoved" in event:
             #User removed a file from Octoprint, we should update the demo list of files
             self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
+        elif "SettingsUpdated" in event:
+            if self._settings.get(["autoconnect"]):
+                self.omega.startConnectionThread()
+            else:
+                self.omega.stopConnectionThread()
 
     def on_shutdown(self):
         self.omega.shutdown()
