@@ -17,9 +17,16 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
 
     def on_after_startup(self):
         self.omega = Omega.Omega(self)
-        
+        self._logger.info("Hello World! (more: %s)" % self._settings.get(["autoconnect"]))
+    
+    def get_settings_defaults(self):
+        return dict(autoconnect=0)
+    
     def get_template_configs(self):
-        return [ dict(type="navbar", custom_bindings=False), dict(type="settings", custom_bindings=False) ]
+        return [ 
+            dict(type="navbar", custom_bindings=False), 
+            dict(type="settings", custom_bindings=False) 
+        ]
 
     def get_assets(self):
         return dict(

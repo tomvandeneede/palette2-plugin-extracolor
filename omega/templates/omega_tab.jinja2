@@ -4,7 +4,7 @@
 			<h4>Palette 2i Status</h4>
 			<p>Connection Status: <span id="connection-state-msg" class="text-muted" data-bind="text: connectionStateMsg">Not Connected</span></p>
 		</div>
-		<div class="row">
+		<div data-bind="if: settings.settings.plugins.omega.autoconnect" class="row">
 			<button class="btn btn-primary" data-bind="click: connectOmega">Connect to Omega</button>
 			<button type="button" class="btn btn-primary" data-bind="click: disconnectPalette2, enable: connected">Disconnect</button>
 		</div>
