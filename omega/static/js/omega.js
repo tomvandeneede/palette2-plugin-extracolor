@@ -55,6 +55,13 @@ $(function() {
 			self.refreshDemoList()
 		}
 
+		self.filterDemoFiles = ko.computed(function() {
+			var filteredFiles = self.files().filter((f) => {
+				return f.match(/.msf$/i);
+			})
+			return filteredFiles
+		});
+
 		self.refreshDemoList = function() {
 			console.log("API KEY", UI_API_KEY)
 			var payload = {}

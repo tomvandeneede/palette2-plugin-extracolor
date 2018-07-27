@@ -50,7 +50,7 @@
 		<div class="row">
 			<h4> Splice Demo </h4>
 			<p> Demo file: </p>
-			<select data-bind="options: files, value: selectedDemoFile, enable: connected"></select>
+			<select data-bind="options: filterDemoFiles, value: selectedDemoFile"></select>
 			<button type="button" class="btn btn-success" data-bind="click: startSpliceDemo, enable: connected"> Start Demo </button>
 		</div>
 	</div>
