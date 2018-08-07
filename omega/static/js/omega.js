@@ -32,6 +32,7 @@ $(function() {
 		self.jogDrive = 0;
 		self.selectedJogDriveObs = ko.observable("1");
 		self.spliceNumber = 0;
+		self.demoWithPrinter = ko.observable(false);
 
 		self.jogDrives = ko.observableArray(['1', '2', '3', '4', 'Out']);
 		self.files = ko.observableArray([]);
@@ -396,7 +397,8 @@ $(function() {
 				console.log("Starting Splice Demo");
 				var payload = {
 					command: "startSpliceDemo",
-					file: self.selectedDemoFile()
+					file: self.selectedDemoFile(),
+					withPrinter: self.demoWithPrinter()
 				}
 	
 				$.ajax({

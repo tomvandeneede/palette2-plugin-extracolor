@@ -139,7 +139,7 @@ class Omega():
     def enqueueCmd(self, line):
         self.writeQueue.put(line)
 
-    def startSpliceDemo(self,fileName, path, withPrinter):
+    def startSpliceDemo(self, fileName, path, withPrinter):
         self._logger.info("Starting splice demo")
         f = open(path, "r")
         for line in f:
@@ -154,11 +154,11 @@ class Omega():
                 self._logger.info("Omega: Adding Splice D: %s, Dist: %s" % (splice[0], splice[1]))
                 self.splices.append(splice)
         f.close()
-
+        print(withPrinter)
         if withPrinter is True:
             self._logger.info("Omega: start Splice Demo w/ Printer")
             if self.connected:
-                cmd = "O2\n"
+                cmd = "O3 D" + fileName + "\n"
                 self.enqueueCmd(cmd)
         else:
             self._logger.info("Omega: start Splice Demo w/o printer")
@@ -168,7 +168,7 @@ class Omega():
 
     def startJog(self, drive, dist):
         self._logger.info("Jog command received")
-
+        subprocess.call(['./connectWifi'])
         jogCmd = None
 
         distBinary = bin(int(dist) & 0xffff)

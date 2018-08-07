@@ -20,12 +20,12 @@
 			</div>
 			<button class="btn btn-primary" data-bind="click: startSingleColor, enable: connected">Start Single Color</button>
 		</div>
-			<div class="row" style="margin-top: 10px">
-				<button type="button" class="btn btn-primary" data-bind="click: showOmegaDialog, enable: connected">Show Dialog</button>
-			</div>
-			<div class="row" style="margin-top: 10px">
-				<button type="button" class="btn btn-primary" data-bind="click: sendCancelCmd, enable: connected">Cancel Print</button>
-			</div>
+		<div class="row" style="margin-top: 10px">
+			<button type="button" class="btn btn-primary" data-bind="click: showOmegaDialog, enable: connected">Show Dialog</button>
+		</div>
+		<div class="row" style="margin-top: 10px">
+			<button type="button" class="btn btn-primary" data-bind="click: sendCancelCmd, enable: connected">Cancel Print</button>
+		</div>
 		<hr>
 		<div class="row">
 			<h4>Manual Controls</h4>
@@ -35,7 +35,7 @@
 			<div class="checkbox">
 				<label><input type="checkbox" data-bind="checked: jogWithOutgoing, enable: connected">With Outgoing</label>
 			</div>
-			<button class="btn btn-primary" data-bind="click: sendJogCmd, enable: connected">Jog</button>
+			<button class="btn btn-primary" data-bind="click: sendJogCmd">Jog</button>
 			<button class="btn btn-danger" data-bind="click: sendStopIndefJogCmd, enable: connected">Stop</button>	
 		</div>
 		<div class="row" style="margin-top: 10px">
@@ -51,7 +51,24 @@
 			<h4> Splice Demo </h4>
 			<p> Demo file: </p>
 			<select data-bind="options: filterDemoFiles, value: selectedDemoFile"></select>
-			<button type="button" class="btn btn-success" data-bind="click: startSpliceDemo, enable: connected"> Start Demo </button>
+			<button type="button" class="btn btn-success" data-bind="click: startSpliceDemo"> Start Demo </button>
+			<div class="checkbox">
+				<label><input type="checkbox" data-bind="checked: demoWithPrinter">With Printer</label>
+			</div>
+		</div>
+		<hr>
+			<div class="row">
+				<h4> Splice Tunning </h4>
+				<div class="row" style="margin-top: 10px">
+					<button type="button" class="btn btn-success" data-bind="click: startSpliceDemo, enable: connected"> Start Splice Tunning </button>
+				</div>
+				<div class="row" style="margin-top: 10px">
+					<button type="button" class="btn btn-success" data-bind="click: startSpliceDemo, enable: connected"> Load Drives </button>
+				</div>
+				<div class="row" style="margin-top: 10px">
+					<button type="button" class="btn btn-success" data-bind="click: startSpliceDemo, enable: connected"> Splice </button>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>

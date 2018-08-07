@@ -46,7 +46,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             sendJogCmd = ["drive", "dist"],
             setActiveDrive = ["drive"],
             startSingleColor = [],
-            startSpliceDemo = ["file"],
+            startSpliceDemo = ["file", "withPrinter"],
             stopIndefJog = [],
             testPrinterCommands = [],
             uiUpdate = [],
@@ -67,8 +67,6 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             self.omega.disconnect()
         elif command == "printStart":
             self.omega.sendPrintStart()
-        elif command == "sdwpStart":
-            self.omega.startSpliceDemo(withPrinter = True)
         elif command == "sendCutCmd":
             self.omega.cut()
         elif command == "sendOmegaCmd":
@@ -91,7 +89,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             # pass the file path to Omega
             path = self._settings.getBaseFolder("uploads") + "/" + data["file"]
             #self.omega.setFilepath(data["file"]) 
-            self.omega.startSpliceDemo(data["file"], path ,withPrinter = False)
+            self.omega.startSpliceDemo(data["file"],path , data["withPrinter"])
         elif command == "stopIndefJog":
             self._logger.info("Stopping indef jog")
             self.omega.stopIndefJog()
