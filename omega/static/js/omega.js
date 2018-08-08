@@ -21,6 +21,8 @@ $(function() {
 		self.newUrl = ko.observable();
 		self.activeDrive = ko.observable();
 		self.omegaCommand = ko.observable();
+		self.wifiSSID = ko.observable();
+		self.wifiPASS = ko.observable();
 		self.omegaPort = ko.observable();
 		self.currentSplice = ko.observable();
 		self.nSplices = ko.observable();
@@ -122,6 +124,23 @@ $(function() {
 			var payload = {
 				command: "sendOmegaCmd",
 				cmd: self.omegaCommand()
+			}
+			$.ajax({
+				url: API_BASEURL + "plugin/omega",
+				type: "POST",
+				dataType: "json",
+				data: JSON.stringify(payload),
+				contentType: "application/json; charset=UTF-8",
+				success: self.fromResponse
+			});
+		}
+
+		self.connectWifi = function() {
+			console.log("Connecting to Wifi")
+			var payload = {
+				command: "connectWifi",
+				wifiSSID: self.wifiSSID(),
+				wifiPASS: self.wifiPASS()
 			}
 			$.ajax({
 				url: API_BASEURL + "plugin/omega",

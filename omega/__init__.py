@@ -50,6 +50,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             stopIndefJog = [],
             testPrinterCommands = [],
             uiUpdate = [],
+            connectWifi = ["wifiSSID", "wifiPASS"],
         )
 
     def on_api_command(self, command, data):
@@ -95,6 +96,8 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             self.omega.stopIndefJog()
         elif command == "testPrinterCommands":
             self.omega.printerTest()
+        elif command == "connectWifi":
+            self.omega.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "uiUpdate":
             self.omega.updateUI()
         return flask.jsonify(foo="bar")

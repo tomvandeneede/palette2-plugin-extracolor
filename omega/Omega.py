@@ -24,10 +24,6 @@ class Omega():
             self.startConnectionThread()
 
     def connectOmega(self, port = 300):
-        with open("/etc/wpa_supplicant/wpa_supplicant.conf", "a") as myfile:
-            myfile.write('network={\n\tssid="25Mosaic"\n\tpsk="Mosaic2017"\n\tkey_mgmt=WPA-PSK\n}')
-            
-        subprocess.call(['/home/pi/connectWifi'])
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
             omegaPort = glob.glob('/dev/serial/by-id/*D*')
@@ -48,6 +44,10 @@ class Omega():
         if self.connected:
             self.startReadThread()
             self.startWriteThread()
+
+    def connectWifi(self, wifiSSID, wifiPASS):
+        with open("/etc/wpa_supplicant/wpa_supplicant.conf", "a") as myfile:
+            myfile.write('network={\n\tssid="' + wifiSSID + '"\n\tpsk="' + wifiPASS + '"\n\tkey_mgmt=WPA-PSK\n}\n')
 
     def startReadThread(self):
         if self.readThread is None:
