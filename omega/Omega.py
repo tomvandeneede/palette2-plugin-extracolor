@@ -3,6 +3,7 @@ import glob
 import time
 import threading
 import subprocess
+import os
 from Queue import Queue
 
 class Omega():
@@ -51,6 +52,8 @@ class Omega():
         
         with open("/etc/wpa_supplicant/wpa_supplicant.conf", "a") as myfile:
             myfile.write('network={\n        ssid="' + wifiSSID + '"\n        psk="' + wifiPASS + '"\n        key_mgmt=WPA-PSK\n}\n')
+        
+        os.system("sudo reboot")
 
     def startReadThread(self):
         if self.readThread is None:
