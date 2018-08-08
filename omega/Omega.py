@@ -24,7 +24,7 @@ class Omega():
             self.startConnectionThread()
 
     def connectOmega(self, port = 300):
-        subprocess.call(['~/connectWifi'])
+        subprocess.call(['/home/pi/connectWifi'])
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
             omegaPort = glob.glob('/dev/serial/by-id/*D*')
