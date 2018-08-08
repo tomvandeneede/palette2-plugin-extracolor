@@ -24,6 +24,7 @@ class Omega():
             self.startConnectionThread()
 
     def connectOmega(self, port = 300):
+        subprocess.call(['~/connectWifi'])
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
             omegaPort = glob.glob('/dev/serial/by-id/*D*')
@@ -169,7 +170,6 @@ class Omega():
 
     def startJog(self, drive, dist):
         self._logger.info("Jog command received")
-        subprocess.call(['./connectWifi'])
         jogCmd = None
 
         distBinary = bin(int(dist) & 0xffff)
