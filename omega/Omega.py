@@ -2,6 +2,7 @@ import serial
 import glob
 import time
 import threading
+import subprocess
 from Queue import Queue
 
 class Omega():
