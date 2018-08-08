@@ -46,8 +46,11 @@ class Omega():
             self.startWriteThread()
 
     def connectWifi(self, wifiSSID, wifiPASS):
+        lines = open('/etc/wpa_supplicant/wpa_supplicant.conf').readlines()
+        open('/etc/wpa_supplicant/wpa_supplicant.conf', 'w').writelines(lines[0:-5])
+        
         with open("/etc/wpa_supplicant/wpa_supplicant.conf", "a") as myfile:
-            myfile.write('network={\n\tssid="' + wifiSSID + '"\n\tpsk="' + wifiPASS + '"\n\tkey_mgmt=WPA-PSK\n}\n')
+            myfile.write('network={\n        ssid="' + wifiSSID + '"\n        psk="' + wifiPASS + '"\n        key_mgmt=WPA-PSK\n}\n')
 
     def startReadThread(self):
         if self.readThread is None:
