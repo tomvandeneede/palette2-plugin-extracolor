@@ -222,35 +222,26 @@ class Omega():
             #self._plugin_manager.send_plugin_message(self._identifier, "UI:Finished Pong")
 
     def sendNextData(self, dataNum):
-        self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
-        self._logger.info(self.sentCounter)
-        if self.sentCounter == 0 and dataNum == 0:
+        # self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
+        # self._logger.info(self.sentCounter)
+
+        if dataNum == 0:
             cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
-            self.enqueueCmd(cmdStr)
-            self._logger.info("Omega: Sent '%s'" % cmdStr)
-            self.sentCounter = self.sentCounter + 1
-        elif self.sentCounter == 1 and dataNum == 0:
-            cmdStr = "O26 D%s\n" % self.msfNS
-            self.enqueueCmd(cmdStr)
-            self._logger.info("Omega: Sent '%s'" % cmdStr)
-            self.sentCounter = self.sentCounter + 1
-        elif self.sentCounter == 2 and dataNum == 0:
-            cmdStr = "O28 D%s\n" % self.msfNA
-            self.enqueueCmd(cmdStr)
-            self._logger.info("Omega: Sent '%s'" % cmdStr)
+            self.enqueueCmd(self.header[self.sentCounter])
+            self._logger.info("Omega: Sent '%s'" % self.sentCounter)
             self.sentCounter = self.sentCounter + 1
         elif dataNum == 4:
             self._logger.info("Omega: send algo")
-            self.enqueueCmd(self.algorithms[self.sentCounter - 3])
-            self._logger.info("Omega: Sent '%s'" % self.algorithms[self.sendCounter - 3])
-            self.sentCounter = self.sentCounter + 1
+            self.enqueueCmd(self.algorithms[self.algoCounter])
+            self._logger.info("Omega: Sent '%s'" % self.algorithms[self.algoCounter])
+            self.algoCounter = self.algoCounter + 1
         elif dataNum == 1:
             self._logger.info("Omega: send splice")
-            splice = self.splices[self.sentCounter - 3 - self.nAlgorithms]
-            cmdStr = "O2%d D%s\n" % ((int(splice[0]) + 1), splice[1])
+            splice = self.splices[self.spliceCounter]
+            cmdStr = "O2%d D%s\n" % (int(splice[0]), splice[1])
             self.enqueueCmd(cmdStr)
             self._logger.info("Omega: Sent '%s'" % cmdStr)
-            self.sentCounter = self.sentCounter + 1
+            self.spliceCounter = self.spliceCounter + 1
 
     def resetConnection(self):
         self._logger.info("Resetting read and write threads")
@@ -277,6 +268,8 @@ class Omega():
 
         self.omegaSerial = None 
         self.sentCounter = 0
+        self.algoCounter = 0
+        self.apliceCounter = 0
 
         self.msfCU = ""
         self.msfNS = "0"
@@ -284,6 +277,7 @@ class Omega():
         self.nAlgorithms = 0
         self.currentSplice = "0"
         self.inPong = False
+        self.header = []
         self.splices = []
         self.algorithms = []
 
@@ -330,30 +324,49 @@ class Omega():
         self._printer.commands(["M83", "G1 E50.00 F200"])
 
     def gotOmegaCmd(self, cmd):
-        if "O25" in cmd:
-            self.msfCU = cmd[5:]
+        if "O21" in cmd:
+            self.header[0] = cmd
+            self._logger.info("Omega: Got Version: %s" % self.header[0])
+        elif "O22" in cmd:
+            self.header[1] = cmd
+            self._logger.info("Omega: Got Printer Profile: %s" % self.header[1])
+        elif "O23" in cmd:
+            self.header[2] = cmd
+            self._logger.info("Omega: Got Slicer Profile: %s" % self.header[2])
+        elif "O24" in cmd:
+            self.header[3] = cmd
+            self._logger.info("Omega: Got PPM Adjustment: %s" % self.header[3])
+        elif "O25" in cmd:
+            self.header[4] = cmd
             #self.msfCU = cmd
-            self._logger.info("Omega: Got CU: %s" % self.msfCU) 
+            self._logger.info("Omega: Got MU: %s" % self.header[4]) 
         elif "O26" in cmd:
-            self.msfNS = cmd[5:]
-            self._logger.info("Omega: Got NS: %s" % self.msfNS)
+            self.header[5] = cmd
+            self._logger.info("Omega: Got NS: %s" % self.header[5])
+        elif "O27" in cmd:
+            self.header[6] = cmd
+            self._logger.info("Omega: Got NP: %s" % self.header[6])
         elif "O28" in cmd:
             self.msfNA = cmd[5:]
             self.nAlgorithms = int(self.msfNA)
-            self._logger.info("Omega: Got NA: %d" % self.nAlgorithms)
+            self.header[7] = cmd
+            self._logger.info("Omega: Got NA: %d" % self.header[7])
         elif "O29" in cmd:
-            self.algorithms.append(cmd)
-            self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
-        elif "O21" in cmd or "O22" in cmd or "O23" in cmd or "O24" in cmd:
-            splice = (int(cmd[2:3]) - 1, cmd[5:13])
+            self.header[8] = cmd
+            self._logger.info("Omega: Got NH: %s" % self.header[8])
+        elif "O30" in cmd:
+            splice = (int(cmd[5:6]), cmd[8:])
             self.splices.append(splice)
             self._logger.info("Omega: Got splice D: %s, dist: %s" % (splice[0], splice[1]))
+        elif "O32" in cmd:
+            self.algorithms.append(cmd)
+            self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
         elif "O9" in cmd and "O99" not in cmd:
             #reset values
             self.resetOmega()
             self.enqueueCmd(cmd)
         elif "O1" in cmd:
-            self.enqueueCmd("O1 D%s D0007 D0001" % self.filename)
+            self.enqueueCmd(cmd.strip() + (" D%s" % self.filename))
         else:
             self._logger.info("Omega: Got an Omega command '%s'" % cmd)
             self.enqueueCmd(cmd)

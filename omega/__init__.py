@@ -129,7 +129,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
         self.omega.shutdown()
     
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode, tags=None):
-        if "O27" in cmd:
+        if "O31" in cmd:
             self.omega.enqueueLine(cmd.strip())
             return "G4 P10",
         elif 'O' in cmd[0]:
