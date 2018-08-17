@@ -35,7 +35,7 @@
 				<div class="checkbox">
 					<label><input type="checkbox" data-bind="checked: jogWithOutgoing, enable: connected">With Outgoing</label>
 				</div>
-				<button class="btn btn-primary" data-bind="click: sendJogCmd">Jog</button>
+				<button class="btn btn-primary" data-bind="click: sendJogCmd, enable: connected">Jog</button>
 				<button class="btn btn-danger" data-bind="click: sendStopIndefJogCmd, enable: connected">Stop</button>	
 			</div>
 			<div class="row" style="margin-top: 10px">
@@ -50,20 +50,11 @@
 			<div class="row">
 				<h4> Splice Demo </h4>
 				<p> Demo file: </p>
-				<select data-bind="options: filterDemoFiles, value: selectedDemoFile"></select>
-				<button type="button" class="btn btn-success" data-bind="click: startSpliceDemo"> Start Demo </button>
+				<select data-bind="options: filterDemoFiles, value: selectedDemoFile, enable: connected"></select>
+				<button type="button" class="btn btn-success" data-bind="click: startSpliceDemo, enable: connected"> Start Demo </button>
 				<div class="checkbox">
 					<label><input type="checkbox" data-bind="checked: demoWithPrinter">With Printer</label>
 				</div>
-			</div>
-		<hr>
-			<div class="row">
-				<h4> Wifi </h4>
-				<input type="text" data-bind="value: wifiSSID">
-			</div>
-			<div class="row" style="margin-top: 10px">
-				<input type="text" data-bind="value: wifiPASS">
-				<button class="btn btn-primary" data-bind="click: connectWifi">Connect</button>
 			</div>
 	</div>
 </div>
