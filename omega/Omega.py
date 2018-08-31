@@ -30,7 +30,7 @@ class Omega():
             omegaPort = glob.glob('/dev/serial/by-id/*D*')
             if len(omegaPort) > 0:
                 try:
-                    self.omegaSerial = serial.Serial(omegaPort[0], 115200, timeout=0.5)
+                    self.omegaSerial = serial.Serial(omegaPort[0], 250000, timeout=0.5)
                     self.connected = True
                     self._logger.info("Connected to Omega")
                     #Tells plugin to update UI
