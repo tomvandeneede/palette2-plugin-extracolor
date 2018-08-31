@@ -27,7 +27,7 @@ class Omega():
     def connectOmega(self, port = 300):
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
-            omegaPort = glob.glob('/dev/serial/by-id/*D*')
+            omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
             if len(omegaPort) > 0:
                 try:
                     self.omegaSerial = serial.Serial(omegaPort[0], 250000, timeout=0.5)
@@ -45,6 +45,9 @@ class Omega():
         if self.connected:
             self.startReadThread()
             self.startWriteThread()
+
+    def setFilename(self, name):
+        self.filename = name
 
     def connectWifi(self, wifiSSID, wifiPASS):
         lines = open('/etc/wpa_supplicant/wpa_supplicant.conf').readlines()
@@ -124,9 +127,10 @@ class Omega():
                         self.currentSplice = line[5:]
                     self.updateUI()
             serialConnection.close()
-        except:
+        except Exception as e:
             #Something went wrong with the connection to Palette2
-            self.disconnect()
+            #self.disconnect()
+            print e
 
     def omegaWriteThread(self, serialConnection):
         self._logger.info("Omega Write Thread: Starting Thread")
@@ -200,7 +204,7 @@ class Omega():
 
     def cut(self):
         self._logger.info("Omega: Sending Cut command") 
-        cutCmd = "O19"
+        cutCmd = "O10 D5"
         self.enqueueCmd(cutCmd)
 
     def sendCmd(self, cmd):
@@ -226,7 +230,7 @@ class Omega():
         # self._logger.info(self.sentCounter)
 
         if dataNum == 0:
-            cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
+            #cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
             self.enqueueCmd(self.header[self.sentCounter])
             self._logger.info("Omega: Sent '%s'" % self.sentCounter)
             self.sentCounter = self.sentCounter + 1
@@ -238,9 +242,8 @@ class Omega():
         elif dataNum == 1:
             self._logger.info("Omega: send splice")
             splice = self.splices[self.spliceCounter]
-            cmdStr = "O2%d D%s\n" % (int(splice[0]), splice[1])
+            cmdStr = "O30 D%d D%s\n" % (int(splice[0]), splice[1])
             self.enqueueCmd(cmdStr)
-            self._logger.info("Omega: Sent '%s'" % cmdStr)
             self.spliceCounter = self.spliceCounter + 1
 
     def resetConnection(self):
@@ -269,7 +272,7 @@ class Omega():
         self.omegaSerial = None 
         self.sentCounter = 0
         self.algoCounter = 0
-        self.apliceCounter = 0
+        self.spliceCounter = 0
 
         self.msfCU = ""
         self.msfNS = "0"
@@ -277,9 +280,11 @@ class Omega():
         self.nAlgorithms = 0
         self.currentSplice = "0"
         self.inPong = False
-        self.header = []
+        self.header = [None] * 9
         self.splices = []
         self.algorithms = []
+
+        self.filename = ""
 
         self.connected = False
         self.readThread = None
@@ -292,6 +297,7 @@ class Omega():
         self.resetVariables()
 
     def shutdown(self):
+        self._logger.info("Shutdown")
         self.disconnect()
 
     def disconnect(self):
@@ -350,7 +356,7 @@ class Omega():
             self.msfNA = cmd[5:]
             self.nAlgorithms = int(self.msfNA)
             self.header[7] = cmd
-            self._logger.info("Omega: Got NA: %d" % self.header[7])
+            self._logger.info("Omega: Got NA: %s" % self.header[7])
         elif "O29" in cmd:
             self.header[8] = cmd
             self._logger.info("Omega: Got NH: %s" % self.header[8])
@@ -366,7 +372,7 @@ class Omega():
             self.resetOmega()
             self.enqueueCmd(cmd)
         elif "O1" in cmd:
-            self.enqueueCmd(cmd.strip() + (" D%s" % self.filename))
+            self.enqueueCmd(cmd.strip() + (" D%s D2710" % self.filename))
         else:
             self._logger.info("Omega: Got an Omega command '%s'" % cmd)
             self.enqueueCmd(cmd)
