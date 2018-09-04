@@ -7,7 +7,7 @@ import flask
 from . import Omega
 
 
-class OmegaPlugin(  octoprint.plugin.StartupPlugin, 
+class P2Plugin(  octoprint.plugin.StartupPlugin, 
                     octoprint.plugin.TemplatePlugin, 
                     octoprint.plugin.SettingsPlugin, 
                     octoprint.plugin.AssetPlugin, 
@@ -16,7 +16,7 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
                     octoprint.plugin.ShutdownPlugin):
 
     def on_after_startup(self):
-        self.omega = Omega.Omega(self)
+        self.palette = Omega.Omega(self)
     
     def get_settings_defaults(self):
         return dict(autoconnect=0)
@@ -58,48 +58,48 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
 
         if command == "cancelPalette2":
             self._logger.info("Cancelling print")
-            self.omega.gotOmegaCmd("O0")
+            self.palette.gotOmegaCmd("O0")
         elif command == "clearPalette2":
-            self.omega.clear()
+            self.palette.clear()
         elif command == "connectOmega":
             self._logger.info("Command recieved")
-            self.omega.connectOmega(data["port"])
+            self.palette.connectOmega(data["port"])
         elif command == "disconnectPalette2":
-            self.omega.disconnect()
+            self.palette.disconnect()
         elif command == "printStart":
-            self.omega.sendPrintStart()
+            self.palette.sendPrintStart()
         elif command == "sendCutCmd":
-            self.omega.cut()
+            self.palette.cut()
         elif command == "sendOmegaCmd":
-            self.omega.enqueueCmd(data["cmd"])
+            self.palette.enqueueCmd(data["cmd"])
         elif command == "sendJogCmd":
             self._logger.info("Sending jog command")
-            self.omega.startJog(data["drive"], data["dist"])
+            self.palette.startJog(data["drive"], data["dist"])
         elif command == "setActiveDrive":
             self._logger.info("Setting active drive to %s" % data["drive"])
             #set the active drive in the Omega class to the drive that was passed
-            self.omega.setActiveDrive(data["drive"])
+            self.palette.setActiveDrive(data["drive"])
         elif command == "startSingleColor":
             self._logger.info("Got Start Single Color Mode command")
             if "drive" in data:
                 self._logger.info("Starting single color with drive %s" % data["drive"])
-                self.omega.setActiveDrive(data["drive"])
-            self.omega.startSingleColor()
+                self.palette.setActiveDrive(data["drive"])
+            self.palette.startSingleColor()
         elif command == "startSpliceDemo":
             self._logger.info("Starting a splice demo")
             # pass the file path to Omega
             path = self._settings.getBaseFolder("uploads") + "/" + data["file"]
-            #self.omega.setFilepath(data["file"]) 
-            self.omega.startSpliceDemo(data["file"],path , data["withPrinter"])
+            #self.palette.setFilepath(data["file"]) 
+            self.palette.startSpliceDemo(data["file"],path , data["withPrinter"])
         elif command == "stopIndefJog":
             self._logger.info("Stopping indef jog")
-            self.omega.stopIndefJog()
+            self.palette.stopIndefJog()
         elif command == "testPrinterCommands":
-            self.omega.printerTest()
+            self.palette.printerTest()
         elif command == "connectWifi":
-            self.omega.connectWifi(data["wifiSSID"], data["wifiPASS"])
+            self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "uiUpdate":
-            self.omega.updateUI()
+            self.palette.updateUI()
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -108,10 +108,10 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
 
     def on_event(self, event, payload):
         if "ClientOpened" in event:
-            self.omega.updateUI()
+            self.palette.updateUI()
         elif "PrintStarted" in event:
             if ".oem" in payload["filename"]:
-                self.omega.setFilename(payload["filename"].split('.')[0])
+                self.palette.setFilename(payload["filename"].split('.')[0])
                 self._logger.info("Filename: %s" % payload["filename"].split('.')[0])
         elif "FileAdded" in event:
             #User uploads a new file to Octoprint, we should update the demo list of files
@@ -121,19 +121,19 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
             if self._settings.get(["autoconnect"]):
-                self.omega.startConnectionThread()
+                self.palette.startConnectionThread()
             else:
-                self.omega.stopConnectionThread()
+                self.palette.stopConnectionThread()
 
     def on_shutdown(self):
-        self.omega.shutdown()
+        self.palette.shutdown()
     
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode, tags=None):
         if "O31" in cmd:
-            self.omega.enqueueCmd(cmd.strip())
+            self.palette.enqueueCmd(cmd.strip())
             return "G4 P10",
         elif 'O' in cmd[0]:
-            self.omega.gotOmegaCmd(cmd)
+            self.palette.gotOmegaCmd(cmd)
             return None,
         elif 'M0' in cmd[0]:
             return None,
@@ -146,12 +146,12 @@ class OmegaPlugin(  octoprint.plugin.StartupPlugin,
             )
         )
 
-__plugin_name__ = "Omega"
+__plugin_name__ = "Palette 2"
 __plugin_version__ = "0.1.0"
-__plugin_description__ = "A Palette-2i plugin for OctoPrint (Beta)"
+__plugin_description__ = "A Palette 2 plugin for OctoPrint (Beta)"
 def __plugin_load__():
     global __plugin_implementation__
-    __plugin_implementation__ = OmegaPlugin()
+    __plugin_implementation__ = P2Plugin()
     
     global __plugin_hooks__
     __plugin_hooks__ = {
