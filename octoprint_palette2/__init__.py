@@ -166,7 +166,6 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
 
 
 __plugin_name__ = "Palette 2"
-__plugin_version__ = "0.2.0"
 __plugin_description__ = "A Palette 2 plugin for OctoPrint (Beta)"
 def __plugin_load__():
     global __plugin_implementation__
