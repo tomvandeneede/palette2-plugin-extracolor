@@ -146,6 +146,24 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
             )
         )
 
+
+    def get_update_information(self):
+        # Define the configuration for your plugin to use with the Software Update
+        # Plugin here. See https://github.com/foosel/OctoPrint/wiki/Plugin:-Software-Update
+        # for details.
+        return dict(
+	    palette2=dict(
+	        displayName="Palette 2 Plugin",
+
+	        type="commandline",
+	        command="/home/pi/test-version.sh",
+
+	        # update method: pip
+	        pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/plugin-refactor/palette-2-plugin-plugin-refactor.zip"
+	    )
+        )
+
+
 __plugin_name__ = "Palette 2"
 __plugin_version__ = "0.1.0"
 __plugin_description__ = "A Palette 2 plugin for OctoPrint (Beta)"
@@ -156,5 +174,6 @@ def __plugin_load__():
     global __plugin_hooks__
     __plugin_hooks__ = {
         "octoprint.comm.protocol.gcode.sending": __plugin_implementation__.sending_gcode,
-        "octoprint.filemanager.extension_tree":  __plugin_implementation__.support_msf_machinecode
+        "octoprint.filemanager.extension_tree":  __plugin_implementation__.support_msf_machinecode,
+        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
     }
