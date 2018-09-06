@@ -154,7 +154,8 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
         return dict(
 	    palette2=dict(
 	        displayName="Palette 2 Plugin",
-
+                displayVersion=self._plugin_version,
+                current=self._plugin_version,
 	        type="commandline",
 	        command="/home/pi/test-version.sh",
 
