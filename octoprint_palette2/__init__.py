@@ -4,6 +4,8 @@ from __future__ import absolute_import
 import octoprint.plugin
 import octoprint.filemanager
 import flask
+import requests
+from distutils.version import LooseVersion
 from . import Omega
 
 
@@ -147,6 +149,30 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
         )
 
 
+
+    def get_latest(self, target, check, full_data=False, online=True):
+        resp = requests.get("http://emerald.mosaicmanufacturing.com/canvas-hub-palette-test/latest")
+        version_data = resp.json()
+        version = version_data["versions"][0]["version"]
+        current_version = check.get("current")
+        information = dict(
+		local=dict(
+			name=current_version,
+		        value=current_version,
+		),
+		remote=dict(
+			name=version,
+			value=version
+		)
+	)
+        self._logger.info("current version: %s" % current_version)
+        self._logger.info("remote version: %s" % version)
+        needs_update = LooseVersion(current_version) < LooseVersion(version)
+        self._logger.info("needs update: %s" % needs_update)
+        return information, not needs_update
+
+
+
     def get_update_information(self):
         # Define the configuration for your plugin to use with the Software Update
         # Plugin here. See https://github.com/foosel/OctoPrint/wiki/Plugin:-Software-Update
@@ -156,7 +182,8 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
 	        displayName="Palette 2 Plugin",
                 displayVersion=self._plugin_version,
                 current=self._plugin_version,
-	        type="commandline",
+	        type="python_checker",
+                python_checker=self,
 	        command="/home/pi/test-version.sh",
 
 	        # update method: pip
