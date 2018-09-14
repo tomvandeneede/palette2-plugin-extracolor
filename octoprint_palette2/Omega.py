@@ -108,11 +108,6 @@ class Omega():
                 if 'O20' in line:
                     #send next line of data
                     self.sendNextData(int(line[5]))
-                elif 'O30' in line:
-                    #send gcode command
-                    dist = line.strip()[5:]
-                    extrudeCmd = "G1 X1 E%s F10" % dist
-                    self._printer.commands(["G91", extrudeCmd, "G90", "G92 E0"])
                 elif "O32" in line:
                     #resume print
                     self._printer.toggle_pause_print()
