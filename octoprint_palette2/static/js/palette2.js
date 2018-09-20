@@ -96,7 +96,7 @@ $(function() {
 			}
 
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify(payload),
@@ -110,7 +110,7 @@ $(function() {
 				command: "disconnectPalette2",
 			}
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify(payload),
@@ -126,7 +126,7 @@ $(function() {
 				cmd: self.omegaCommand()
 			}
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify(payload),
@@ -143,7 +143,7 @@ $(function() {
 				wifiPASS: self.wifiPASS()
 			}
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify(payload),
@@ -177,7 +177,7 @@ $(function() {
 					dist: dist 
 				}
 				$.ajax({
-					url: API_BASEURL + "plugin/omega",
+					url: API_BASEURL + "plugin/palette2",
 					type: "POST",
 					dataType: "json",
 					data: JSON.stringify(payload),
@@ -193,7 +193,7 @@ $(function() {
 				command: "stopIndefJog",
 			}
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify(payload),
@@ -208,7 +208,7 @@ $(function() {
 				command: "sendCutCmd",
 			}
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify(payload),
@@ -225,7 +225,7 @@ $(function() {
 			}
 
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 					dataType: "json",
 					data: JSON.stringify(payload),
@@ -245,7 +245,7 @@ $(function() {
 				command: "sdwpStart"
 			}
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify(payload),
@@ -260,7 +260,7 @@ $(function() {
 				command: "printStart",
 			}
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify(payload),
@@ -320,7 +320,7 @@ $(function() {
 			}
 	
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify(payload),
@@ -402,7 +402,7 @@ $(function() {
 			}
 
 			$.ajax({
-				url: API_BASEURL + "plugin/omega",
+				url: API_BASEURL + "plugin/palette2",
 				type: "POST",
 				dataType: "json",
 				data: JSON.stringify(payload),
@@ -421,7 +421,7 @@ $(function() {
 				}
 	
 				$.ajax({
-					url: API_BASEURL + "plugin/omega",
+					url: API_BASEURL + "plugin/palette2",
 					type: "POST",
 					dataType: "json",
 					data: JSON.stringify(payload),
@@ -457,6 +457,6 @@ $(function() {
         ["settingsViewModel"],
 
         // Finally, this is the list of selectors for all elements we want this view model to be bound to.
-        ["#tab_plugin_omega"]
+        ["#tab_plugin_palette2"]
     ]);
 });
