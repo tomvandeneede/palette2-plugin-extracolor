@@ -31,8 +31,8 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
 
     def get_assets(self):
         return dict(
-            js=["js/omega.js"],
-            css=["css/omega.css"]
+            js=["js/palette2.js"],
+            css=["css/palette2.css"]
         )
 
     def get_api_commands(self):
