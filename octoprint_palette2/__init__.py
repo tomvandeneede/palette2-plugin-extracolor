@@ -9,24 +9,24 @@ from distutils.version import LooseVersion
 from . import Omega
 
 
-class P2Plugin(  octoprint.plugin.StartupPlugin, 
-                    octoprint.plugin.TemplatePlugin, 
-                    octoprint.plugin.SettingsPlugin, 
-                    octoprint.plugin.AssetPlugin, 
-                    octoprint.plugin.SimpleApiPlugin, 
-                    octoprint.plugin.EventHandlerPlugin,
-                    octoprint.plugin.ShutdownPlugin):
+class P2Plugin(octoprint.plugin.StartupPlugin,
+               octoprint.plugin.TemplatePlugin,
+               octoprint.plugin.SettingsPlugin,
+               octoprint.plugin.AssetPlugin,
+               octoprint.plugin.SimpleApiPlugin,
+               octoprint.plugin.EventHandlerPlugin,
+               octoprint.plugin.ShutdownPlugin):
 
     def on_after_startup(self):
         self.palette = Omega.Omega(self)
-    
+
     def get_settings_defaults(self):
         return dict(autoconnect=0)
-    
+
     def get_template_configs(self):
-        return [ 
-            dict(type="navbar", custom_bindings=False), 
-            dict(type="settings", custom_bindings=False) 
+        return [
+            dict(type="navbar", custom_bindings=False),
+            dict(type="settings", custom_bindings=False)
         ]
 
     def get_assets(self):
@@ -36,23 +36,23 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
         )
 
     def get_api_commands(self):
-        return dict (
-            cancelPalette2 = [],
-            clearPalette2 = [],
-            connectOmega = ["port"],
-            disconnectPalette2 = [],
-            printStart = [],
-            sdwpStart = [],
-            sendCutCmd = [],
-            sendOmegaCmd = ["cmd"],
-            sendJogCmd = ["drive", "dist"],
-            setActiveDrive = ["drive"],
-            startSingleColor = [],
-            startSpliceDemo = ["file", "withPrinter"],
-            stopIndefJog = [],
-            testPrinterCommands = [],
-            uiUpdate = [],
-            connectWifi = ["wifiSSID", "wifiPASS"],
+        return dict(
+            cancelPalette2=[],
+            clearPalette2=[],
+            connectOmega=["port"],
+            disconnectPalette2=[],
+            printStart=[],
+            sdwpStart=[],
+            sendCutCmd=[],
+            sendOmegaCmd=["cmd"],
+            sendJogCmd=["drive", "dist"],
+            setActiveDrive=["drive"],
+            startSingleColor=[],
+            startSpliceDemo=["file", "withPrinter"],
+            stopIndefJog=[],
+            testPrinterCommands=[],
+            uiUpdate=[],
+            connectWifi=["wifiSSID", "wifiPASS"],
         )
 
     def on_api_command(self, command, data):
@@ -79,20 +79,22 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
             self.palette.startJog(data["drive"], data["dist"])
         elif command == "setActiveDrive":
             self._logger.info("Setting active drive to %s" % data["drive"])
-            #set the active drive in the Omega class to the drive that was passed
+            # set the active drive in the Omega class to the drive that was passed
             self.palette.setActiveDrive(data["drive"])
         elif command == "startSingleColor":
             self._logger.info("Got Start Single Color Mode command")
             if "drive" in data:
-                self._logger.info("Starting single color with drive %s" % data["drive"])
+                self._logger.info(
+                    "Starting single color with drive %s" % data["drive"])
                 self.palette.setActiveDrive(data["drive"])
             self.palette.startSingleColor()
         elif command == "startSpliceDemo":
             self._logger.info("Starting a splice demo")
             # pass the file path to Omega
             path = self._settings.getBaseFolder("uploads") + "/" + data["file"]
-            #self.palette.setFilepath(data["file"]) 
-            self.palette.startSpliceDemo(data["file"],path , data["withPrinter"])
+            # self.palette.setFilepath(data["file"])
+            self.palette.startSpliceDemo(
+                data["file"], path, data["withPrinter"])
         elif command == "stopIndefJog":
             self._logger.info("Stopping indef jog")
             self.palette.stopIndefJog()
@@ -105,8 +107,9 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
-        self._plugin_manager.send_plugin_message(self._identifier, "Omega Message")
-        return flask.jsonify(foo="bar") 
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "Omega Message")
+        return flask.jsonify(foo="bar")
 
     def on_event(self, event, payload):
         if "ClientOpened" in event:
@@ -114,13 +117,16 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
         elif "PrintStarted" in event:
             if ".oem" in payload["filename"]:
                 self.palette.setFilename(payload["filename"].split('.')[0])
-                self._logger.info("Filename: %s" % payload["filename"].split('.')[0])
+                self._logger.info("Filename: %s" %
+                                  payload["filename"].split('.')[0])
         elif "FileAdded" in event:
-            #User uploads a new file to Octoprint, we should update the demo list of files
-            self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
+            # User uploads a new file to Octoprint, we should update the demo list of files
+            self._plugin_manager.send_plugin_message(
+                self._identifier, "UI:Refresh Demo List")
         elif "FileRemoved" in event:
-            #User removed a file from Octoprint, we should update the demo list of files
-            self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
+            # User removed a file from Octoprint, we should update the demo list of files
+            self._plugin_manager.send_plugin_message(
+                self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
@@ -129,7 +135,7 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
 
     def on_shutdown(self):
         self.palette.shutdown()
-    
+
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode, tags=None):
         if "O31" in cmd:
             self.palette.enqueueCmd(cmd.strip())
@@ -139,7 +145,7 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
             return None,
         elif 'M0' in cmd[0]:
             return None,
-        #return gcode
+        # return gcode
 
     def support_msf_machinecode(*args, **kwargs):
         return dict(
@@ -148,56 +154,55 @@ class P2Plugin(  octoprint.plugin.StartupPlugin,
             )
         )
 
-
-
     def get_latest(self, target, check, full_data=False, online=True):
-        resp = requests.get("http://emerald.mosaicmanufacturing.com/canvas-hub-palette-test/latest")
+        resp = requests.get(
+            "http://emerald.mosaicmanufacturing.com/canvas-hub-palette-test/latest")
         version_data = resp.json()
         version = version_data["versions"][0]["version"]
         current_version = check.get("current")
         information = dict(
-		local=dict(
-			name=current_version,
-		        value=current_version,
-		),
-		remote=dict(
-			name=version,
-			value=version
-		)
-	)
+            local=dict(
+                name=current_version,
+                value=current_version,
+            ),
+            remote=dict(
+                name=version,
+                value=version
+            )
+        )
         self._logger.info("current version: %s" % current_version)
         self._logger.info("remote version: %s" % version)
         needs_update = LooseVersion(current_version) < LooseVersion(version)
         self._logger.info("needs update: %s" % needs_update)
         return information, not needs_update
 
-
-
     def get_update_information(self):
         # Define the configuration for your plugin to use with the Software Update
         # Plugin here. See https://github.com/foosel/OctoPrint/wiki/Plugin:-Software-Update
         # for details.
         return dict(
-	    palette2=dict(
-	        displayName="Palette 2 Plugin",
+            palette2=dict(
+                displayName="Palette 2 Plugin",
                 displayVersion=self._plugin_version,
                 current=self._plugin_version,
-	        type="python_checker",
+                type="python_checker",
                 python_checker=self,
-	        command="/home/pi/test-version.sh",
+                command="/home/pi/test-version.sh",
 
-	        # update method: pip
-	        pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/plugin-refactor/palette-2-plugin-plugin-refactor.zip"
-	    )
+                # update method: pip
+                pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/plugin-refactor/palette-2-plugin-plugin-refactor.zip"
+            )
         )
 
 
 __plugin_name__ = "Palette 2"
 __plugin_description__ = "A Palette 2 plugin for OctoPrint (Beta)"
+
+
 def __plugin_load__():
     global __plugin_implementation__
     __plugin_implementation__ = P2Plugin()
-    
+
     global __plugin_hooks__
     __plugin_hooks__ = {
         "octoprint.comm.protocol.gcode.sending": __plugin_implementation__.sending_gcode,
