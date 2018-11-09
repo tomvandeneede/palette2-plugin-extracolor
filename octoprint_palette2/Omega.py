@@ -19,7 +19,7 @@ class Omega():
 
         self.resetVariables()
         self.resetConnection()
-        
+
         #Trys to automatically connect to palette first
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
@@ -52,10 +52,10 @@ class Omega():
     def connectWifi(self, wifiSSID, wifiPASS):
         lines = open('/etc/wpa_supplicant/wpa_supplicant.conf').readlines()
         open('/etc/wpa_supplicant/wpa_supplicant.conf', 'w').writelines(lines[0:-5])
-        
+
         with open("/etc/wpa_supplicant/wpa_supplicant.conf", "a") as myfile:
             myfile.write('network={\n        ssid="' + wifiSSID + '"\n        psk="' + wifiPASS + '"\n        key_mgmt=WPA-PSK\n}\n')
-        
+
         os.system("sudo reboot")
 
     def startReadThread(self):
@@ -71,20 +71,20 @@ class Omega():
             self.writeThread = threading.Thread(target=self.omegaWriteThread, args=(self.omegaSerial,))
             self.writeThread.daemon = True
             self.writeThread.start()
-    
+
     def startConnectionThread(self):
         if self.connectionThread is None:
             self.connectionThreadStop = False
             self.connectionThread = threading.Thread(target=self.omegaConnectionThread)
             self.connectionThread.daemon = True
             self.connectionThread.start()
-    
+
     def stopReadThread(self):
         self.readThreadStop = True
         if self.readThread and threading.current_thread() != self.readThread:
             self.readThread.join()
         self.readThread = None
-    
+
     def stopWriteThread(self):
         self.writeThreadStop = True
         if self.writeThread and threading.current_thread() != self.writeThread:
@@ -198,7 +198,7 @@ class Omega():
         self.enqueueCmd(jogCmd)
 
     def cut(self):
-        self._logger.info("Omega: Sending Cut command") 
+        self._logger.info("Omega: Sending Cut command")
         cutCmd = "O10 D5"
         self.enqueueCmd(cutCmd)
 
@@ -244,7 +244,7 @@ class Omega():
     def resetConnection(self):
         self._logger.info("Resetting read and write threads")
         # stop read and write threads
-        
+
         self.stopReadThread()
         self.stopWriteThread()
         if not self._settings.get(["autoconnect"]):
@@ -258,13 +258,13 @@ class Omega():
         # clear command queue
         while not self.writeQueue.empty():
             self.writeQueue.get()
-    
+
     def resetVariables(self):
         self._logger.info("Omega: Resetting print values")
         self.activeDrive = "1"
         self.currentFilepath = "/home/s1/mcor.msf"
 
-        self.omegaSerial = None 
+        self.omegaSerial = None
         self.sentCounter = 0
         self.algoCounter = 0
         self.spliceCounter = 0
@@ -313,7 +313,7 @@ class Omega():
     def sendPrintStart(self):
         self._logger.info("Omega toggle pause")
         self._printer.toggle_pause_print()
-    
+
     def sendAutoloadOn(self):
         self.omegaSerial.write("O38\n")
 
@@ -340,7 +340,7 @@ class Omega():
         elif "O25" in cmd:
             self.header[4] = cmd
             #self.msfCU = cmd
-            self._logger.info("Omega: Got MU: %s" % self.header[4]) 
+            self._logger.info("Omega: Got MU: %s" % self.header[4])
         elif "O26" in cmd:
             self.header[5] = cmd
             self._logger.info("Omega: Got NS: %s" % self.header[5])
