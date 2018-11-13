@@ -366,8 +366,6 @@ class Omega():
             #reset values
             self.resetOmega()
             self.enqueueCmd(cmd)
-        elif "O1" in cmd:
-            self.enqueueCmd(cmd.strip() + (" D%s D2710" % self.filename))
         else:
             self._logger.info("Omega: Got an Omega command '%s'" % cmd)
             self.enqueueCmd(cmd)
