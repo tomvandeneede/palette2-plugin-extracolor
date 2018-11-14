@@ -45,6 +45,11 @@ class Omega():
         if self.connected:
             self.startReadThread()
             self.startWriteThread()
+            # send an O99 to handshake
+            enqueueCmd("O99")
+            while not self.heartbeat:
+                pass
+            self.heartbeat = False
 
     def setFilename(self, name):
         self.filename = name
@@ -111,6 +116,11 @@ class Omega():
                 elif "O32" in line:
                     #resume print
                     self._printer.toggle_pause_print()
+                elif "O50" in line:
+                    # get file list
+                    pass
+                elif "Connection Okay" in line:
+                    self.heartbeat = True
                 elif "UI:" in line:
                     #send a message to the front end
                     self._logger.info(line)
@@ -286,6 +296,7 @@ class Omega():
         self.writeThread = None
         self.connectionThread = None
         self.connectionStop = False
+        self.heartbeat = False
 
     def resetOmega(self):
         self.resetConnection()
