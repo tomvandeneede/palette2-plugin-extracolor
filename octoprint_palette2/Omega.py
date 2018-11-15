@@ -33,6 +33,7 @@ class Omega():
             omegaPort += glob.glob('/dev/*usbserial*')
             # WINDOWS
             # LINUX
+            # PLACEHOLDER
             if len(omegaPort) > 0:
                 try:
                     self.omegaSerial = serial.Serial(

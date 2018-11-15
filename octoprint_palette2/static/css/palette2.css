@@ -1,4 +1,13 @@
 /*Stop Button*/
-select, input[type="text"] {
-    margin-bottom: 0;
+select,
+input[type="text"] {
+  margin-bottom: 0;
+}
+
+.cancel-palette-button {
+  margin-bottom: 10px;
+}
+
+.manual-controls {
+  margin-bottom: 20px;
 }
