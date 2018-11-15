@@ -46,7 +46,7 @@ class Omega():
             self.startReadThread()
             self.startWriteThread()
             # send an O99 to handshake
-            enqueueCmd("O99")
+            self.enqueueCmd("O99")
             while not self.heartbeat:
                 pass
             self.heartbeat = False
