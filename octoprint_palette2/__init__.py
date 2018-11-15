@@ -5,8 +5,10 @@ import octoprint.plugin
 import octoprint.filemanager
 import flask
 import requests
+import os.path
 from distutils.version import LooseVersion
 from . import Omega
+from subprocess import call
 
 
 class P2Plugin(octoprint.plugin.StartupPlugin,
@@ -18,6 +20,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                octoprint.plugin.ShutdownPlugin):
 
     def on_after_startup(self):
+        if os.path.isdir("/home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"):
+            self._logger.info("found bad file")
+            call(["sudo rm -rf /home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"], shell=True)
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
