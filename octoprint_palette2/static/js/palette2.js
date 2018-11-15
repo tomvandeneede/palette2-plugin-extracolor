@@ -336,6 +336,7 @@ $(function() {
     };
 
     self.onDataUpdaterPluginMessage = function(pluginIdent, message) {
+      console.log(message);
       if (pluginIdent === "palette2") {
         console.log("Message from " + pluginIdent + ": " + message);
         if (message.includes("UI:S=")) {
@@ -389,12 +390,18 @@ $(function() {
             $("#connection-state-msg").removeClass("text-muted");
             $("#connection-state-msg").addClass("text-success");
             $("#connection-state-msg").css("color", "green");
+            $(".connect-palette-button")
+              .text("Connected")
+              .addClass("disabled");
             self.connectionStateMsg("Connected");
             self.connected(true);
           } else {
             $("#connection-state-msg").removeClass("text-success");
             $("#connection-state-msg").addClass("text-muted");
             $("#connection-state-msg").css("color", "red");
+            $(".connect-palette-button")
+              .text("Connect to Palette 2")
+              .removeClass("disabled");
             self.connectionStateMsg("Not Connected");
             self.connected(false);
           }

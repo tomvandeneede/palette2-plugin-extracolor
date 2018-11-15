@@ -6,6 +6,7 @@ import subprocess
 import os
 from Queue import Queue
 
+
 class Omega():
     def __init__(self, plugin):
         plugin._logger.info("Hello from Omega!")
@@ -20,23 +21,30 @@ class Omega():
         self.resetVariables()
         self.resetConnection()
 
-        #Trys to automatically connect to palette first
+        # Trys to automatically connect to palette first
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
 
-    def connectOmega(self, port = 300):
+    def connectOmega(self, port=300):
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
             omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
+            # MAC OS
+            omegaPort += glob.glob('/dev/*usbserial*')
+            # WINDOWS
+            # LINUX
             if len(omegaPort) > 0:
                 try:
-                    self.omegaSerial = serial.Serial(omegaPort[0], 250000, timeout=0.5)
+                    self.omegaSerial = serial.Serial(
+                        omegaPort[0], 250000, timeout=0.5)
                     self.connected = True
                     self._logger.info("Connected to Omega")
-                    #Tells plugin to update UI
-                    self._plugin_manager.send_plugin_message(self._identifier, "UI:Con=%s" % self.connected)
+                    # Tells plugin to update UI
+                    self._plugin_manager.send_plugin_message(
+                        self._identifier, "UI:Con=%s" % self.connected)
                 except:
-                    self._logger.info("Another resource is connected to Palette")
+                    self._logger.info(
+                        "Another resource is connected to Palette")
             else:
                 self._logger.info("Unable to find Omega port")
         else:
@@ -56,31 +64,36 @@ class Omega():
 
     def connectWifi(self, wifiSSID, wifiPASS):
         lines = open('/etc/wpa_supplicant/wpa_supplicant.conf').readlines()
-        open('/etc/wpa_supplicant/wpa_supplicant.conf', 'w').writelines(lines[0:-5])
+        open('/etc/wpa_supplicant/wpa_supplicant.conf',
+             'w').writelines(lines[0:-5])
 
         with open("/etc/wpa_supplicant/wpa_supplicant.conf", "a") as myfile:
-            myfile.write('network={\n        ssid="' + wifiSSID + '"\n        psk="' + wifiPASS + '"\n        key_mgmt=WPA-PSK\n}\n')
+            myfile.write('network={\n        ssid="' + wifiSSID +
+                         '"\n        psk="' + wifiPASS + '"\n        key_mgmt=WPA-PSK\n}\n')
 
         os.system("sudo reboot")
 
     def startReadThread(self):
         if self.readThread is None:
             self.readThreadStop = False
-            self.readThread = threading.Thread(target=self.omegaReadThread, args=(self.omegaSerial,))
+            self.readThread = threading.Thread(
+                target=self.omegaReadThread, args=(self.omegaSerial,))
             self.readThread.daemon = True
             self.readThread.start()
 
     def startWriteThread(self):
         if self.writeThread is None:
             self.writeThreadStop = False
-            self.writeThread = threading.Thread(target=self.omegaWriteThread, args=(self.omegaSerial,))
+            self.writeThread = threading.Thread(
+                target=self.omegaWriteThread, args=(self.omegaSerial,))
             self.writeThread.daemon = True
             self.writeThread.start()
 
     def startConnectionThread(self):
         if self.connectionThread is None:
             self.connectionThreadStop = False
-            self.connectionThread = threading.Thread(target=self.omegaConnectionThread)
+            self.connectionThread = threading.Thread(
+                target=self.omegaConnectionThread)
             self.connectionThread.daemon = True
             self.connectionThread.start()
 
@@ -111,10 +124,10 @@ class Omega():
                 if line:
                     self._logger.info("Omega: read in line: %s" % line)
                 if 'O20' in line:
-                    #send next line of data
+                    # send next line of data
                     self.sendNextData(int(line[5]))
                 elif "O32" in line:
-                    #resume print
+                    # resume print
                     self._printer.toggle_pause_print()
                 elif "O50" in line:
                     # get file list
@@ -122,7 +135,7 @@ class Omega():
                 elif "Connection Okay" in line:
                     self.heartbeat = True
                 elif "UI:" in line:
-                    #send a message to the front end
+                    # send a message to the front end
                     self._logger.info(line)
                     if "Ponging" in line:
                         self.inPong = True
@@ -133,8 +146,8 @@ class Omega():
                     self.updateUI()
             serialConnection.close()
         except Exception as e:
-            #Something went wrong with the connection to Palette2
-            #self.disconnect()
+            # Something went wrong with the connection to Palette2
+            # self.disconnect()
             print e
 
     def omegaWriteThread(self, serialConnection):
@@ -171,7 +184,8 @@ class Omega():
                 self._logger.info("Omega: setting NS to %s" % self.msfNS)
             elif "(" in line:
                 splice = (line[2:3], line[4:12])
-                self._logger.info("Omega: Adding Splice D: %s, Dist: %s" % (splice[0], splice[1]))
+                self._logger.info(
+                    "Omega: Adding Splice D: %s, Dist: %s" % (splice[0], splice[1]))
                 self.splices.append(splice)
         f.close()
         print(withPrinter)
@@ -193,11 +207,11 @@ class Omega():
         distBinary = bin(int(dist) & 0xffff)
         distHex = "%04X" % int(distBinary, 2)
 
-        if dist == 999: # drive indef inwards
+        if dist == 999:  # drive indef inwards
             jogCmd = "O%s D1 D1" % (drive)
-        elif dist == -999: # drive indef outwards
+        elif dist == -999:  # drive indef outwards
             jogCmd = "O%s D1 D0" % (drive)
-        else: # drive a certain distance
+        else:  # drive a certain distance
             jogCmd = "O%s D0 D%s" % (drive, distHex)
 
         self.enqueueCmd(jogCmd)
@@ -224,11 +238,12 @@ class Omega():
         self._logger.info("Sending UIUpdate")
         #self._plugin_manager.send_plugin_message(self._identifier, "UI:nSplices=%s" % int(self.msfNS, 16))
         #self._plugin_manager.send_plugin_message(self._identifier, "UI:S=%s" % self.currentSplice)
-        self._plugin_manager.send_plugin_message(self._identifier, "UI:Con=%s" % self.connected)
-        #if self.inPong:
-            #self._plugin_manager.send_plugin_message(self._identifier, "UI:Ponging")
-        #else:
-            #self._plugin_manager.send_plugin_message(self._identifier, "UI:Finished Pong")
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:Con=%s" % self.connected)
+        # if self.inPong:
+        #self._plugin_manager.send_plugin_message(self._identifier, "UI:Ponging")
+        # else:
+        #self._plugin_manager.send_plugin_message(self._identifier, "UI:Finished Pong")
 
     def sendNextData(self, dataNum):
         # self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
@@ -242,7 +257,8 @@ class Omega():
         elif dataNum == 4:
             self._logger.info("Omega: send algo")
             self.enqueueCmd(self.algorithms[self.algoCounter])
-            self._logger.info("Omega: Sent '%s'" % self.algorithms[self.algoCounter])
+            self._logger.info("Omega: Sent '%s'" %
+                              self.algorithms[self.algoCounter])
             self.algoCounter = self.algoCounter + 1
         elif dataNum == 1:
             self._logger.info("Omega: send splice")
@@ -316,7 +332,8 @@ class Omega():
         self._logger.info("Omega: active drive set to: %s" % self.activeDrive)
 
     def startSingleColor(self):
-        self._logger.info("Omega: start Single Color Mode with drive %s" % self.activeDrive)
+        self._logger.info(
+            "Omega: start Single Color Mode with drive %s" % self.activeDrive)
         cmdStr = "O4 D%s\n" % self.activeDrive
         self.omegaSerial.write(cmdStr.encode())
         self._logger.info("Omega: Sent %s" % cmdStr)
@@ -341,7 +358,8 @@ class Omega():
             self._logger.info("Omega: Got Version: %s" % self.header[0])
         elif "O22" in cmd:
             self.header[1] = cmd
-            self._logger.info("Omega: Got Printer Profile: %s" % self.header[1])
+            self._logger.info("Omega: Got Printer Profile: %s" %
+                              self.header[1])
         elif "O23" in cmd:
             self.header[2] = cmd
             self._logger.info("Omega: Got Slicer Profile: %s" % self.header[2])
@@ -369,12 +387,13 @@ class Omega():
         elif "O30" in cmd:
             splice = (int(cmd[5:6]), cmd[8:])
             self.splices.append(splice)
-            self._logger.info("Omega: Got splice D: %s, dist: %s" % (splice[0], splice[1]))
+            self._logger.info("Omega: Got splice D: %s, dist: %s" %
+                              (splice[0], splice[1]))
         elif "O32" in cmd:
             self.algorithms.append(cmd)
             self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
         elif "O9" in cmd and "O99" not in cmd:
-            #reset values
+            # reset values
             self.resetOmega()
             self.enqueueCmd(cmd)
         else:

@@ -1,11 +1,11 @@
 <div class="row">
 	<div class="distance" style="margin-left: 50px">
 			<div class="row">
-				<h4>Palette 2i Status</h4>
+				<h4>Palette 2 Status</h4>
 				<p>Connection Status: <span id="connection-state-msg" class="text-muted" data-bind="text: connectionStateMsg">Not Connected</span></p>
 			</div>
 			<div data-bind="if: !settings.settings.plugins.palette2.autoconnect()" class="row">
-				<button class="btn btn-primary" data-bind="click: connectOmega">Connect to Palette 2</button>
+				<button class="btn btn-primary connect-palette-button" data-bind="click: connectOmega">Connect to Palette 2</button>
 				<button type="button" class="btn btn-primary" data-bind="click: disconnectPalette2, enable: connected">Disconnect</button>
 			</div>
 			<div class="row" style="margin-top: 10px">
