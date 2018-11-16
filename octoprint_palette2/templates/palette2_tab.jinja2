@@ -1,79 +1,57 @@
 <div class="row">
 	<div class="distance" style="margin-left: 50px">
 			<div class="row">
-				<h4>Palette 2 Status</h4>
+				<h4>Palette 2</h4>
 				<p>Connection Status: <span id="connection-state-msg" class="text-muted" data-bind="text: connectionStateMsg">Not Connected</span></p>
-			</div>
-			<div data-bind="if: !settings.settings.plugins.palette2.autoconnect()" class="row">
-				<button class="btn btn-primary connect-palette-button" data-bind="click: connectOmega">Connect to Palette 2</button>
-				<button type="button" class="btn btn-primary" data-bind="click: disconnectPalette2, enable: connected">Disconnect</button>
-			</div>
-			<div class="row" style="margin-top: 10px">
-				<button class="btn btn-primary" data-bind="click: sendFilamentLoaded, enable: connected">Send Loaded</button>
-			</div>
-			<div class="row" style="margin-top: 10px">
-				<div class="btn-group" data-toggle="buttons-radio" id="omega-mod-ad">
-					<button type="button" id="omega-mod-ad-1" class="btn active" value="1" data-bind="click: activeDriveTest, enable: connected">1</button>
-					<button type="button" id="omega-mod-ad-2" class="btn" value="2" data-bind="click: activeDriveTest, enable: connected">2</button>
-					<button type="button" id="omega-mod-ad-3" class="btn" data-bind="click: activeDriveTest, enable: connected">3</button>
-					<button type="button" id="omega-mod-ad-4" class="btn" data-bind="click: activeDriveTest, enable: connected">4</button>
+				<div data-bind="if: !settings.settings.plugins.palette2.autoconnect()" style="margin-top: 20px">
+					<button class="btn btn-primary connect-palette-button" data-bind="click: connectOmega">Connect</button>
+					<button type="button" class="btn btn-primary" data-bind="click: disconnectPalette2, enable: connected">Disconnect</button>
 				</div>
-				<button class="btn btn-primary" data-bind="click: startSingleColor, enable: connected">Start Single Color</button>
+				<div style="margin-top: 10px">
+					<button type="button" class="btn btn-primary cancel-palette-button" data-bind="click: sendCancelCmd, enable: connected">Cancel Print</button>
+				</div>
 			</div>
-			<div class="row" style="margin-top: 10px">
-				<button type="button" class="btn btn-primary" data-bind="click: showOmegaDialog, enable: connected">Show Dialog</button>
-			</div>
-			<div class="row" style="margin-top: 10px">
-				<button type="button" class="btn btn-primary" data-bind="click: sendCancelCmd, enable: connected">Cancel Print</button>
-			</div>
-		<hr>
+			<hr>
 			<div class="row">
-				<h4>Manual Controls</h4>
-				<p>Jog Drive:</p>
-				<select data-bind="options: jogDrives, value: selectedJogDriveObs , enable: connected"></select>
-				<select data-bind="options: jogDists, value: selectedJogDistance, optionsText: 'distance', optionsValue: 'dvalue', enable: connected"></select>
-				<div class="checkbox">
-					<label><input type="checkbox" data-bind="checked: jogWithOutgoing, enable: connected">With Outgoing</label>
-				</div>
-				<button class="btn btn-primary" data-bind="click: sendJogCmd, enable: connected">Jog</button>
-				<button class="btn btn-danger" data-bind="click: sendStopIndefJogCmd, enable: connected">Stop</button>
+				<h4 class="palette-status">Status</h4>
+				<ul class="status-container">
+					<li class="single-status splice-amount">
+						<h5 class="single-status-title">Current Splice: </h5>
+						<span class="single-status-value current-splice"></span>
+						<span class="single-status-value total-splices">-</span>
+					</li>
+					<li class="single-status filament-used">
+						<h5 class="single-status-title">Filament Used: </h5>
+						<span class="single-status-value">-</span>
+					</li>
+				</ul>
 			</div>
-			<div class="row" style="margin-top: 10px">
+			<hr>
+			<div class="row">
+				<h4 class="manual-controls">Manual Controls</h4>
+				<div style="margin-top: 10px">
+					<h5>Move Drives:</h5>
+					<select data-bind="options: jogDrives, value: selectedJogDriveObs , enable: connected"></select>
+					<select data-bind="options: jogDists, value: selectedJogDistance, optionsText: 'distance', optionsValue: 'dvalue', enable: connected"></select>
+					<button class="btn btn-primary" data-bind="click: sendJogCmd, enable: connected">Run</button>
+					<div class="checkbox">
+						<label><input type="checkbox" data-bind="checked: jogWithOutgoing, enable: connected">With Outgoing</label>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<h5>Other Controls:</h5>
 				<button type="button" class="btn btn-primary" data-bind="click: sendCutCmd, enable: connected">Cut</button>
-				<button type="button" class="btn btn-primary" data-bind="click: sendClearOutCmd, enable: connected">Clear Outgoing</button>
+				<button type="button" class="btn btn-primary" data-bind="click: sendClearOutCmd, enable: connected">Clear Palette</button>
 			</div>
-			<div class="row" style="margin-top: 10px">
+			<div class="row" style="margin-top: 7px; margin-bottom: 10px">
+				<h5>Send Command to Palette:</h5>
 				<input type="text" data-bind="value: omegaCommand, enable: connected">
-				<button class="btn btn-primary" data-bind="click: sendOmegaCmd, enable: connected">Send Command</button>
-			</div>
-		<hr>
-			<div class="row">
-				<h4> Splice Demo </h4>
-				<p> Demo file: </p>
-				<select data-bind="options: filterDemoFiles, value: selectedDemoFile, enable: connected"></select>
-				<button type="button" class="btn btn-success" data-bind="click: startSpliceDemo, enable: connected"> Start Demo </button>
-				<div class="checkbox">
-					<label><input type="checkbox" data-bind="checked: demoWithPrinter">With Printer</label>
-				</div>
+				<button class="btn btn-primary" data-bind="click: sendOmegaCmd, enable: connected">Send</button>
 			</div>
 	</div>
 </div>
 
 <div id="omega_dialog" class="modal hide fade large">
-    <div class="modal-body" style="margin-left: 50px">
-    	<div class="row" style="padding-left: 20px">
-			<h3>Omega Print Info</h3>
-		</div>
-		<span class="span4">Splices: <span data-bind="text: currentSplice">0</span>/<span data-bind="text: nSplices">100</span></span>
-		<span id="loading-span" class="span4 hide">Loading Drive <span data-bind="text: loadingDrive">1</span> with <span data-bind="text: loadingColor">Green</span></span>
-		<span id="ponging-span" class="span4 hide">Ponging</span>
-		<div class="row">
-			<div class="row" style="margin-top: 10px">
-				<button class="btn btn-primary" data-bind="click: sendFilamentLoaded">Send Loaded</button>
-			</div>
-			<div class="row" style="margin-top: 10px">
-				<button type="button" class="btn btn-primary" data-bind="click: sendCancelCmd">Cancel Print</button>
-			</div>
-		</div>
-    </div>
+    <div>Follow the instructions on your Palette</div>
 </div>

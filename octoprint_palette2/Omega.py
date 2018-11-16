@@ -33,15 +33,12 @@ class Omega():
             omegaPort += glob.glob('/dev/*usbserial*')
             # WINDOWS
             # LINUX
+            # PLACEHOLDER
             if len(omegaPort) > 0:
                 try:
                     self.omegaSerial = serial.Serial(
                         omegaPort[0], 250000, timeout=0.5)
                     self.connected = True
-                    self._logger.info("Connected to Omega")
-                    # Tells plugin to update UI
-                    self._plugin_manager.send_plugin_message(
-                        self._identifier, "UI:Con=%s" % self.connected)
                 except:
                     self._logger.info(
                         "Another resource is connected to Palette")
@@ -55,9 +52,23 @@ class Omega():
             self.startWriteThread()
             # send an O99 to handshake
             self.enqueueCmd("O99")
-            while not self.heartbeat:
-                pass
-            self.heartbeat = False
+
+            timeout = 5   # [seconds]
+            timeout_start = time.time()
+            # Wait for Palette to respond with a handshake within 5 seconds
+            while time.time() < timeout_start + timeout:
+                if self.heartbeat:
+                    self._logger.info("Connected to Omega")
+                    self.updateUI()
+
+                    break
+                else:
+                    pass
+            if not self.heartbeat:
+                self._logger.info("Palette is not turned on.")
+                self.resetVariables()
+                self.resetConnection()
+                self.updateUI()
 
     def setFilename(self, name):
         self.filename = name
@@ -132,6 +143,21 @@ class Omega():
                 elif "O50" in line:
                     # get file list
                     pass
+                elif "O97" in line:
+                    if "U26" in line:
+                        self.filamentLength = int(line[9:], 16)
+                        self._logger.info(self.filamentLength)
+                        self.updateUI()
+                    elif "U25" in line:
+                        if "D1" in line:
+                            self.currentSplice = int(line[12:], 16)
+                            self._logger.info(self.currentSplice)
+                            self.updateUI()
+                    elif "U39" in line:
+                        if "D-" in line:
+                            self.amountLeftToExtrude = int(line[10:])
+                            self._logger.info(
+                                line[10:] + "mm left to extrude.")
                 elif "Connection Okay" in line:
                     self.heartbeat = True
                 elif "UI:" in line:
@@ -141,9 +167,9 @@ class Omega():
                         self.inPong = True
                     elif "Finished Pong" in line:
                         self.inPong = False
-                    elif "S=" in line:
-                        self.currentSplice = line[5:]
-                    self.updateUI()
+                    # elif "S=" in line:
+                    #     self.currentSplice = line[5:]
+                    # self.updateUI()
             serialConnection.close()
         except Exception as e:
             # Something went wrong with the connection to Palette2
@@ -235,22 +261,29 @@ class Omega():
             self.omegaSerial.close()
 
     def updateUI(self):
-        self._logger.info("Sending UIUpdate")
-        #self._plugin_manager.send_plugin_message(self._identifier, "UI:nSplices=%s" % int(self.msfNS, 16))
-        #self._plugin_manager.send_plugin_message(self._identifier, "UI:S=%s" % self.currentSplice)
+
+        self._logger.info("Sending UIUpdate from Palette")
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:nSplices=%s" % self.msfNS)
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:currentSplice=%s" % self.currentSplice)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:Con=%s" % self.connected)
-        # if self.inPong:
-        #self._plugin_manager.send_plugin_message(self._identifier, "UI:Ponging")
-        # else:
-        #self._plugin_manager.send_plugin_message(self._identifier, "UI:Finished Pong")
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:FilamentLength=%s" % self.filamentLength)
+        if self.inPong:
+            self._plugin_manager.send_plugin_message(
+                self._identifier, "UI:Ponging")
+        else:
+            self._plugin_manager.send_plugin_message(
+                self._identifier, "UI:Finished Pong")
 
     def sendNextData(self, dataNum):
         # self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
         # self._logger.info(self.sentCounter)
 
         if dataNum == 0:
-            #cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
+            # cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
             self.enqueueCmd(self.header[self.sentCounter])
             self._logger.info("Omega: Sent '%s'" % self.sentCounter)
             self.sentCounter = self.sentCounter + 1
@@ -304,6 +337,7 @@ class Omega():
         self.header = [None] * 9
         self.splices = []
         self.algorithms = []
+        self.filamentLength = 0
 
         self.filename = ""
 
@@ -368,11 +402,13 @@ class Omega():
             self._logger.info("Omega: Got PPM Adjustment: %s" % self.header[3])
         elif "O25" in cmd:
             self.header[4] = cmd
-            #self.msfCU = cmd
+            # self.msfCU = cmd
             self._logger.info("Omega: Got MU: %s" % self.header[4])
         elif "O26" in cmd:
             self.header[5] = cmd
+            self.msfNS = int(cmd[5:], 16)
             self._logger.info("Omega: Got NS: %s" % self.header[5])
+            self.updateUI()
         elif "O27" in cmd:
             self.header[6] = cmd
             self._logger.info("Omega: Got NP: %s" % self.header[6])
