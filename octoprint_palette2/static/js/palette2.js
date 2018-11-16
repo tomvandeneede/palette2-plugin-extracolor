@@ -336,11 +336,10 @@ $(function() {
     };
 
     self.onDataUpdaterPluginMessage = function(pluginIdent, message) {
-      console.log(message);
       if (pluginIdent === "palette2") {
         console.log("Message from " + pluginIdent + ": " + message);
-        if (message.includes("UI:S=")) {
-          var num = message.substring(5);
+        if (message.includes("UI:currentSplice")) {
+          var num = message.substring(17);
           console.log("Current splice " + num);
           self.currentSplice(num);
         } else if (message.includes("UI:Load")) {
@@ -407,6 +406,9 @@ $(function() {
           }
         } else if (message.includes("UI:Refresh Demo List")) {
           self.refreshDemoList();
+        } else if (message.includes("UI:FilamentLength")) {
+          var filaLength = message.substring(18);
+          console.log("Filament Length: " + filaLength);
         }
       }
     };

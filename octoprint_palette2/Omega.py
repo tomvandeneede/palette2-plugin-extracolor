@@ -59,8 +59,8 @@ class Omega():
             while time.time() < timeout_start + timeout:
                 if self.heartbeat:
                     self._logger.info("Connected to Omega")
-                    self._plugin_manager.send_plugin_message(
-                        self._identifier, "UI:Con=%s" % self.connected)
+                    self.updateUI()
+
                     break
                 else:
                     pass
@@ -68,6 +68,7 @@ class Omega():
                 self._logger.info("Palette is not turned on.")
                 self.resetVariables()
                 self.resetConnection()
+                self.updateUI()
 
     def setFilename(self, name):
         self.filename = name
@@ -142,9 +143,14 @@ class Omega():
                 elif "O50" in line:
                     # get file list
                     pass
-                # elif "097" in line:
-                # "U26" for filament
-                    # self.filament
+                elif "097" in line:
+                    if "U26" in line:
+                        self.filamentLength = int(line[9:], 16)
+                        self.updateUI()
+                    if "U25" in line:
+                        if "D1" in line:
+                            self.currentSplice = int(line[12:], 16)
+                            self.updateUI()
                 elif "Connection Okay" in line:
                     self.heartbeat = True
                 elif "UI:" in line:
@@ -154,9 +160,9 @@ class Omega():
                         self.inPong = True
                     elif "Finished Pong" in line:
                         self.inPong = False
-                    elif "S=" in line:
-                        self.currentSplice = line[5:]
-                    self.updateUI()
+                    # elif "S=" in line:
+                    #     self.currentSplice = line[5:]
+                    # self.updateUI()
             serialConnection.close()
         except Exception as e:
             # Something went wrong with the connection to Palette2
@@ -248,15 +254,21 @@ class Omega():
             self.omegaSerial.close()
 
     def updateUI(self):
-        self._logger.info("Sending UIUpdate")
-        #self._plugin_manager.send_plugin_message(self._identifier, "UI:nSplices=%s" % int(self.msfNS, 16))
-        #self._plugin_manager.send_plugin_message(self._identifier, "UI:S=%s" % self.currentSplice)
+        self._logger.info("Sending UIUpdate from Palette")
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:nSplices=%s" % self.msfNS)
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:currentSplice=%s" % self.currentSplice)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:Con=%s" % self.connected)
-        # if self.inPong:
-        #self._plugin_manager.send_plugin_message(self._identifier, "UI:Ponging")
-        # else:
-        #self._plugin_manager.send_plugin_message(self._identifier, "UI:Finished Pong")
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:FilamentLength=%s" % self.filamentLength)
+        if self.inPong:
+            self._plugin_manager.send_plugin_message(
+                self._identifier, "UI:Ponging")
+        else:
+            self._plugin_manager.send_plugin_message(
+                self._identifier, "UI:Finished Pong")
 
     def sendNextData(self, dataNum):
         # self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
@@ -317,6 +329,7 @@ class Omega():
         self.header = [None] * 9
         self.splices = []
         self.algorithms = []
+        self.filamentLength = 0
 
         self.filename = ""
 
@@ -385,6 +398,7 @@ class Omega():
             self._logger.info("Omega: Got MU: %s" % self.header[4])
         elif "O26" in cmd:
             self.header[5] = cmd
+            self.msfNS = int(cmd[5:], 16)
             self._logger.info("Omega: Got NS: %s" % self.header[5])
         elif "O27" in cmd:
             self.header[6] = cmd
