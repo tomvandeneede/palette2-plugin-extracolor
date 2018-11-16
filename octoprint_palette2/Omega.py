@@ -143,14 +143,21 @@ class Omega():
                 elif "O50" in line:
                     # get file list
                     pass
-                elif "097" in line:
+                elif "O97" in line:
                     if "U26" in line:
                         self.filamentLength = int(line[9:], 16)
+                        self._logger.info(self.filamentLength)
                         self.updateUI()
-                    if "U25" in line:
+                    elif "U25" in line:
                         if "D1" in line:
                             self.currentSplice = int(line[12:], 16)
+                            self._logger.info(self.currentSplice)
                             self.updateUI()
+                    elif "U39" in line:
+                        if "D-" in line:
+                            self.amountLeftToExtrude = int(line[10:])
+                            self._logger.info(
+                                line[10:] + "mm left to extrude.")
                 elif "Connection Okay" in line:
                     self.heartbeat = True
                 elif "UI:" in line:
@@ -254,6 +261,7 @@ class Omega():
             self.omegaSerial.close()
 
     def updateUI(self):
+
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:nSplices=%s" % self.msfNS)
@@ -275,7 +283,7 @@ class Omega():
         # self._logger.info(self.sentCounter)
 
         if dataNum == 0:
-            #cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
+            # cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
             self.enqueueCmd(self.header[self.sentCounter])
             self._logger.info("Omega: Sent '%s'" % self.sentCounter)
             self.sentCounter = self.sentCounter + 1
@@ -394,12 +402,13 @@ class Omega():
             self._logger.info("Omega: Got PPM Adjustment: %s" % self.header[3])
         elif "O25" in cmd:
             self.header[4] = cmd
-            #self.msfCU = cmd
+            # self.msfCU = cmd
             self._logger.info("Omega: Got MU: %s" % self.header[4])
         elif "O26" in cmd:
             self.header[5] = cmd
             self.msfNS = int(cmd[5:], 16)
             self._logger.info("Omega: Got NS: %s" % self.header[5])
+            self.updateUI()
         elif "O27" in cmd:
             self.header[6] = cmd
             self._logger.info("Omega: Got NP: %s" % self.header[6])

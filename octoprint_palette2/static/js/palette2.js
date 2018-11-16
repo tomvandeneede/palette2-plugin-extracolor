@@ -292,9 +292,8 @@ $(function() {
     };
 
     self.onEventPrintStarted = function(payload) {
-      //self.showOmegaDialog();
       console.log(payload.filename);
-      if (payload.filename.includes(".oem")) {
+      if (payload.filename.includes(".mcf.gcode")) {
         self.showOmegaDialog();
       }
     };
@@ -335,6 +334,24 @@ $(function() {
       });
     };
 
+    self.updateFilamentUsed = function() {
+      let filament = (Number(self.filaLength) / 1000.0).toFixed(1) + "m";
+      console.log(filament + "m");
+      $(".filament-used span")
+        .html("")
+        .text(filament);
+    };
+
+    self.updateCurrentSplice = function() {
+      $(".current-splice").text(self.currentSplice());
+    };
+
+    self.updateTotalSplices = function() {
+      let totalSplices = " / " + self.nSplices() + " Splices";
+      console.log(totalSplices);
+      $(".total-splices").text(totalSplices);
+    };
+
     self.onDataUpdaterPluginMessage = function(pluginIdent, message) {
       if (pluginIdent === "palette2") {
         console.log("Message from " + pluginIdent + ": " + message);
@@ -342,6 +359,7 @@ $(function() {
           var num = message.substring(17);
           console.log("Current splice " + num);
           self.currentSplice(num);
+          self.updateCurrentSplice();
         } else if (message.includes("UI:Load")) {
           var colors = [
             "",
@@ -379,6 +397,8 @@ $(function() {
         } else if (message.includes("UI:nSplices")) {
           var ns = message.substring(12);
           self.nSplices(ns);
+          console.log(self.nSplices());
+          self.updateTotalSplices();
         } else if (message.includes("UI:Ponging")) {
           self.updatePongMsg(true);
         } else if (message.includes("UI:Finished Pong")) {
@@ -391,7 +411,8 @@ $(function() {
             $("#connection-state-msg").css("color", "green");
             $(".connect-palette-button")
               .text("Connected")
-              .addClass("disabled");
+              .addClass("disabled")
+              .attr("disabled", true);
             self.connectionStateMsg("Connected");
             self.connected(true);
           } else {
@@ -400,15 +421,17 @@ $(function() {
             $("#connection-state-msg").css("color", "red");
             $(".connect-palette-button")
               .text("Connect to Palette 2")
-              .removeClass("disabled");
+              .removeClass("disabled")
+              .attr("disabled", false);
             self.connectionStateMsg("Not Connected");
             self.connected(false);
           }
         } else if (message.includes("UI:Refresh Demo List")) {
           self.refreshDemoList();
         } else if (message.includes("UI:FilamentLength")) {
-          var filaLength = message.substring(18);
-          console.log("Filament Length: " + filaLength);
+          self.filaLength = message.substring(18);
+          console.log("Filament Length: " + self.filaLength);
+          self.updateFilamentUsed();
         }
       }
     };
