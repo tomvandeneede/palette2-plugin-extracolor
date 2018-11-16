@@ -39,10 +39,6 @@ class Omega():
                     self.omegaSerial = serial.Serial(
                         omegaPort[0], 250000, timeout=0.5)
                     self.connected = True
-                    self._logger.info("Connected to Omega")
-                    # Tells plugin to update UI
-                    self._plugin_manager.send_plugin_message(
-                        self._identifier, "UI:Con=%s" % self.connected)
                 except:
                     self._logger.info(
                         "Another resource is connected to Palette")
@@ -56,9 +52,22 @@ class Omega():
             self.startWriteThread()
             # send an O99 to handshake
             self.enqueueCmd("O99")
-            while not self.heartbeat:
-                pass
-            self.heartbeat = False
+
+            timeout = 5   # [seconds]
+            timeout_start = time.time()
+            # Wait for Palette to respond with a handshake within 5 seconds
+            while time.time() < timeout_start + timeout:
+                if self.heartbeat:
+                    self._logger.info("Connected to Omega")
+                    self._plugin_manager.send_plugin_message(
+                        self._identifier, "UI:Con=%s" % self.connected)
+                    break
+                else:
+                    pass
+            if not self.heartbeat:
+                self._logger.info("Palette is not turned on.")
+                self.resetVariables()
+                self.resetConnection()
 
     def setFilename(self, name):
         self.filename = name
@@ -133,6 +142,9 @@ class Omega():
                 elif "O50" in line:
                     # get file list
                     pass
+                # elif "097" in line:
+                # "U26" for filament
+                    # self.filament
                 elif "Connection Okay" in line:
                     self.heartbeat = True
                 elif "UI:" in line:

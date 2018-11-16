@@ -11,7 +11,25 @@
 					<button type="button" class="btn btn-primary cancel-palette-button" data-bind="click: sendCancelCmd, enable: connected">Cancel Print</button>
 				</div>
 			</div>
-		<hr>
+			<hr>
+			<div class="row">
+				<h4 class="palette-status">Status</h4>
+				<ul class="status-container">
+					<li class="single-status splice-amount">
+						<h5>Splices: </h5>
+						<span>-</span>
+					</li>
+					<li class="single-status time-elapsed">
+						<h5>Time Elapsed: </h5>
+						<span>-</span>
+					</li>
+					<li class="single-status filament-used">
+						<h5>Filament Used: </h5>
+						<span>-</span>
+					</li>
+				</ul>
+			</div>
+			<hr>
 			<div class="row">
 				<h4 class="manual-controls">Manual Controls</h4>
 				<div style="margin-top: 10px">
