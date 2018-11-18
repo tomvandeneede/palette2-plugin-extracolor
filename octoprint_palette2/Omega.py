@@ -139,7 +139,13 @@ class Omega():
                     self.sendNextData(int(line[5]))
                 elif "O32" in line:
                     # resume print
+                    self.printPaused = True
+                    self.updateUI()
                     self._printer.toggle_pause_print()
+                    if line == "O32":
+                        self.currentStatus = "Preparing splices"
+                        self.updateUI()
+                        self._logger.info("Splices being prepared.")
                 elif "O50" in line:
                     # get file list
                     pass
@@ -158,6 +164,31 @@ class Omega():
                             self.amountLeftToExtrude = int(line[10:])
                             self._logger.info(
                                 line[10:] + "mm left to extrude.")
+                            self.updateUI()
+                        elif "D" not in line:
+                            self.currentStatus = "Loading filament into extruder"
+                            self.updateUI()
+                            self._logger.info(
+                                "Filament must be loaded into extruder by user")
+                        elif "D0" in line:
+                            self.amountLeftToExtrude = 0
+                            self._logger.info("0" + "mm left to extrude.")
+                            self.updateUI()
+                            self.amountLeftToExtrude = ""
+                    elif self.drivesInUse[0] in line:
+                        if "D0" in line:
+                            self.currentStatus = "Loading ingoing drives"
+                            self.updateUI()
+                            self._logger.info("STARTING TO LOAD FIRST DRIVE")
+                    elif self.drivesInUse[-1] in line:
+                        if "D1" in line:
+                            self.currentStatus = "Loading filament through outgoing tube"
+                            self.updateUI()
+                            self._logger.info("FINISHED LOADING LAST DRIVE")
+                    elif "U0" in line:
+                        self.currentStatus = "Palette work completed: all splices prepared"
+                        self.updateUI()
+                        self._logger.info("Palette work is done.")
                 elif "Connection Okay" in line:
                     self.heartbeat = True
                 elif "UI:" in line:
@@ -264,6 +295,8 @@ class Omega():
 
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:currentStatus=%s" % self.currentStatus)
+        self._plugin_manager.send_plugin_message(
             self._identifier, "UI:nSplices=%s" % self.msfNS)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:currentSplice=%s" % self.currentSplice)
@@ -271,6 +304,10 @@ class Omega():
             self._identifier, "UI:Con=%s" % self.connected)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:FilamentLength=%s" % self.filamentLength)
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:AmountLeftToExtrude=%s" % self.amountLeftToExtrude)
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:PalettePausedPrint=%s" % self.printPaused)
         if self.inPong:
             self._plugin_manager.send_plugin_message(
                 self._identifier, "UI:Ponging")
@@ -338,6 +375,10 @@ class Omega():
         self.splices = []
         self.algorithms = []
         self.filamentLength = 0
+        self.currentStatus = ""
+        self.drivesInUse = []
+        self.amountLeftToExtrude = ""
+        self.printPaused = ""
 
         self.filename = ""
 
@@ -374,6 +415,8 @@ class Omega():
 
     def sendPrintStart(self):
         self._logger.info("Omega toggle pause")
+        self.printPaused = False
+        self.updateUI()
         self._printer.toggle_pause_print()
 
     def sendAutoloadOn(self):
@@ -402,8 +445,21 @@ class Omega():
             self._logger.info("Omega: Got PPM Adjustment: %s" % self.header[3])
         elif "O25" in cmd:
             self.header[4] = cmd
-            # self.msfCU = cmd
             self._logger.info("Omega: Got MU: %s" % self.header[4])
+            drives = self.header[4][4:].split(" ")
+            for index, drive in enumerate(drives):
+                if "D1" in drive:
+                    if index == 0:
+                        drives[index] = "U60"
+                    elif index == 1:
+                        drives[index] = "U61"
+                    elif index == 2:
+                        drives[index] = "U62"
+                    elif index == 3:
+                        drives[index] = "U63"
+            self.drivesInUse = list(
+                filter(lambda drive: drive != "D0", drives))
+            self._logger.info("Used Drives: %s" % self.drivesInUse)
         elif "O26" in cmd:
             self.header[5] = cmd
             self.msfNS = int(cmd[5:], 16)
