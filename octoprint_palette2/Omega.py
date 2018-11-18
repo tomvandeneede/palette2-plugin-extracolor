@@ -295,6 +295,8 @@ class Omega():
 
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:DisplayAlerts=%s" % self.displayAlerts)
+        self._plugin_manager.send_plugin_message(
             self._identifier, "UI:currentStatus=%s" % self.currentStatus)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:nSplices=%s" % self.msfNS)
@@ -379,6 +381,8 @@ class Omega():
         self.drivesInUse = []
         self.amountLeftToExtrude = ""
         self.printPaused = ""
+
+        self.displayAlerts = self._settings.get(["palette2Alerts"])
 
         self.filename = ""
 
