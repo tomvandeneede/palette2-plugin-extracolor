@@ -140,10 +140,11 @@ $(function() {
       });
     };
 
-    self.sendOmegaCmd = function() {
+    self.sendOmegaCmd = function(command, payload) {
       console.log("Sending omega command");
       var payload = {
         command: "sendOmegaCmd",
+        // command: command,
         cmd: self.omegaCommand()
       };
       $.ajax({
@@ -308,6 +309,18 @@ $(function() {
     self.onAllBound = function(allViewModels) {
       console.log(allViewModels);
       console.log(self.settings);
+      // console.log($(".temperature_target .input-mini.input-nospin"));
+      // .css("background-color", "yellow");
+      // .fadeOut(300)
+      // .fadeIn(300)
+      // .fadeOut(300)
+      // .fadeIn(300)
+      // .fadeOut(300)
+      // .fadeIn(300)
+      // .fadeOut(300)
+      // .fadeIn(300)
+      // .focus()
+      // .select();
     };
 
     self.onEventPrintStarted = function(payload) {
@@ -316,9 +329,9 @@ $(function() {
         // self.showOmegaDialog();
         if (self.displayAlerts) {
           swal({
-            title: "You are about to print a Multi-Material File",
+            title: "You are about to print with Palette 2",
             text:
-              "Your print has temporarily been paused by the Palette 2 Plugin. This is normal - please go see your Palette 2 device and follow the instructions on its screen. The print will resume automatically once everything is ready.",
+              "Your print has temporarily been paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
             type: "info"
           });
         }
@@ -341,15 +354,10 @@ $(function() {
       }
     };
 
-    self.onEventPrintDone = function(payload) {
+    self.onEventPrintCancelled = function(payload) {
       if (payload.name.includes(".mcf.gcode")) {
-        if (self.displayAlerts) {
-          swal({
-            title: "Print Completed",
-            text: `Your Multi-Material Print for ${payload.name} is done.`,
-            type: "success"
-          });
-        }
+        console.log("PRINT IS CANCELLED!");
+        self.sendCancelCmd();
       }
     };
 
@@ -439,61 +447,36 @@ $(function() {
         $(".current-status")
           .text(self.currentStatus)
           .addClass("completed");
-        if (self.displayAlerts) {
-          swal({
-            title: "Palette work is completed",
-            text: `All splices have been prepared. You may check on the progress of your print on the left sidebar. You will be notified when the print is completed. `,
-            type: "success"
-          });
-        }
       } else if (self.currentStatus === "Loading filament through outgoing tube") {
         if (self.displayAlerts) {
+          let base_url = window.location.origin;
+          window.location.href = `${base_url}/#temp`;
           swal({
-            title: "Drives Are Loaded",
+            title: "Pre-heat your printer",
             text:
-              "Please wait while the filament is loaded through the outgoing tube. You will be notified when this is done. In the meanwhile, please pre-heat your printer in the Temperature Tab.",
+              "Palette 2 is now making filament. In the meantime, please pre-heat your printer using the controls in the Temperature Tab.",
             type: "info"
           });
         }
       } else if (self.currentStatus === "Loading filament into extruder") {
         if (self.displayAlerts) {
+          let base_url = window.location.origin;
+          window.location.href = `${base_url}/#control`;
           swal({
-            title: "Filament Is Ready",
-            text:
-              "Please follow the instructions on the Palette Screen. Press OK when you are at the filament jogging step.",
+            title: "Follow instructions on Palette 2 ",
+            text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
             type: "info"
-          }).then(result => {
-            if (result.value) {
-              let base_url = window.location.origin;
-              window.location.href = `${base_url}/#control`;
-              if (self.displayAlerts) {
-                swal({
-                  title: "Slowly extrude until the filament is in place ",
-                  text: `Use the "Extrude" button in this tab to push the filament to the appropriate start location. Please set small amounts (1mm - 5mm) to not extrude too far. `,
-                  type: "info",
-                  position: "bottom",
-                  allowOutsideClick: false
-                });
-              }
-              let notification = $(`<li id="jog-filament-notification" class="popup-notification">
-            <h6>Remaining length to extrude:</h6>
-            <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
-            </li>`).hide();
-              $(".side-notifications-list").append(notification);
-              notification.fadeIn(200);
-              self.jogId = "#jog-filament-notification";
-            }
           });
-        } else {
-          // let base_url = window.location.origin;
-          // window.location.href = `${base_url}/#control`;
-          let notification = $(`<li id="jog-filament-notification" class="popup-notification">
+        }
+        let notification = $(`<li id="jog-filament-notification" class="popup-notification">
             <h6>Remaining length to extrude:</h6>
             <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
             </li>`).hide();
-          $(".side-notifications-list").append(notification);
-          notification.fadeIn(200);
-          self.jogId = "#jog-filament-notification";
+        self.jogId = "#jog-filament-notification";
+        $(".side-notifications-list").append(notification);
+      } else if (self.currentStatus === "Preparing splices") {
+        if (swal.isVisible()) {
+          swal.close();
         }
       }
     };
@@ -577,6 +560,9 @@ $(function() {
         } else if (message.includes("UI:AmountLeftToExtrude")) {
           self.amountLeftToExtrude = message.substring(23);
           console.log(self.amountLeftToExtrude);
+          console.log(self.amountLeftToExtrude.length);
+          console.log($("#jog-filament-notification").is(":visible"));
+
           if (self.amountLeftToExtrude === "0") {
             $(self.jogId).fadeOut(500, function() {
               this.remove();
@@ -584,11 +570,18 @@ $(function() {
             if (self.displayAlerts) {
               swal({
                 title: "Filament in place and ready to go",
-                text: `Please go back to your Palette and press "Next". Once that is done, your print will restart automatically. You will be notified when Palette finishes preparing splices as well as when the print itself is completed.`,
+                text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
                 type: "info"
               });
             }
-          } else if ($("#jog-filament-notification").length) {
+          } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
+            console.log("GOT IN");
+            console.log($(self.jogId));
+            $(self.jogId)
+              .fadeIn(200)
+              .find(".jog-filament-value")
+              .text(`${self.amountLeftToExtrude}mm`);
+          } else if ($("#jog-filament-notification").is(":visible")) {
             $(self.jogId)
               .find(".jog-filament-value")
               .text(`${self.amountLeftToExtrude}mm`);
@@ -598,20 +591,18 @@ $(function() {
           console.log("PRINT PAUSED: " + self.printPaused);
         }
       }
-    };
 
-    self.updatePongMsg = function(isPonging) {
-      if (isPonging) {
-        $("#ponging-span").removeClass("hide");
-      } else {
-        $("#ponging-span").addClass("hide");
-      }
+      self.updatePongMsg = function(isPonging) {
+        if (isPonging) {
+          $("#ponging-span").removeClass("hide");
+        } else {
+          $("#ponging-span").addClass("hide");
+        }
+      };
     };
 
     self.onAfterBinding = function() {
-      var payload = {
-        command: "uiUpdate"
-      };
+      var payload = { command: "uiUpdate" };
 
       $.ajax({
         url: API_BASEURL + "plugin/palette2",
@@ -621,6 +612,40 @@ $(function() {
         contentType: "application/json; charset=UTF-8",
         success: self.fromResponse
       });
+
+      // swal({
+      // title: "You are about to print with Palette 2",
+      // text:
+      //   "Your print has temporarily been paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
+      // type: "info"
+      // });
+      // swal({
+      // title: "Pre-heat your printer",
+      // text:
+      //   "Palette 2 is now making filament. In the meantime, please pre-heat your printer using the controls in the Temperature Tab.",
+      // type: "info"
+      // });
+      // REDIRECT
+      // KEEP THIS POSITION AND PUT THE EXTRUDING TEXT INSTEAD
+      // swal({
+      //   title: "Filament Is Ready",
+      //   text:
+      //     "Please follow the instructions on the Palette Screen. Press OK when you are at the filament jogging step.",
+      //   type: "info"
+      // });
+      // REMOVE THE EVENT LISETNER FOR BELOW, BUT KEEP TEXT FOR ABOVE.
+      // swal({
+      // title: "Follow instructions on Palette 2 ",
+      // text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+      // type: "info"
+      // });
+      // HAVE SOMETHING TO DISABLE THESE SETUP TUTORIALS
+      // 1. No ongoing Palette 2 print
+      // 2. Loading ingoing drives
+      // 3. Loading filament through outgoing tube
+      // 4. Loading filament into extruder
+      // 5. Preparing splices
+      // 6. Palette work completed: all splices prepared
     };
 
     self.startSpliceDemo = function() {
