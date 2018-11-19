@@ -484,6 +484,16 @@ $(function() {
               self.jogId = "#jog-filament-notification";
             }
           });
+        } else {
+          // let base_url = window.location.origin;
+          // window.location.href = `${base_url}/#control`;
+          let notification = $(`<li id="jog-filament-notification" class="popup-notification">
+            <h6>Remaining length to extrude:</h6>
+            <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
+            </li>`).hide();
+          $(".side-notifications-list").append(notification);
+          notification.fadeIn(200);
+          self.jogId = "#jog-filament-notification";
         }
       }
     };
