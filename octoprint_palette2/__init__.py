@@ -170,7 +170,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def get_latest(self, target, check, full_data=False, online=True):
         resp = requests.get(
-            "http://emerald.mosaicmanufacturing.com/canvas-hub-palette-test/latest")
+            "http://emerald.mosaicmanufacturing.com/canvas-hub-palette/latest")
         version_data = resp.json()
         version = version_data["versions"][0]["version"]
         current_version = check.get("current")
@@ -204,7 +204,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 command="/home/pi/test-version.sh",
 
                 # update method: pip
-                pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/plugin-refactor/palette-2-plugin-plugin-refactor.zip"
+                pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/plugin-refactor/palette-2-plugin-master.zip"
             )
         )
 
