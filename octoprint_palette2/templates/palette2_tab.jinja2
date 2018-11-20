@@ -3,17 +3,15 @@
 			<div class="row">
 				<h4>Palette 2</h4>
 				<p>Connection Status: <span id="connection-state-msg" class="text-muted" data-bind="text: connectionStateMsg">Not Connected</span></p>
-				<div data-bind="if: !settings.settings.plugins.palette2.autoconnect()" style="margin-top: 20px">
+				<div style="margin-top: 20px">
 					<button class="btn btn-primary connect-palette-button" data-bind="click: connectOmega">Connect</button>
 					<button type="button" class="btn btn-primary" data-bind="click: disconnectPalette2, enable: connected">Disconnect</button>
 				</div>
-				<div style="margin-top: 10px">
-					<button type="button" class="btn btn-primary cancel-palette-button" data-bind="click: sendCancelCmd, enable: connected">Cancel Print</button>
-				</div>
 			</div>
 			<hr>
-			<div class="row">
-				<h4 class="palette-status">Status</h4>
+			<div class="row palette-status">
+				<h4 class="palette-status-title">Status</h4>
+				<h5 class="current-status">No ongoing Palette 2 print</h5>
 				<ul class="status-container">
 					<li class="single-status splice-amount">
 						<h5 class="single-status-title">Current Splice: </h5>

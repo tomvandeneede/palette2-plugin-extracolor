@@ -26,7 +26,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=0)
+        return dict(autoconnect=0, palette2Alerts=True)
 
     def get_template_configs(self):
         return [
@@ -59,6 +59,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             testPrinterCommands=[],
             uiUpdate=[],
             connectWifi=["wifiSSID", "wifiPASS"],
+            changeAlertSettings=["condition"],
         )
 
     def on_api_command(self, command, data):
@@ -110,6 +111,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "uiUpdate":
             self.palette.updateUI()
+        elif command == "changeAlertSettings":
+            self.palette.changeAlertSettings(data["condition"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -121,10 +124,12 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         if "ClientOpened" in event:
             self.palette.updateUI()
         elif "PrintStarted" in event:
-            if ".oem" in payload["filename"]:
-                self.palette.setFilename(payload["filename"].split('.')[0])
+            if ".mcf.gcode" in payload["name"]:
+                self.palette.setFilename(payload["name"].split('.')[0])
                 self._logger.info("Filename: %s" %
-                                  payload["filename"].split('.')[0])
+                                  payload["name"].split('.')[0])
+                self.palette.currentStatus = "Initializing ..."
+                self.palette.updateUI()
         elif "FileAdded" in event:
             # User uploads a new file to Octoprint, we should update the demo list of files
             self._plugin_manager.send_plugin_message(
@@ -134,6 +139,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self._plugin_manager.send_plugin_message(
                 self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
+            self.palette.displayAlerts = self._settings.get(
+                ["palette2Alerts"])
+            self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
             else:

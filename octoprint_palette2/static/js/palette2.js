@@ -1,3 +1,17 @@
+if (!document.getElementById("sweetalert2-styling")) {
+  let link = document.createElement("link");
+  link.id = "sweetalert2-styling";
+  link.href = "https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/7.29.0/sweetalert2.min.css";
+  link.rel = "stylesheet";
+  document.head.appendChild(link);
+}
+if (!document.getElementById("sweetalert2-script")) {
+  let script = document.createElement("script");
+  script.id = "sweetalert2-script";
+  script.src = "https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/7.29.0/sweetalert2.min.js";
+  document.head.appendChild(script);
+}
+
 $(function() {
   function OmegaViewModel(parameters) {
     var self = this;
@@ -35,6 +49,11 @@ $(function() {
     self.selectedJogDriveObs = ko.observable("1");
     self.spliceNumber = 0;
     self.demoWithPrinter = ko.observable(false);
+    self.currentStatus = "";
+    self.amountLeftToExtrude = "";
+    self.jogId = "";
+    self.displayAlerts = true;
+    self.tryingToConnect = false;
 
     self.jogDrives = ko.observableArray(["1", "2", "3", "4", "Out"]);
     self.files = ko.observableArray([]);
@@ -91,8 +110,22 @@ $(function() {
       });
     };
 
+    self.loadingOverlay = condition => {
+      if (condition) {
+        $("body").append(`<div class="loading-overlay-container"><div class="loader"></div></div>`);
+      } else {
+        $("body")
+          .find(".loading-overlay-container")
+          .remove();
+      }
+    };
+
     self.connectOmega = function() {
       console.log("Connect omega");
+
+      self.tryingToConnect = true;
+      self.loadingOverlay(true);
+
       var payload = {
         command: "connectOmega",
         port: ""
@@ -109,6 +142,11 @@ $(function() {
     };
 
     self.disconnectPalette2 = function() {
+      self.loadingOverlay(true);
+      self.connected(false);
+      $(self.jogId).fadeOut(500, function() {
+        this.remove();
+      });
       var payload = {
         command: "disconnectPalette2"
       };
@@ -122,10 +160,11 @@ $(function() {
       });
     };
 
-    self.sendOmegaCmd = function() {
+    self.sendOmegaCmd = function(command, payload) {
       console.log("Sending omega command");
       var payload = {
         command: "sendOmegaCmd",
+        // command: command,
         cmd: self.omegaCommand()
       };
       $.ajax({
@@ -289,12 +328,145 @@ $(function() {
 
     self.onAllBound = function(allViewModels) {
       console.log(allViewModels);
+      console.log(self.settings);
+      self.removeFolderBinding();
+      self.handleGCODEFolders();
+    };
+
+    self.onStartupComplete = function() {
+      console.log("P2 startup finished");
+      self.removeFolderBinding();
+      self.handleGCODEFolders();
+    };
+
+    self.applyPaletteDisabling = function() {
+      if (!self.connected()) {
+        console.log("APPLYING PALETTE DISABLING");
+        let count = 0;
+        let applyDisabling = setInterval(function() {
+          if (count > 10) {
+            clearInterval(applyDisabling);
+          }
+          $(".palette-tag")
+            .siblings(".action-buttons")
+            .find(".btn:last-child")
+            .css("pointer-events", "none")
+            .attr("disabled", true);
+          // $("#job_print").attr("disabled", true);
+          count++;
+        }, 100);
+      } else {
+        let count = 0;
+        console.log("REMOVING PALETTE DISABLING");
+        let applyDisabling2 = setInterval(function() {
+          if (count > 10) {
+            clearInterval(applyDisabling2);
+          }
+          $(".palette-tag")
+            .siblings(".action-buttons")
+            .find(".btn:last-child")
+            .css("pointer-events", "auto")
+            .attr("disabled", false);
+          // $("#job_print").attr("disabled", false);
+          count++;
+        }, 100);
+      }
+    };
+
+    self.handleGCODEFolders = function(payload) {
+      self.removeFolderBinding();
+      $("#files .gcode_files .entry.back.clickable").on("click", () => {
+        self.applyPaletteDisabling();
+      });
+    };
+
+    self.removeFolderBinding = function(payload) {
+      $("#files .gcode_files")
+        .find(".folder .title")
+        .removeAttr("data-bind")
+        .on("click", event => {
+          self.applyPaletteDisabling();
+        });
+    };
+
+    self.onEventFileRemoved = function(payload) {
+      self.applyPaletteDisabling();
+    };
+
+    self.onEventUpdatedFiles = function(payload) {
+      self.applyPaletteDisabling();
+    };
+
+    self.onEventFileSelected = function(payload) {
+      if (payload.name.includes(".mcf.gcode")) {
+        self.applyPaletteDisabling();
+        if (!self.connected()) {
+          swal({
+            title: "Palette 2 not connected",
+            text: "You have selected an .mcf file. Please enable the connection to Palette 2 before printing.",
+            type: "info"
+          });
+        }
+      }
+    };
+
+    self.onEventFileDeselected = function(payload) {
+      self.applyPaletteDisabling();
     };
 
     self.onEventPrintStarted = function(payload) {
-      console.log(payload.filename);
-      if (payload.filename.includes(".mcf.gcode")) {
-        self.showOmegaDialog();
+      console.log(payload.name);
+      if (payload.name.includes(".mcf.gcode")) {
+        if (self.connected()) {
+          // self.showOmegaDialog();
+          if (self.displayAlerts) {
+            swal({
+              title: "You are about to print with Palette 2",
+              text:
+                "Your print has temporarily been paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
+              type: "info"
+            });
+          }
+        }
+      }
+    };
+
+    self.onEventPrintPaused = function(payload) {
+      if (self.connected() && payload.name.includes(".mcf.gcode")) {
+        let applyDisablingResume = setInterval(function() {
+          let count = 0;
+          if (count > 50) {
+            clearInterval(applyDisablingResume);
+          }
+          $("body")
+            .find("#job_pause")
+            .attr("disabled", true);
+          count++;
+        }, 100);
+      }
+    };
+
+    self.onEventPrintResumed = function(payload) {
+      if (self.connected() && payload.name.includes(".mcf.gcode")) {
+        let applyDisablingResume2 = setInterval(function() {
+          let count = 0;
+          if (count > 5) {
+            clearInterval(applyDisablingResume2);
+          }
+          console.log(
+            $("body")
+              .find("#job_pause")
+              .attr("disabled", false)
+          );
+          count++;
+        }, 500);
+      }
+    };
+
+    self.onEventPrintCancelled = function(payload) {
+      if (payload.name.includes(".mcf.gcode")) {
+        console.log("PRINT IS CANCELLED!");
+        self.sendCancelCmd();
       }
     };
 
@@ -335,7 +507,7 @@ $(function() {
     };
 
     self.updateFilamentUsed = function() {
-      let filament = (Number(self.filaLength) / 1000.0).toFixed(1) + "m";
+      let filament = (Number(self.filaLength) / 1000.0).toFixed(2) + "m";
       console.log(filament + "m");
       $(".filament-used span")
         .html("")
@@ -352,14 +524,119 @@ $(function() {
       $(".total-splices").text(totalSplices);
     };
 
+    self.updateConnection = function(condition) {
+      if (condition) {
+        $("#connection-state-msg")
+          .removeClass("text-muted")
+          .addClass("text-success")
+          .css("color", "green");
+        $(".connect-palette-button")
+          .text("Connected")
+          .addClass("disabled")
+          .attr("disabled", true);
+        self.connectionStateMsg("Connected");
+        self.connected(true);
+        self.applyPaletteDisabling();
+      } else {
+        $("#connection-state-msg")
+          .removeClass("text-success")
+          .addClass("text-muted")
+          .css("color", "red");
+        $(".connect-palette-button")
+          .text("Connect to Palette 2")
+          .removeClass("disabled")
+          .attr("disabled", false);
+        self.connectionStateMsg("Not Connected");
+        self.connected(false);
+        self.applyPaletteDisabling();
+      }
+    };
+
+    self.updateCurrentStatus = function() {
+      $(".current-status").text(self.currentStatus);
+      if (self.currentStatus === "Palette work completed: all splices prepared") {
+        $(".current-status")
+          .text(self.currentStatus)
+          .addClass("completed");
+      } else if (self.currentStatus === "Loading filament through outgoing tube") {
+        if (self.displayAlerts) {
+          let base_url = window.location.origin;
+          window.location.href = `${base_url}/#temp`;
+          swal({
+            title: "Pre-heat your printer",
+            text:
+              "Palette 2 is now making filament. In the meantime, please pre-heat your printer using the controls in the Temperature Tab.",
+            type: "info"
+          }).then(res => {
+            $("body")
+              .find(`#temperature-table .input-mini.input-nospin`)
+              .addClass("highlight-glow")
+              .on("focus", event => {
+                $(event.target).removeClass("highlight-glow");
+              });
+          });
+        }
+      } else if (self.currentStatus === "Loading filament into extruder") {
+        if (self.displayAlerts) {
+          let base_url = window.location.origin;
+          window.location.href = `${base_url}/#control`;
+          swal({
+            title: "Follow instructions on Palette 2 ",
+            text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+            type: "info"
+          }).then(res => {
+            $("body")
+              .find("#control-jog-extrusion .input-mini.text-right")
+              .addClass("highlight-glow")
+              .on("focus", event => {
+                $(event.target).removeClass("highlight-glow");
+              });
+            $("body")
+              .find("#control-jog-extrusion > div :nth-child(3)")
+              .addClass("highlight-glow-border")
+              .on("focus", event => {
+                $(event.target).removeClass("highlight-glow-border");
+              });
+          });
+        }
+        let notification = $(`<li id="jog-filament-notification" class="popup-notification">
+            <h6>Remaining length to extrude:</h6>
+            <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
+            </li>`).hide();
+        self.jogId = "#jog-filament-notification";
+        $(".side-notifications-list").append(notification);
+      }
+    };
+
+    self.changeAlertSettings = function(condition) {
+      self.displayAlerts = !condition;
+      $(".alert-input").prop("checked", self.displayAlerts);
+      var payload = { command: "changeAlertSettings", condition: self.displayAlerts };
+
+      $.ajax({
+        url: API_BASEURL + "plugin/palette2",
+        type: "POST",
+        dataType: "json",
+        data: JSON.stringify(payload),
+        contentType: "application/json; charset=UTF-8"
+      });
+    };
+
     self.onDataUpdaterPluginMessage = function(pluginIdent, message) {
       if (pluginIdent === "palette2") {
-        console.log("Message from " + pluginIdent + ": " + message);
+        console.log(message);
+        // console.log("Message from " + pluginIdent + ": " + message);
         if (message.includes("UI:currentSplice")) {
           var num = message.substring(17);
           console.log("Current splice " + num);
           self.currentSplice(num);
           self.updateCurrentSplice();
+        } else if (message.includes("UI:DisplayAlerts")) {
+          if (message.includes("True")) {
+            self.displayAlerts = true;
+          } else if (message.includes("False")) {
+            self.displayAlerts = false;
+          }
         } else if (message.includes("UI:Load")) {
           var colors = [
             "",
@@ -405,26 +682,24 @@ $(function() {
           self.updatePongMsg(false);
         } else if (message.includes("UI:Con=")) {
           console.log("Checking connection state");
+          self.loadingOverlay(false);
           if (message.includes("True")) {
-            $("#connection-state-msg").removeClass("text-muted");
-            $("#connection-state-msg").addClass("text-success");
-            $("#connection-state-msg").css("color", "green");
-            $(".connect-palette-button")
-              .text("Connected")
-              .addClass("disabled")
-              .attr("disabled", true);
-            self.connectionStateMsg("Connected");
-            self.connected(true);
+            self.tryingToConnect = false;
+            self.updateConnection(true);
           } else {
-            $("#connection-state-msg").removeClass("text-success");
-            $("#connection-state-msg").addClass("text-muted");
-            $("#connection-state-msg").css("color", "red");
-            $(".connect-palette-button")
-              .text("Connect to Palette 2")
-              .removeClass("disabled")
-              .attr("disabled", false);
-            self.connectionStateMsg("Not Connected");
-            self.connected(false);
+            self.updateConnection(false);
+            console.log("Trying To Connect: " + self.tryingToConnect);
+            if (self.tryingToConnect) {
+              self.tryingToConnect = false;
+              $("body").on("click", "#swal2-checkbox", event => {
+                self.changeAlertSettings(event.target.checked);
+              });
+              swal({
+                title: "Could not connect to Palette 2",
+                text: `Please make sure Palette 2 is turned on. Please wait 5 seconds before trying again.`,
+                type: "error"
+              });
+            }
           }
         } else if (message.includes("UI:Refresh Demo List")) {
           self.refreshDemoList();
@@ -432,22 +707,58 @@ $(function() {
           self.filaLength = message.substring(18);
           console.log("Filament Length: " + self.filaLength);
           self.updateFilamentUsed();
+        } else if (message.includes("UI:currentStatus")) {
+          if (message.substring(17) !== self.currentStatus) {
+            self.currentStatus = message.substring(17);
+            self.updateCurrentStatus();
+          }
+        } else if (message.includes("UI:AmountLeftToExtrude")) {
+          self.amountLeftToExtrude = message.substring(23);
+          console.log(self.amountLeftToExtrude);
+          console.log(self.amountLeftToExtrude.length);
+          console.log($("#jog-filament-notification").is(":visible"));
+
+          if (self.amountLeftToExtrude === "0") {
+            $(self.jogId).fadeOut(500, function() {
+              this.remove();
+            });
+            if (self.displayAlerts) {
+              swal({
+                title: "Filament in place and ready to go",
+                text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
+                type: "info",
+                input: "checkbox",
+                inputPlaceholder: "Don't show me these setup alerts anymore"
+              });
+            }
+          } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
+            console.log($(self.jogId));
+            $(self.jogId)
+              .fadeIn(200)
+              .find(".jog-filament-value")
+              .text(`${self.amountLeftToExtrude}mm`);
+          } else if ($("#jog-filament-notification").is(":visible")) {
+            $(self.jogId)
+              .find(".jog-filament-value")
+              .text(`${self.amountLeftToExtrude}mm`);
+          }
+        } else if (message.includes("UI:PalettePausedPrint")) {
+          self.printPaused = message.substring(22);
+          console.log("PRINT PAUSED: " + self.printPaused);
         }
       }
-    };
 
-    self.updatePongMsg = function(isPonging) {
-      if (isPonging) {
-        $("#ponging-span").removeClass("hide");
-      } else {
-        $("#ponging-span").addClass("hide");
-      }
+      self.updatePongMsg = function(isPonging) {
+        if (isPonging) {
+          $("#ponging-span").removeClass("hide");
+        } else {
+          $("#ponging-span").addClass("hide");
+        }
+      };
     };
 
     self.onAfterBinding = function() {
-      var payload = {
-        command: "uiUpdate"
-      };
+      var payload = { command: "uiUpdate" };
 
       $.ajax({
         url: API_BASEURL + "plugin/palette2",
@@ -457,6 +768,40 @@ $(function() {
         contentType: "application/json; charset=UTF-8",
         success: self.fromResponse
       });
+      // swal({
+      // title: "You are about to print with Palette 2",
+      // text:
+      //   "Your print has temporarily been paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
+      // type: "info"
+      // });
+      // swal({
+      // title: "Pre-heat your printer",
+      // text:
+      //   "Palette 2 is now making filament. In the meantime, please pre-heat your printer using the controls in the Temperature Tab.",
+      // type: "info"
+      // });
+      // REDIRECT
+      // KEEP THIS POSITION AND PUT THE EXTRUDING TEXT INSTEAD
+      // swal({
+      //   title: "Filament Is Ready",
+      //   text:
+      //     "Please follow the instructions on the Palette Screen. Press OK when you are at the filament jogging step.",
+      //   type: "info"
+      // });
+      // REMOVE THE EVENT LISETNER FOR BELOW, BUT KEEP TEXT FOR ABOVE.
+      // swal({
+      // title: "Follow instructions on Palette 2 ",
+      // text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+      // type: "info"
+      // });
+
+      // HAVE SOMETHING TO DISABLE THESE SETUP TUTORIALS
+      // 1. No ongoing Palette 2 print
+      // 2. Loading ingoing drives
+      // 3. Loading filament through outgoing tube
+      // 4. Loading filament into extruder
+      // 5. Preparing splices
+      // 6. Palette work completed: all splices prepared
     };
 
     self.startSpliceDemo = function() {
