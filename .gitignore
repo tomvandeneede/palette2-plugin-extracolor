@@ -1,1 +1,3 @@
 *.pyc
+.vscode
+prepros-6.config

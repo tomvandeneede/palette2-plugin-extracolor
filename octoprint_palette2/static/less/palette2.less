@@ -1,0 +1,72 @@
+/*Stop Button*/
+select,
+input[type="text"] {
+  margin-bottom: 0;
+}
+
+.cancel-palette-button {
+  margin-bottom: 10px;
+}
+
+.manual-controls {
+  margin-bottom: 20px;
+}
+
+.status-container {
+  list-style: none;
+  margin: 0;
+}
+
+.single-status {
+  display: flex;
+  align-content: center;
+
+  &-title {
+    margin-right: 10px;
+  }
+
+  span {
+    align-self: center;
+  }
+
+  .total-splices {
+    white-space: pre;
+  }
+}
+
+.current-status {
+  font-weight: 400;
+  font-style: italic;
+
+  &.completed {
+    color: green;
+  }
+}
+
+.highlight-glow {
+  animation: highlight 1.5s infinite;
+}
+
+.highlight-glow-border {
+  animation: highlight-border 1.5s infinite;
+}
+
+@keyframes highlight {
+  0% {
+    background: #ffff99; /* lovely yellow colour */
+  }
+  100% {
+    background: none;
+  }
+}
+
+@keyframes highlight-border {
+  0% {
+    color: #ffff99; /* lovely yellow colour */
+    background: rgba(54, 54, 54, 0.7);
+  }
+  100% {
+    color: white;
+    background: rgba(54, 54, 54, 1);
+  }
+}
