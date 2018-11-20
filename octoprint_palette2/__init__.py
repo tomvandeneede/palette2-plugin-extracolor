@@ -59,7 +59,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             testPrinterCommands=[],
             uiUpdate=[],
             connectWifi=["wifiSSID", "wifiPASS"],
-            changeAlertSettings=["condition"]
+            changeAlertSettings=["condition"],
         )
 
     def on_api_command(self, command, data):

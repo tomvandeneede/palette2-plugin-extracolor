@@ -333,7 +333,13 @@ $(function() {
       self.handleGCODEFolders();
     };
 
-    self.applyPaletteDisabling = function(condition) {
+    self.onStartupComplete = function() {
+      console.log("P2 startup finished");
+      self.removeFolderBinding();
+      self.handleGCODEFolders();
+    };
+
+    self.applyPaletteDisabling = function() {
       if (!self.connected()) {
         console.log("APPLYING PALETTE DISABLING");
         let count = 0;
@@ -346,6 +352,7 @@ $(function() {
             .find(".btn:last-child")
             .css("pointer-events", "none")
             .attr("disabled", true);
+          // $("#job_print").attr("disabled", true);
           count++;
         }, 100);
       } else {
@@ -360,6 +367,7 @@ $(function() {
             .find(".btn:last-child")
             .css("pointer-events", "auto")
             .attr("disabled", false);
+          // $("#job_print").attr("disabled", false);
           count++;
         }, 100);
       }
@@ -390,8 +398,8 @@ $(function() {
     };
 
     self.onEventFileSelected = function(payload) {
-      self.applyPaletteDisabling();
       if (payload.name.includes(".mcf.gcode")) {
+        self.applyPaletteDisabling();
         if (!self.connected()) {
           swal({
             title: "Palette 2 not connected",
@@ -409,14 +417,16 @@ $(function() {
     self.onEventPrintStarted = function(payload) {
       console.log(payload.name);
       if (payload.name.includes(".mcf.gcode")) {
-        // self.showOmegaDialog();
-        if (self.displayAlerts) {
-          swal({
-            title: "You are about to print with Palette 2",
-            text:
-              "Your print has temporarily been paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
-            type: "info"
-          });
+        if (self.connected()) {
+          // self.showOmegaDialog();
+          if (self.displayAlerts) {
+            swal({
+              title: "You are about to print with Palette 2",
+              text:
+                "Your print has temporarily been paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
+              type: "info"
+            });
+          }
         }
       }
     };
