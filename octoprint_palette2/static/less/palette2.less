@@ -42,3 +42,31 @@ input[type="text"] {
     color: green;
   }
 }
+
+.highlight-glow {
+  animation: highlight 1.5s infinite;
+}
+
+.highlight-glow-border {
+  animation: highlight-border 1.5s infinite;
+}
+
+@keyframes highlight {
+  0% {
+    background: #ffff99; /* lovely yellow colour */
+  }
+  100% {
+    background: none;
+  }
+}
+
+@keyframes highlight-border {
+  0% {
+    color: #ffff99; /* lovely yellow colour */
+    background: rgba(54, 54, 54, 0.7);
+  }
+  100% {
+    color: white;
+    background: rgba(54, 54, 54, 1);
+  }
+}

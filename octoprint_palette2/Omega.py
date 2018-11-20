@@ -42,10 +42,13 @@ class Omega():
                 except:
                     self._logger.info(
                         "Another resource is connected to Palette")
+                    self.updateUI()
             else:
                 self._logger.info("Unable to find Omega port")
+                self.updateUI()
         else:
             self._logger.info("Already Connected")
+            self.updateUI()
 
         if self.connected:
             self.startReadThread()
@@ -60,7 +63,6 @@ class Omega():
                 if self.heartbeat:
                     self._logger.info("Connected to Omega")
                     self.updateUI()
-
                     break
                 else:
                     pass
@@ -495,3 +497,7 @@ class Omega():
         else:
             self._logger.info("Omega: Got an Omega command '%s'" % cmd)
             self.enqueueCmd(cmd)
+
+    def changeAlertSettings(self, condition):
+        self._settings.set(["palette2Alerts"], condition)
+        self._settings.save()

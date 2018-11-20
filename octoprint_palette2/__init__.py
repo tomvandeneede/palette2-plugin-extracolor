@@ -59,6 +59,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             testPrinterCommands=[],
             uiUpdate=[],
             connectWifi=["wifiSSID", "wifiPASS"],
+            changeAlertSettings=["condition"]
         )
 
     def on_api_command(self, command, data):
@@ -96,6 +97,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.startSingleColor()
         elif command == "startSpliceDemo":
             self._logger.info("Starting a splice demo")
+
             # pass the file path to Omega
             path = self._settings.getBaseFolder("uploads") + "/" + data["file"]
             # self.palette.setFilepath(data["file"])
@@ -110,6 +112,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "uiUpdate":
             self.palette.updateUI()
+        elif command == "changeAlertSettings":
+            self.palette.changeAlertSettings(data["condition"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
