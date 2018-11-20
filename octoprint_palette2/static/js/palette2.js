@@ -143,6 +143,7 @@ $(function() {
 
     self.disconnectPalette2 = function() {
       self.loadingOverlay(true);
+      self.connected(false);
       $(self.jogId).fadeOut(500, function() {
         this.remove();
       });
@@ -328,55 +329,68 @@ $(function() {
     self.onAllBound = function(allViewModels) {
       console.log(allViewModels);
       console.log(self.settings);
-      $("body")
-        .find("#control-jog-extrusion .input-mini.text-right, #control-jog-extrusion > div :nth-child(3)")
-        .addClass("highlight-glow")
-        .on("focus", event => {
-          $(event.target).removeClass("highlight-glow");
-        });
-      $("body")
-        .find("#control-jog-extrusion > div :nth-child(3)")
-        .addClass("highlight-glow-border")
-        .on("focus", event => {
-          $(event.target).removeClass("highlight-glow-border");
-        });
+      self.removeFolderBinding();
+      self.handleGCODEFolders();
     };
 
     self.applyPaletteDisabling = function(condition) {
       if (!self.connected()) {
+        console.log("APPLYING PALETTE DISABLING");
+        let count = 0;
         let applyDisabling = setInterval(function() {
-          let count = 0;
-          if (count > 50) {
+          if (count > 10) {
             clearInterval(applyDisabling);
           }
           $(".palette-tag")
             .siblings(".action-buttons")
             .find(".btn:last-child")
-            .css("pointer-events", "none");
+            .css("pointer-events", "none")
+            .attr("disabled", true);
           count++;
         }, 100);
       } else {
+        let count = 0;
+        console.log("REMOVING PALETTE DISABLING");
         let applyDisabling2 = setInterval(function() {
-          let count = 0;
-          if (count > 50) {
+          if (count > 10) {
             clearInterval(applyDisabling2);
           }
           $(".palette-tag")
             .siblings(".action-buttons")
             .find(".btn:last-child")
-            .css("pointer-events", "auto");
+            .css("pointer-events", "auto")
+            .attr("disabled", false);
           count++;
         }, 100);
       }
     };
 
-    // self.onEventUpdatedFiles = function(payload) {
-    //   if (!self.connected()) {
-    //     self.applyPaletteDisabling(true);
-    //   }
-    // };
+    self.handleGCODEFolders = function(payload) {
+      self.removeFolderBinding();
+      $("#files .gcode_files .entry.back.clickable").on("click", () => {
+        self.applyPaletteDisabling();
+      });
+    };
+
+    self.removeFolderBinding = function(payload) {
+      $("#files .gcode_files")
+        .find(".folder .title")
+        .removeAttr("data-bind")
+        .on("click", event => {
+          self.applyPaletteDisabling();
+        });
+    };
+
+    self.onEventFileRemoved = function(payload) {
+      self.applyPaletteDisabling();
+    };
+
+    self.onEventUpdatedFiles = function(payload) {
+      self.applyPaletteDisabling();
+    };
 
     self.onEventFileSelected = function(payload) {
+      self.applyPaletteDisabling();
       if (payload.name.includes(".mcf.gcode")) {
         if (!self.connected()) {
           swal({
@@ -386,6 +400,10 @@ $(function() {
           });
         }
       }
+    };
+
+    self.onEventFileDeselected = function(payload) {
+      self.applyPaletteDisabling();
     };
 
     self.onEventPrintStarted = function(payload) {
@@ -404,18 +422,34 @@ $(function() {
     };
 
     self.onEventPrintPaused = function(payload) {
-      if (payload.name.includes(".mcf.gcode")) {
-        if (self.printPaused === "True") {
-          $("#job_pause").attr("disabled", true);
-        }
+      if (self.connected() && payload.name.includes(".mcf.gcode")) {
+        let applyDisablingResume = setInterval(function() {
+          let count = 0;
+          if (count > 50) {
+            clearInterval(applyDisablingResume);
+          }
+          $("body")
+            .find("#job_pause")
+            .attr("disabled", true);
+          count++;
+        }, 100);
       }
     };
 
     self.onEventPrintResumed = function(payload) {
-      if (payload.name.includes(".mcf.gcode")) {
-        if (self.printPaused === "False") {
-          $("#job_pause").attr("disabled", false);
-        }
+      if (self.connected() && payload.name.includes(".mcf.gcode")) {
+        let applyDisablingResume2 = setInterval(function() {
+          let count = 0;
+          if (count > 5) {
+            clearInterval(applyDisablingResume2);
+          }
+          console.log(
+            $("body")
+              .find("#job_pause")
+              .attr("disabled", false)
+          );
+          count++;
+        }, 500);
       }
     };
 
@@ -463,7 +497,7 @@ $(function() {
     };
 
     self.updateFilamentUsed = function() {
-      let filament = (Number(self.filaLength) / 1000.0).toFixed(1) + "m";
+      let filament = (Number(self.filaLength) / 1000.0).toFixed(2) + "m";
       console.log(filament + "m");
       $(".filament-used span")
         .html("")
@@ -492,7 +526,7 @@ $(function() {
           .attr("disabled", true);
         self.connectionStateMsg("Connected");
         self.connected(true);
-        // self.applyPaletteDisabling();
+        self.applyPaletteDisabling();
       } else {
         $("#connection-state-msg")
           .removeClass("text-success")
@@ -504,7 +538,7 @@ $(function() {
           .attr("disabled", false);
         self.connectionStateMsg("Not Connected");
         self.connected(false);
-        // self.applyPaletteDisabling();
+        self.applyPaletteDisabling();
       }
     };
 
@@ -542,10 +576,16 @@ $(function() {
             type: "info"
           }).then(res => {
             $("body")
-              .find(`#temperature-table .input-mini.input-nospin`)
+              .find("#control-jog-extrusion .input-mini.text-right")
               .addClass("highlight-glow")
               .on("focus", event => {
                 $(event.target).removeClass("highlight-glow");
+              });
+            $("body")
+              .find("#control-jog-extrusion > div :nth-child(3)")
+              .addClass("highlight-glow-border")
+              .on("focus", event => {
+                $(event.target).removeClass("highlight-glow-border");
               });
           });
         }
@@ -556,11 +596,6 @@ $(function() {
         self.jogId = "#jog-filament-notification";
         $(".side-notifications-list").append(notification);
       }
-      // else if (self.currentStatus === "Preparing splices") {
-      //   if (swal.isVisible()) {
-      //     swal.close();
-      //   }
-      // }
     };
 
     self.changeAlertSettings = function(condition) {
@@ -683,7 +718,7 @@ $(function() {
                 text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
                 type: "info",
                 input: "checkbox",
-                inputPlaceholder: "Don't show me these setup alerts anymore."
+                inputPlaceholder: "Don't show me these setup alerts anymore"
               });
             }
           } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
@@ -723,7 +758,6 @@ $(function() {
         contentType: "application/json; charset=UTF-8",
         success: self.fromResponse
       });
-
       // swal({
       // title: "You are about to print with Palette 2",
       // text:

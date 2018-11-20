@@ -139,15 +139,12 @@ class Omega():
                 if 'O20' in line:
                     # send next line of data
                     self.sendNextData(int(line[5]))
-                elif "O32" in line:
-                    # resume print
-                    self.printPaused = True
+                elif "O40" in line:
+                    self.printPaused = False
+                    self.currentStatus = "Preparing splices"
                     self.updateUI()
                     self._printer.toggle_pause_print()
-                    if line == "O32":
-                        self.currentStatus = "Preparing splices"
-                        self.updateUI()
-                        self._logger.info("Splices being prepared.")
+                    self._logger.info("Splices being prepared.")
                 elif "O50" in line:
                     # get file list
                     pass
@@ -421,8 +418,6 @@ class Omega():
 
     def sendPrintStart(self):
         self._logger.info("Omega toggle pause")
-        self.printPaused = False
-        self.updateUI()
         self._printer.toggle_pause_print()
 
     def sendAutoloadOn(self):

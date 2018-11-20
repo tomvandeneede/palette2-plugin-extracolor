@@ -97,7 +97,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.startSingleColor()
         elif command == "startSpliceDemo":
             self._logger.info("Starting a splice demo")
-
             # pass the file path to Omega
             path = self._settings.getBaseFolder("uploads") + "/" + data["file"]
             # self.palette.setFilepath(data["file"])
