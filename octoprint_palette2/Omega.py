@@ -28,11 +28,7 @@ class Omega():
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
             omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
-            # MAC OS
             omegaPort += glob.glob('/dev/*usbserial*')
-            # WINDOWS
-            # LINUX
-            # PLACEHOLDER
             if len(omegaPort) > 0:
                 try:
                     self.omegaSerial = serial.Serial(
@@ -184,9 +180,19 @@ class Omega():
                             self.updateUI()
                             self._logger.info("FINISHED LOADING LAST DRIVE")
                     elif "U0" in line:
-                        self.currentStatus = "Palette work completed: all splices prepared"
-                        self.updateUI()
-                        self._logger.info("Palette work is done.")
+                        if "D0" in line:
+                            self._logger.info("CANCELLING START")
+                            self._printer.cancel_print()
+                            self.currentStatus = "Cancelling Print"
+                            self.updateUI()
+                        elif "D1" in line:
+                            self._logger.info("CANCELLING END")
+                            self.currentStatus = "Print Cancelled"
+                            self.updateUI()
+                        else:
+                            self.currentStatus = "Palette work completed: all splices prepared"
+                            self.updateUI()
+                            self._logger.info("Palette work is done.")
                 elif "Connection Okay" in line:
                     self.heartbeat = True
                 elif "UI:" in line:

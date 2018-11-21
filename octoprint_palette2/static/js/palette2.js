@@ -308,14 +308,9 @@ $(function() {
       var activeDrive = $("#omega-ad button.active").innerHTML;
     };
 
-    self.fromResponse = function() {
-      // console.log("SUCCESS");
-    };
+    self.fromResponse = function() {};
 
-    self.onAllBound = function(allViewModels) {
-      // self.removeFolderBinding();
-      // self.handleGCODEFolders();
-    };
+    self.onAllBound = function(allViewModels) {};
 
     self.findCurrentFilename = function() {
       self.currentFile = $("#state_wrapper")
@@ -330,9 +325,6 @@ $(function() {
     };
 
     self.applyPaletteDisabling = function() {
-      console.log("PRINTER: " + self.printerConnected);
-      console.log("P2: " + self.connected());
-      console.log(self.currentFile);
       if (self.printerConnected) {
         if (!self.connected()) {
           let count = 0;
@@ -474,16 +466,9 @@ $(function() {
     };
 
     self.onEventPrintResumed = function(payload) {
-      console.log("GOT TO EVENT PRINT RESUMED");
-      console.log(self.connected());
-      console.log(payload.name);
-
       if (self.connected() && payload.name.includes(".mcf.gcode")) {
-        console.log("GOT INSIDE IF");
         let count = 0;
         let applyDisablingResume2 = setInterval(function() {
-          console.log("GOT LOOP");
-
           if (count > 50) {
             clearInterval(applyDisablingResume2);
           }
@@ -498,6 +483,8 @@ $(function() {
 
     self.onEventPrintCancelled = function(payload) {
       if (payload.name.includes(".mcf.gcode")) {
+        self.currentStatus = "Print cancelled";
+        self.updateCurrentStatus();
         self.sendCancelCmd();
       }
     };
@@ -517,6 +504,8 @@ $(function() {
           }
         });
     };
+
+    self.onEventPrintDone = function(payload) {};
 
     self.startSingleColor = function() {
       var activeDrive = $("#omega-mod-ad button.active")[0].innerHTML;
@@ -631,6 +620,12 @@ $(function() {
             </li>`).hide();
         self.jogId = "#jog-filament-notification";
         $(".side-notifications-list").append(notification);
+      } else if (self.currentStatus === "Cancelling Print") {
+        swal({
+          title: "Print cancelling ",
+          text: `Please remove filament from the extruder.`,
+          type: "info"
+        });
       }
     };
 
