@@ -54,6 +54,7 @@ $(function() {
     self.jogId = "";
     self.displayAlerts = true;
     self.tryingToConnect = false;
+    self.currentFile = "";
 
     self.jogDrives = ko.observableArray(["1", "2", "3", "4", "Out"]);
     self.files = ko.observableArray([]);
@@ -86,7 +87,6 @@ $(function() {
     });
 
     self.refreshDemoList = function() {
-      console.log("API KEY", UI_API_KEY);
       var payload = {};
       $.ajax({
         headers: {
@@ -98,14 +98,11 @@ $(function() {
         data: JSON.stringify(payload),
         contentType: "application/json; charset=UTF-8",
         success: function(d) {
-          console.log("SUCCESS ~~~", d);
           self.files(
             d.files.map(function(file, index) {
-              console.log(index, file);
               return file.name;
             })
           );
-          console.log(self.files);
         }
       });
     };
@@ -121,8 +118,6 @@ $(function() {
     };
 
     self.connectOmega = function() {
-      console.log("Connect omega");
-
       self.tryingToConnect = true;
       self.loadingOverlay(true);
 
@@ -161,10 +156,8 @@ $(function() {
     };
 
     self.sendOmegaCmd = function(command, payload) {
-      console.log("Sending omega command");
       var payload = {
         command: "sendOmegaCmd",
-        // command: command,
         cmd: self.omegaCommand()
       };
       $.ajax({
@@ -178,7 +171,6 @@ $(function() {
     };
 
     self.connectWifi = function() {
-      console.log("Connecting to Wifi");
       var payload = {
         command: "connectWifi",
         wifiSSID: self.wifiSSID(),
@@ -195,7 +187,6 @@ $(function() {
     };
 
     self.sendJogCmd = function() {
-      console.log("Send jog command called");
       var drive = parseInt(self.selectedJogDriveObs());
       var dist = parseInt(self.selectedJogDistance());
 
@@ -206,9 +197,6 @@ $(function() {
       } else {
         drive += 9;
       }
-
-      console.log(drive);
-      console.log(dist);
 
       if (dist) {
         var payload = {
@@ -228,7 +216,6 @@ $(function() {
     };
 
     self.sendStopIndefJogCmd = function() {
-      console.log("Send stop indef jog command");
       var payload = {
         command: "stopIndefJog"
       };
@@ -243,7 +230,6 @@ $(function() {
     };
 
     self.sendCutCmd = function() {
-      console.log("Sending cut command");
       var payload = {
         command: "sendCutCmd"
       };
@@ -259,9 +245,7 @@ $(function() {
 
     self.sendClearOutCmd = function() {
       var payload = {
-        command: "sendJogCmd",
-        drive: 18,
-        dist: 150
+        command: "clearPalette2"
       };
 
       $.ajax({
@@ -319,32 +303,30 @@ $(function() {
 
     self.setAD = function() {
       var activeDrive = $("#omega-ad button.active").innerHTML;
-      console.log("Active Drive " + activeDrive);
     };
 
     self.fromResponse = function() {
-      console.log("SUCCESS");
+      // console.log("SUCCESS");
     };
 
     self.onAllBound = function(allViewModels) {
-      console.log(allViewModels);
-      console.log(self.settings);
-      self.removeFolderBinding();
-      self.handleGCODEFolders();
+      // self.removeFolderBinding();
+      // self.handleGCODEFolders();
     };
 
     self.onStartupComplete = function() {
-      console.log("P2 startup finished");
+      self.currentFile = $("#state_wrapper")
+        .find(`strong[title]`)
+        .text();
       self.removeFolderBinding();
       self.handleGCODEFolders();
     };
 
     self.applyPaletteDisabling = function() {
       if (!self.connected()) {
-        console.log("APPLYING PALETTE DISABLING");
         let count = 0;
         let applyDisabling = setInterval(function() {
-          if (count > 10) {
+          if (count > 20) {
             clearInterval(applyDisabling);
           }
           $(".palette-tag")
@@ -352,14 +334,18 @@ $(function() {
             .find(".btn:last-child")
             .css("pointer-events", "none")
             .attr("disabled", true);
-          // $("#job_print").attr("disabled", true);
+
           count++;
+          if (self.currentFile.includes(".mcf.gcode")) {
+            $("#job_print").attr("disabled", true);
+          } else if (!self.currentFile.includes(".mcf.gcode")) {
+            $("#job_print").attr("disabled", false);
+          }
         }, 100);
       } else {
         let count = 0;
-        console.log("REMOVING PALETTE DISABLING");
         let applyDisabling2 = setInterval(function() {
-          if (count > 10) {
+          if (count > 20) {
             clearInterval(applyDisabling2);
           }
           $(".palette-tag")
@@ -367,8 +353,8 @@ $(function() {
             .find(".btn:last-child")
             .css("pointer-events", "auto")
             .attr("disabled", false);
-          // $("#job_print").attr("disabled", false);
           count++;
+          $("#job_print").attr("disabled", false);
         }, 100);
       }
     };
@@ -398,7 +384,9 @@ $(function() {
     };
 
     self.onEventFileSelected = function(payload) {
-      if (payload.name.includes(".mcf.gcode")) {
+      self.currentFile = payload.name;
+
+      if (self.currentFile.includes(".mcf.gcode")) {
         self.applyPaletteDisabling();
         if (!self.connected()) {
           swal({
@@ -415,10 +403,8 @@ $(function() {
     };
 
     self.onEventPrintStarted = function(payload) {
-      console.log(payload.name);
       if (payload.name.includes(".mcf.gcode")) {
         if (self.connected()) {
-          // self.showOmegaDialog();
           if (self.displayAlerts) {
             swal({
               title: "You are about to print with Palette 2",
@@ -433,31 +419,29 @@ $(function() {
 
     self.onEventPrintPaused = function(payload) {
       if (self.connected() && payload.name.includes(".mcf.gcode")) {
+        let count = 0;
         let applyDisablingResume = setInterval(function() {
-          let count = 0;
-          if (count > 50) {
+          if (count > 5) {
             clearInterval(applyDisablingResume);
           }
           $("body")
             .find("#job_pause")
             .attr("disabled", true);
           count++;
-        }, 100);
+        }, 500);
       }
     };
 
     self.onEventPrintResumed = function(payload) {
       if (self.connected() && payload.name.includes(".mcf.gcode")) {
+        let count = 0;
         let applyDisablingResume2 = setInterval(function() {
-          let count = 0;
           if (count > 5) {
             clearInterval(applyDisablingResume2);
           }
-          console.log(
-            $("body")
-              .find("#job_pause")
-              .attr("disabled", false)
-          );
+          $("body")
+            .find("#job_pause")
+            .attr("disabled", false);
           count++;
         }, 500);
       }
@@ -465,13 +449,11 @@ $(function() {
 
     self.onEventPrintCancelled = function(payload) {
       if (payload.name.includes(".mcf.gcode")) {
-        console.log("PRINT IS CANCELLED!");
         self.sendCancelCmd();
       }
     };
 
     self.showOmegaDialog = function() {
-      //self.currentSplice(self.spliceNumber);
       self.loadingColor("Blue");
       self.omegaDialog
         .modal({
@@ -490,7 +472,6 @@ $(function() {
     self.startSingleColor = function() {
       var activeDrive = $("#omega-mod-ad button.active")[0].innerHTML;
       activeDrive = activeDrive - 1;
-      console.log(activeDrive);
       var payload = {
         command: "startSingleColor",
         drive: activeDrive
@@ -508,7 +489,6 @@ $(function() {
 
     self.updateFilamentUsed = function() {
       let filament = (Number(self.filaLength) / 1000.0).toFixed(2) + "m";
-      console.log(filament + "m");
       $(".filament-used span")
         .html("")
         .text(filament);
@@ -520,7 +500,6 @@ $(function() {
 
     self.updateTotalSplices = function() {
       let totalSplices = " / " + self.nSplices() + " Splices";
-      console.log(totalSplices);
       $(".total-splices").text(totalSplices);
     };
 
@@ -624,11 +603,8 @@ $(function() {
 
     self.onDataUpdaterPluginMessage = function(pluginIdent, message) {
       if (pluginIdent === "palette2") {
-        console.log(message);
-        // console.log("Message from " + pluginIdent + ": " + message);
         if (message.includes("UI:currentSplice")) {
           var num = message.substring(17);
-          console.log("Current splice " + num);
           self.currentSplice(num);
           self.updateCurrentSplice();
         } else if (message.includes("UI:DisplayAlerts")) {
@@ -661,7 +637,6 @@ $(function() {
           var colorHex = message.substring(11, 12);
           var colorDec = parseInt("0x" + colorHex);
           var color = colors[colorDec];
-          console.log("loading drive #:" + drive + " with " + color);
 
           if ($("#loading-span").hasClass("hide")) {
             $("#loading-span").removeClass("hide");
@@ -674,21 +649,18 @@ $(function() {
         } else if (message.includes("UI:nSplices")) {
           var ns = message.substring(12);
           self.nSplices(ns);
-          console.log(self.nSplices());
           self.updateTotalSplices();
         } else if (message.includes("UI:Ponging")) {
           self.updatePongMsg(true);
         } else if (message.includes("UI:Finished Pong")) {
           self.updatePongMsg(false);
         } else if (message.includes("UI:Con=")) {
-          console.log("Checking connection state");
           self.loadingOverlay(false);
           if (message.includes("True")) {
             self.tryingToConnect = false;
             self.updateConnection(true);
           } else {
             self.updateConnection(false);
-            console.log("Trying To Connect: " + self.tryingToConnect);
             if (self.tryingToConnect) {
               self.tryingToConnect = false;
               $("body").on("click", "#swal2-checkbox", event => {
@@ -705,7 +677,6 @@ $(function() {
           self.refreshDemoList();
         } else if (message.includes("UI:FilamentLength")) {
           self.filaLength = message.substring(18);
-          console.log("Filament Length: " + self.filaLength);
           self.updateFilamentUsed();
         } else if (message.includes("UI:currentStatus")) {
           if (message.substring(17) !== self.currentStatus) {
@@ -714,9 +685,6 @@ $(function() {
           }
         } else if (message.includes("UI:AmountLeftToExtrude")) {
           self.amountLeftToExtrude = message.substring(23);
-          console.log(self.amountLeftToExtrude);
-          console.log(self.amountLeftToExtrude.length);
-          console.log($("#jog-filament-notification").is(":visible"));
 
           if (self.amountLeftToExtrude === "0") {
             $(self.jogId).fadeOut(500, function() {
@@ -732,7 +700,6 @@ $(function() {
               });
             }
           } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
-            console.log($(self.jogId));
             $(self.jogId)
               .fadeIn(200)
               .find(".jog-filament-value")
@@ -744,7 +711,6 @@ $(function() {
           }
         } else if (message.includes("UI:PalettePausedPrint")) {
           self.printPaused = message.substring(22);
-          console.log("PRINT PAUSED: " + self.printPaused);
         }
       }
 
@@ -765,35 +731,8 @@ $(function() {
         type: "POST",
         dataType: "json",
         data: JSON.stringify(payload),
-        contentType: "application/json; charset=UTF-8",
-        success: self.fromResponse
+        contentType: "application/json; charset=UTF-8"
       });
-      // swal({
-      // title: "You are about to print with Palette 2",
-      // text:
-      //   "Your print has temporarily been paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
-      // type: "info"
-      // });
-      // swal({
-      // title: "Pre-heat your printer",
-      // text:
-      //   "Palette 2 is now making filament. In the meantime, please pre-heat your printer using the controls in the Temperature Tab.",
-      // type: "info"
-      // });
-      // REDIRECT
-      // KEEP THIS POSITION AND PUT THE EXTRUDING TEXT INSTEAD
-      // swal({
-      //   title: "Filament Is Ready",
-      //   text:
-      //     "Please follow the instructions on the Palette Screen. Press OK when you are at the filament jogging step.",
-      //   type: "info"
-      // });
-      // REMOVE THE EVENT LISETNER FOR BELOW, BUT KEEP TEXT FOR ABOVE.
-      // swal({
-      // title: "Follow instructions on Palette 2 ",
-      // text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
-      // type: "info"
-      // });
 
       // HAVE SOMETHING TO DISABLE THESE SETUP TUTORIALS
       // 1. No ongoing Palette 2 print
@@ -806,7 +745,6 @@ $(function() {
 
     self.startSpliceDemo = function() {
       if (self.selectedDemoFile()) {
-        console.log("Starting Splice Demo");
         var payload = {
           command: "startSpliceDemo",
           file: self.selectedDemoFile(),
@@ -818,8 +756,7 @@ $(function() {
           type: "POST",
           dataType: "json",
           data: JSON.stringify(payload),
-          contentType: "application/json; charset=UTF-8",
-          success: self.fromResponse
+          contentType: "application/json; charset=UTF-8"
         });
       }
     };

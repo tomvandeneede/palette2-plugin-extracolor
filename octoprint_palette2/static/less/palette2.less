@@ -44,16 +44,16 @@ input[type="text"] {
 }
 
 .highlight-glow {
-  animation: highlight 1.5s infinite;
+  animation: highlight 1.5s 10;
 }
 
 .highlight-glow-border {
-  animation: highlight-border 1.5s infinite;
+  animation: highlight-border 1.5s 10;
 }
 
 @keyframes highlight {
   0% {
-    background: #ffff99; /* lovely yellow colour */
+    background: #ffff99;
   }
   100% {
     background: none;
@@ -62,7 +62,7 @@ input[type="text"] {
 
 @keyframes highlight-border {
   0% {
-    color: #ffff99; /* lovely yellow colour */
+    color: #ffff99;
     background: rgba(54, 54, 54, 0.7);
   }
   100% {
