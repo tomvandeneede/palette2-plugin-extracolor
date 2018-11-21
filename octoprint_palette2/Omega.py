@@ -9,7 +9,6 @@ from Queue import Queue
 
 class Omega():
     def __init__(self, plugin):
-        plugin._logger.info("Hello from Omega!")
         self._logger = plugin._logger
         self._printer = plugin._printer
         self._plugin_manager = plugin._plugin_manager
@@ -281,6 +280,13 @@ class Omega():
         self._logger.info("Omega: Sending Cut command")
         cutCmd = "O10 D5"
         self.enqueueCmd(cutCmd)
+
+    def clear(self):
+        self._logger.info("Omega: Sending Clear command")
+        clearCmds = ["O10 D5", "O10 D0 D0 D0 DFFE1", "O10 D1 D0 D0 DFFE1",
+                     "O10 D2 D0 D0 DFFE1", "O10 D3 D0 D0 DFFE1", "O10 D4 D0 D0 D0069"]
+        for command in clearCmds:
+            self.enqueueCmd(command)
 
     def sendCmd(self, cmd):
         self._logger.info("Omega: Sending '%s'" % cmd)

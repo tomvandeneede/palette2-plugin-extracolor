@@ -25,31 +25,10 @@
 				</ul>
 			</div>
 			<hr>
-			<div class="row">
+			<div class="row" style="margin-bottom: 20px">
 				<h4 class="manual-controls">Manual Controls</h4>
-				<div style="margin-top: 10px">
-					<h5>Move Drives:</h5>
-					<select data-bind="options: jogDrives, value: selectedJogDriveObs , enable: connected"></select>
-					<select data-bind="options: jogDists, value: selectedJogDistance, optionsText: 'distance', optionsValue: 'dvalue', enable: connected"></select>
-					<button class="btn btn-primary" data-bind="click: sendJogCmd, enable: connected">Run</button>
-					<div class="checkbox">
-						<label><input type="checkbox" data-bind="checked: jogWithOutgoing, enable: connected">With Outgoing</label>
-					</div>
-				</div>
-			</div>
-			<div class="row">
-				<h5>Other Controls:</h5>
 				<button type="button" class="btn btn-primary" data-bind="click: sendCutCmd, enable: connected">Cut</button>
 				<button type="button" class="btn btn-primary" data-bind="click: sendClearOutCmd, enable: connected">Clear Palette</button>
 			</div>
-			<div class="row" style="margin-top: 7px; margin-bottom: 10px">
-				<h5>Send Command to Palette:</h5>
-				<input type="text" data-bind="value: omegaCommand, enable: connected">
-				<button class="btn btn-primary" data-bind="click: sendOmegaCmd, enable: connected">Send</button>
-			</div>
 	</div>
-</div>
-
-<div id="omega_dialog" class="modal hide fade large">
-    <div>Follow the instructions on your Palette</div>
 </div>

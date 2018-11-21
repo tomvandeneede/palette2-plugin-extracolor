@@ -20,6 +20,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                octoprint.plugin.ShutdownPlugin):
 
     def on_after_startup(self):
+        self._logger.info("Palette 2 Plugin STARTED")
+
         if os.path.isdir("/home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"):
             self._logger.info("found bad file")
             call(["sudo rm -rf /home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"], shell=True)
@@ -67,7 +69,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
         if command == "cancelPalette2":
             self._logger.info("Cancelling print")
-            self.palette.gotOmegaCmd("O0")
+            # self.palette.gotOmegaCmd("O0")
+            self.palette.enqueueCmd("O0")
         elif command == "clearPalette2":
             self.palette.clear()
         elif command == "connectOmega":
