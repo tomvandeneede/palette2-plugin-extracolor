@@ -584,7 +584,7 @@ $(function() {
             type: "info"
           }).then(res => {
             $("body")
-              .find(`#temperature-table .input-mini.input-nospin`)
+              .find(`#temperature-table .input-mini.input-nospin:first`)
               .addClass("highlight-glow")
               .on("focus", event => {
                 $(event.target).removeClass("highlight-glow");
