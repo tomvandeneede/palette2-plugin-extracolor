@@ -69,7 +69,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
         if command == "cancelPalette2":
             self._logger.info("Cancelling print")
-            self.palette.gotOmegaCmd("O0")
+            # self.palette.gotOmegaCmd("O0")
+            self.palette.enqueueCmd("O0")
         elif command == "clearPalette2":
             self.palette.clear()
         elif command == "connectOmega":
