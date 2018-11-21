@@ -55,6 +55,7 @@ $(function() {
     self.displayAlerts = true;
     self.tryingToConnect = false;
     self.currentFile = "";
+    self.printerConnected = false;
 
     self.jogDrives = ko.observableArray(["1", "2", "3", "4", "Out"]);
     self.files = ko.observableArray([]);
@@ -131,8 +132,9 @@ $(function() {
         type: "POST",
         dataType: "json",
         data: JSON.stringify(payload),
-        contentType: "application/json; charset=UTF-8",
-        success: self.fromResponse
+        contentType: "application/json; charset=UTF-8"
+      }).then(res => {
+        self.applyPaletteDisabling();
       });
     };
 
@@ -150,8 +152,9 @@ $(function() {
         type: "POST",
         dataType: "json",
         data: JSON.stringify(payload),
-        contentType: "application/json; charset=UTF-8",
-        success: self.fromResponse
+        contentType: "application/json; charset=UTF-8"
+      }).then(res => {
+        self.applyPaletteDisabling();
       });
     };
 
@@ -314,47 +317,74 @@ $(function() {
       // self.handleGCODEFolders();
     };
 
-    self.onStartupComplete = function() {
+    self.findCurrentFilename = function() {
       self.currentFile = $("#state_wrapper")
         .find(`strong[title]`)
         .text();
+    };
+
+    self.onStartupComplete = function() {
+      self.findCurrentFilename();
       self.removeFolderBinding();
       self.handleGCODEFolders();
     };
 
     self.applyPaletteDisabling = function() {
-      if (!self.connected()) {
-        let count = 0;
-        let applyDisabling = setInterval(function() {
-          if (count > 20) {
-            clearInterval(applyDisabling);
-          }
-          $(".palette-tag")
-            .siblings(".action-buttons")
-            .find(".btn:last-child")
-            .css("pointer-events", "none")
-            .attr("disabled", true);
+      console.log("PRINTER: " + self.printerConnected);
+      console.log("P2: " + self.connected());
+      console.log(self.currentFile);
+      if (self.printerConnected) {
+        if (!self.connected()) {
+          let count = 0;
+          let applyDisabling = setInterval(function() {
+            if (count > 20) {
+              clearInterval(applyDisabling);
+            }
+            $(".palette-tag")
+              .siblings(".action-buttons")
+              .find(".btn:last-child")
+              .css("pointer-events", "none")
+              .attr("disabled", true);
 
-          count++;
-          if (self.currentFile.includes(".mcf.gcode")) {
+            count++;
+            if (self.currentFile.includes(".mcf.gcode")) {
+              $("#job_print").attr("disabled", true);
+            } else if (self.currentFile && !self.currentFile.includes(".mcf.gcode")) {
+              $("#job_print").attr("disabled", false);
+            }
+          }, 100);
+        } else if (!self.currentFile) {
+          let count = 0;
+          let applyDisabling3 = setInterval(function() {
+            if (count > 20) {
+              clearInterval(applyDisabling3);
+            }
             $("#job_print").attr("disabled", true);
-          } else if (!self.currentFile.includes(".mcf.gcode")) {
+            count++;
+          }, 100);
+        } else {
+          let count = 0;
+          let applyDisabling2 = setInterval(function() {
+            if (count > 20) {
+              clearInterval(applyDisabling2);
+            }
+            $(".palette-tag")
+              .siblings(".action-buttons")
+              .find(".btn:last-child")
+              .css("pointer-events", "auto")
+              .attr("disabled", false);
             $("#job_print").attr("disabled", false);
-          }
-        }, 100);
+            count++;
+          }, 100);
+        }
       } else {
         let count = 0;
-        let applyDisabling2 = setInterval(function() {
+        let applyDisabling3 = setInterval(function() {
           if (count > 20) {
-            clearInterval(applyDisabling2);
+            clearInterval(applyDisabling3);
           }
-          $(".palette-tag")
-            .siblings(".action-buttons")
-            .find(".btn:last-child")
-            .css("pointer-events", "auto")
-            .attr("disabled", false);
+          $("#job_print").attr("disabled", true);
           count++;
-          $("#job_print").attr("disabled", false);
         }, 100);
       }
     };
@@ -373,6 +403,17 @@ $(function() {
         .on("click", event => {
           self.applyPaletteDisabling();
         });
+    };
+
+    self.onEventConnected = function(payload) {
+      self.printerConnected = true;
+      self.findCurrentFilename();
+      self.applyPaletteDisabling();
+    };
+
+    self.onEventDisconnected = function(payload) {
+      self.printerConnected = false;
+      self.applyPaletteDisabling();
     };
 
     self.onEventFileRemoved = function(payload) {
@@ -421,29 +462,37 @@ $(function() {
       if (self.connected() && payload.name.includes(".mcf.gcode")) {
         let count = 0;
         let applyDisablingResume = setInterval(function() {
-          if (count > 5) {
+          if (count > 50) {
             clearInterval(applyDisablingResume);
           }
           $("body")
             .find("#job_pause")
             .attr("disabled", true);
           count++;
-        }, 500);
+        }, 100);
       }
     };
 
     self.onEventPrintResumed = function(payload) {
+      console.log("GOT TO EVENT PRINT RESUMED");
+      console.log(self.connected());
+      console.log(payload.name);
+
       if (self.connected() && payload.name.includes(".mcf.gcode")) {
+        console.log("GOT INSIDE IF");
         let count = 0;
         let applyDisablingResume2 = setInterval(function() {
-          if (count > 5) {
+          console.log("GOT LOOP");
+
+          if (count > 50) {
             clearInterval(applyDisablingResume2);
           }
           $("body")
             .find("#job_pause")
             .attr("disabled", false);
+          $("#job_print").attr("disabled", true);
           count++;
-        }, 500);
+        }, 100);
       }
     };
 
@@ -503,8 +552,8 @@ $(function() {
       $(".total-splices").text(totalSplices);
     };
 
-    self.updateConnection = function(condition) {
-      if (condition) {
+    self.updateConnection = function() {
+      if (self.connected()) {
         $("#connection-state-msg")
           .removeClass("text-muted")
           .addClass("text-success")
@@ -514,7 +563,6 @@ $(function() {
           .addClass("disabled")
           .attr("disabled", true);
         self.connectionStateMsg("Connected");
-        self.connected(true);
         self.applyPaletteDisabling();
       } else {
         $("#connection-state-msg")
@@ -526,7 +574,6 @@ $(function() {
           .removeClass("disabled")
           .attr("disabled", false);
         self.connectionStateMsg("Not Connected");
-        self.connected(false);
         self.applyPaletteDisabling();
       }
     };
@@ -658,9 +705,11 @@ $(function() {
           self.loadingOverlay(false);
           if (message.includes("True")) {
             self.tryingToConnect = false;
-            self.updateConnection(true);
+            self.connected(true);
+            self.updateConnection();
           } else {
-            self.updateConnection(false);
+            self.connected(false);
+            self.updateConnection();
             if (self.tryingToConnect) {
               self.tryingToConnect = false;
               $("body").on("click", "#swal2-checkbox", event => {
@@ -711,6 +760,15 @@ $(function() {
           }
         } else if (message.includes("UI:PalettePausedPrint")) {
           self.printPaused = message.substring(22);
+        } else if (message.includes("UI:PrinterCon")) {
+          let printerState = message.substring(14);
+          if (printerState) {
+            if (printerState === "Closed") {
+              self.printerConnected = false;
+            } else {
+              self.printerConnected = true;
+            }
+          }
         }
       }
 

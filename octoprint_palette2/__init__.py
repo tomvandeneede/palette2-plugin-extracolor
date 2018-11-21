@@ -125,7 +125,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_event(self, event, payload):
         if "ClientOpened" in event:
+            self.palette.printerConnection = self._printer.get_current_connection()[
+                0]
             self.palette.updateUI()
+            self.palette.printerConnection = ""
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.setFilename(payload["name"].split('.')[0])
