@@ -66,6 +66,7 @@ class Omega():
                 self.resetVariables()
                 self.resetConnection()
                 self.updateUI()
+            # self.startHeartbeatThread()
 
     def setFilename(self, name):
         self.filename = name
@@ -97,6 +98,15 @@ class Omega():
             self.writeThread.daemon = True
             self.writeThread.start()
 
+    def startHeartbeatThread(self):
+        self._logger.info("START HEARTBEAT THREAD FUNCTION")
+        if self.heartbeatThread is None:
+            self.heartbeatThreadStop = False
+            self.heartbeatThread = threading.Thread(
+                target=self.omegaHeartbeatThread, args=(self.omegaSerial,))
+            self.heartbeatThread.daemon = True
+            self.heartbeatThread.start()
+
     def startConnectionThread(self):
         if self.connectionThread is None:
             self.connectionThreadStop = False
@@ -123,13 +133,45 @@ class Omega():
             self.connectionThread.join()
         self.connectionThread = None
 
+    def stopHeartbeatThread(self):
+        self.heartbeatThreadStop = True
+        if self.heartbeatThread and threading.current_thread() != self.heartbeatThread:
+            self.heartbeatThread.join()
+        self.heartbeatThread = None
+
+    def omegaHeartbeatThread(self, serialConnection):
+        self._logger.info("Omega Heartbeat Thread: Starting thread")
+        while self.heartbeatThreadStop is False:
+            if self.heartbeat:
+                time.sleep(5)
+                self.heartbeat = False
+                self.enqueueCmd("O99")
+                timeout = 5
+                timeout_start = time.time()
+
+                while time.time() < timeout_start + timeout:
+                    if self.heartbeat:
+                        self._logger.info("PALETTE 2 IS STILL POWERED ON")
+                        self.heartbeat = True
+                        break
+                    else:
+                        pass
+            else:
+                self.resetOmega()
+                self.updateUI()
+
     def omegaReadThread(self, serialConnection):
         self._logger.info("Omega Read Thread: Starting thread")
         try:
             while self.readThreadStop is False:
                 line = serialConnection.readline()
+                self._logger.info("AFTER 1st LINE")
+                self._logger.info(line)
                 line = line.strip()
+                self._logger.info("AFTER 2nd LINE")
+                self._logger.info(line)
                 if line:
+                    self._logger.info("AFTER IF LINE")
                     self._logger.info("Omega: read in line: %s" % line)
                 if 'O20' in line:
                     # send next line of data
@@ -307,7 +349,6 @@ class Omega():
             self.omegaSerial.close()
 
     def updateUI(self):
-
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:FirstTime=%s" % self.firstTime)
@@ -364,6 +405,7 @@ class Omega():
 
         self.stopReadThread()
         self.stopWriteThread()
+        self.stopHeartbeatThread()
         if not self._settings.get(["autoconnect"]):
             self.stopConnectionThread()
 
@@ -413,6 +455,8 @@ class Omega():
         self.connectionThread = None
         self.connectionStop = False
         self.heartbeat = False
+
+        self.heartbeatThread = None
 
     def resetOmega(self):
         self.resetConnection()
