@@ -134,6 +134,10 @@ class Omega():
                 if 'O20' in line:
                     # send next line of data
                     self.sendNextData(int(line[5]))
+                    if "D5" in line:
+                        self._logger.info("FIRST TIME USE WITH PALETTE")
+                        self.firstTime = True
+                        self.updateUI()
                 elif "O40" in line:
                     self.printPaused = False
                     self.currentStatus = "Preparing splices"
@@ -306,6 +310,8 @@ class Omega():
 
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:FirstTime=%s" % self.firstTime)
+        self._plugin_manager.send_plugin_message(
             self._identifier, "UI:PrinterCon=%s" % self.printerConnection)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:DisplayAlerts=%s" % self.displayAlerts)
@@ -395,6 +401,7 @@ class Omega():
         self.amountLeftToExtrude = ""
         self.printPaused = ""
         self.printerConnection = ""
+        self.firstTime = False
 
         self.displayAlerts = self._settings.get(["palette2Alerts"])
 

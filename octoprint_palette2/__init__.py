@@ -131,9 +131,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.printerConnection = ""
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
-                self.palette.setFilename(payload["name"].split('.')[0])
                 self._logger.info("Filename: %s" %
                                   payload["name"].split('.')[0])
+                self.palette.setFilename(payload["name"].split(".")[0])
                 self.palette.currentStatus = "Initializing ..."
                 self.palette.updateUI()
         elif "FileAdded" in event:

@@ -56,6 +56,8 @@ $(function() {
     self.tryingToConnect = false;
     self.currentFile = "";
     self.printerConnected = false;
+    self.firstTime = false;
+    self.actualPrintStarted = false;
 
     self.jogDrives = ko.observableArray(["1", "2", "3", "4", "Out"]);
     self.files = ko.observableArray([]);
@@ -442,7 +444,7 @@ $(function() {
             swal({
               title: "You are about to print with Palette 2",
               text:
-                "Your print has temporarily been paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
+                "Your print will temporarily be paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
               type: "info"
             });
           }
@@ -451,7 +453,7 @@ $(function() {
     };
 
     self.onEventPrintPaused = function(payload) {
-      if (self.connected() && payload.name.includes(".mcf.gcode")) {
+      if (self.connected() && payload.name.includes(".mcf.gcode") && !self.actualPrintStarted) {
         let count = 0;
         let applyDisablingResume = setInterval(function() {
           if (count > 50) {
@@ -466,7 +468,7 @@ $(function() {
     };
 
     self.onEventPrintResumed = function(payload) {
-      if (self.connected() && payload.name.includes(".mcf.gcode")) {
+      if (self.connected() && payload.name.includes(".mcf.gcode") && !self.actualPrintStarted) {
         let count = 0;
         let applyDisablingResume2 = setInterval(function() {
           if (count > 50) {
@@ -573,6 +575,7 @@ $(function() {
         $(".current-status")
           .text(self.currentStatus)
           .addClass("completed");
+        self.actualPrintStarted = false;
       } else if (self.currentStatus === "Loading filament through outgoing tube") {
         if (self.displayAlerts) {
           let base_url = window.location.origin;
@@ -583,50 +586,72 @@ $(function() {
               "Palette 2 is now making filament. In the meantime, please pre-heat your printer using the controls in the Temperature Tab.",
             type: "info"
           }).then(res => {
-            $("body")
-              .find(`#temperature-table .input-mini.input-nospin:first`)
-              .addClass("highlight-glow")
-              .on("focus", event => {
-                $(event.target).removeClass("highlight-glow");
-              });
+            self.temperatureHighlight();
           });
         }
       } else if (self.currentStatus === "Loading filament into extruder") {
         if (self.displayAlerts) {
+          console.log("INSIDE EXTRUDE INSTRUCTIONS");
+          console.log(self.firstTime);
           let base_url = window.location.origin;
           window.location.href = `${base_url}/#control`;
-          swal({
-            title: "Follow instructions on Palette 2 ",
-            text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
-            type: "info"
-          }).then(res => {
-            $("body")
-              .find("#control-jog-extrusion .input-mini.text-right")
-              .addClass("highlight-glow")
-              .on("focus", event => {
-                $(event.target).removeClass("highlight-glow");
-              });
-            $("body")
-              .find("#control-jog-extrusion > div :nth-child(3)")
-              .addClass("highlight-glow-border")
-              .on("focus", event => {
-                $(event.target).removeClass("highlight-glow-border");
-              });
-          });
+          if (self.firstTime) {
+            swal({
+              title: "Follow instructions on Palette 2 ",
+              text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder until you see the desired color. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+              type: "info"
+            }).then(res => {
+              self.extrusionHighlight();
+            });
+          } else {
+            swal({
+              title: "Follow instructions on Palette 2 ",
+              text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+              type: "info"
+            }).then(res => {
+              self.extrusionHighlight();
+            });
+          }
+          let notification = $(`<li id="jog-filament-notification" class="popup-notification remove-popup">
+              <h6>Remaining length to extrude:</h6>
+              <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
+              </li>`).hide();
+          self.jogId = "#jog-filament-notification";
+          $(".side-notifications-list").append(notification);
         }
-        let notification = $(`<li id="jog-filament-notification" class="popup-notification">
-            <h6>Remaining length to extrude:</h6>
-            <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
-            </li>`).hide();
-        self.jogId = "#jog-filament-notification";
-        $(".side-notifications-list").append(notification);
       } else if (self.currentStatus === "Cancelling Print") {
         swal({
           title: "Print cancelling ",
           text: `Please remove filament from the extruder.`,
           type: "info"
         });
+      } else if (self.currentStatus === "Preparing splices") {
+        self.actualPrintStarted = true;
       }
+    };
+
+    self.temperatureHighlight = function() {
+      $("body")
+        .find(`#temperature-table .input-mini.input-nospin:first`)
+        .addClass("highlight-glow")
+        .on("focus", event => {
+          $(event.target).removeClass("highlight-glow");
+        });
+    };
+
+    self.extrusionHighlight = function() {
+      $("body")
+        .find("#control-jog-extrusion .input-mini.text-right")
+        .addClass("highlight-glow")
+        .on("focus", event => {
+          $(event.target).removeClass("highlight-glow");
+        });
+      $("body")
+        .find("#control-jog-extrusion > div :nth-child(3)")
+        .addClass("highlight-glow-border")
+        .on("focus", event => {
+          $(event.target).removeClass("highlight-glow-border");
+        });
     };
 
     self.changeAlertSettings = function(condition) {
@@ -645,6 +670,7 @@ $(function() {
 
     self.onDataUpdaterPluginMessage = function(pluginIdent, message) {
       if (pluginIdent === "palette2") {
+        console.log(message);
         if (message.includes("UI:currentSplice")) {
           var num = message.substring(17);
           self.currentSplice(num);
@@ -729,7 +755,6 @@ $(function() {
           }
         } else if (message.includes("UI:AmountLeftToExtrude")) {
           self.amountLeftToExtrude = message.substring(23);
-
           if (self.amountLeftToExtrude === "0") {
             $(self.jogId).fadeOut(500, function() {
               this.remove();
@@ -748,7 +773,7 @@ $(function() {
               .fadeIn(200)
               .find(".jog-filament-value")
               .text(`${self.amountLeftToExtrude}mm`);
-          } else if ($("#jog-filament-notification").is(":visible")) {
+          } else if (self.amountLeftToExtrude.length && $("#jog-filament-notification").is(":visible")) {
             $(self.jogId)
               .find(".jog-filament-value")
               .text(`${self.amountLeftToExtrude}mm`);
@@ -763,6 +788,17 @@ $(function() {
             } else {
               self.printerConnected = true;
             }
+          }
+        } else if (message.includes("UI:FirstTime")) {
+          console.log(message);
+          let firstTime = message.substring(13);
+          console.log(firstTime);
+          if (firstTime === "True") {
+            console.log(firstTime);
+            self.firstTime = true;
+            console.log(self.firstTime);
+          } else {
+            self.firstTime = false;
           }
         }
       }
@@ -786,14 +822,6 @@ $(function() {
         data: JSON.stringify(payload),
         contentType: "application/json; charset=UTF-8"
       });
-
-      // HAVE SOMETHING TO DISABLE THESE SETUP TUTORIALS
-      // 1. No ongoing Palette 2 print
-      // 2. Loading ingoing drives
-      // 3. Loading filament through outgoing tube
-      // 4. Loading filament into extruder
-      // 5. Preparing splices
-      // 6. Palette work completed: all splices prepared
     };
 
     self.startSpliceDemo = function() {
