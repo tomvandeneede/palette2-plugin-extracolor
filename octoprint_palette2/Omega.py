@@ -98,15 +98,6 @@ class Omega():
             self.writeThread.daemon = True
             self.writeThread.start()
 
-    def startHeartbeatThread(self):
-        self._logger.info("START HEARTBEAT THREAD FUNCTION")
-        if self.heartbeatThread is None:
-            self.heartbeatThreadStop = False
-            self.heartbeatThread = threading.Thread(
-                target=self.omegaHeartbeatThread, args=(self.omegaSerial,))
-            self.heartbeatThread.daemon = True
-            self.heartbeatThread.start()
-
     def startConnectionThread(self):
         if self.connectionThread is None:
             self.connectionThreadStop = False
@@ -132,33 +123,6 @@ class Omega():
         if self.connectionThread and threading.current_thread() != self.connectionThread:
             self.connectionThread.join()
         self.connectionThread = None
-
-    def stopHeartbeatThread(self):
-        self.heartbeatThreadStop = True
-        if self.heartbeatThread and threading.current_thread() != self.heartbeatThread:
-            self.heartbeatThread.join()
-        self.heartbeatThread = None
-
-    def omegaHeartbeatThread(self, serialConnection):
-        self._logger.info("Omega Heartbeat Thread: Starting thread")
-        while self.heartbeatThreadStop is False:
-            if self.heartbeat:
-                time.sleep(5)
-                self.heartbeat = False
-                self.enqueueCmd("O99")
-                timeout = 5
-                timeout_start = time.time()
-
-                while time.time() < timeout_start + timeout:
-                    if self.heartbeat:
-                        self._logger.info("PALETTE 2 IS STILL POWERED ON")
-                        self.heartbeat = True
-                        break
-                    else:
-                        pass
-            else:
-                self.resetOmega()
-                self.updateUI()
 
     def omegaReadThread(self, serialConnection):
         self._logger.info("Omega Read Thread: Starting thread")
@@ -276,34 +240,6 @@ class Omega():
 
     def enqueueCmd(self, line):
         self.writeQueue.put(line)
-
-    def startSpliceDemo(self, fileName, path, withPrinter):
-        self._logger.info("Starting splice demo")
-        f = open(path, "r")
-        for line in f:
-            if "cu" in line:
-                self.msfCU = line[3:7]
-                self._logger.info("Omega: setting CU to %s" % self.msfCU)
-            elif "ns" in line:
-                self.msfNS = line[3:7]
-                self._logger.info("Omega: setting NS to %s" % self.msfNS)
-            elif "(" in line:
-                splice = (line[2:3], line[4:12])
-                self._logger.info(
-                    "Omega: Adding Splice D: %s, Dist: %s" % (splice[0], splice[1]))
-                self.splices.append(splice)
-        f.close()
-        print(withPrinter)
-        if withPrinter is True:
-            self._logger.info("Omega: start Splice Demo w/ Printer")
-            if self.connected:
-                cmd = "O3 D" + fileName + "\n"
-                self.enqueueCmd(cmd)
-        else:
-            self._logger.info("Omega: start Splice Demo w/o printer")
-            if self.connected:
-                cmd = "O3 D" + fileName + "\n"
-                self.enqueueCmd(cmd)
 
     def startJog(self, drive, dist):
         self._logger.info("Jog command received")

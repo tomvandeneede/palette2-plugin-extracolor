@@ -57,7 +57,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             sendJogCmd=["drive", "dist"],
             setActiveDrive=["drive"],
             startSingleColor=[],
-            startSpliceDemo=["file", "withPrinter"],
             stopIndefJog=[],
             testPrinterCommands=[],
             uiUpdate=[],
@@ -99,13 +98,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                     "Starting single color with drive %s" % data["drive"])
                 self.palette.setActiveDrive(data["drive"])
             self.palette.startSingleColor()
-        elif command == "startSpliceDemo":
-            self._logger.info("Starting a splice demo")
-            # pass the file path to Omega
-            path = self._settings.getBaseFolder("uploads") + "/" + data["file"]
-            # self.palette.setFilepath(data["file"])
-            self.palette.startSpliceDemo(
-                data["file"], path, data["withPrinter"])
         elif command == "stopIndefJog":
             self._logger.info("Stopping indef jog")
             self.palette.stopIndefJog()
@@ -211,7 +203,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 command="/home/pi/test-version.sh",
 
                 # update method: pip
-                pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/plugin-refactor/palette-2-plugin-master.zip"
+                pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/master/palette-2-plugin-master.zip"
             )
         )
 
