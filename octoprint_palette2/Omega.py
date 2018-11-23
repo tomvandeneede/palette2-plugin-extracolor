@@ -210,6 +210,7 @@ class Omega():
         while self.writeThreadStop is False:
             try:
                 line = self.writeQueue.get(True, 0.5)
+                self.lastCommandSent = line
                 line = line.strip()
                 line = line + "\n"
                 self._logger.info("Omega Write Thread: Sending: %s" % line)
@@ -343,6 +344,9 @@ class Omega():
             cmdStr = "O30 D%d D%s\n" % (int(splice[0]), splice[1])
             self.enqueueCmd(cmdStr)
             self.spliceCounter = self.spliceCounter + 1
+        elif dataNum == 8:
+            self._logger.info("Need to resend last line")
+            self.enqueueCmd(self.lastCommandSent)
 
     def resetConnection(self):
         self._logger.info("Resetting read and write threads")
@@ -397,6 +401,7 @@ class Omega():
         self.connectionThread = None
         self.connectionStop = False
         self.heartbeat = False
+        self.lastCommandSent = ""
 
     def resetOmega(self):
         self.resetConnection()
