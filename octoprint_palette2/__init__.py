@@ -23,7 +23,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self._logger.info("Palette 2 Plugin STARTED")
 
         if os.path.isdir("/home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"):
-            self._logger.info("found bad file")
             call(["sudo rm -rf /home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"], shell=True)
         self.palette = Omega.Omega(self)
 

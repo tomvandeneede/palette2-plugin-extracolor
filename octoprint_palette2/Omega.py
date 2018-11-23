@@ -164,14 +164,11 @@ class Omega():
         self._logger.info("Omega Read Thread: Starting thread")
         try:
             while self.readThreadStop is False:
+                # self._logger.info('TRYING TO READ')
                 line = serialConnection.readline()
-                self._logger.info("AFTER 1st LINE")
-                self._logger.info(line)
                 line = line.strip()
-                self._logger.info("AFTER 2nd LINE")
                 self._logger.info(line)
                 if line:
-                    self._logger.info("AFTER IF LINE")
                     self._logger.info("Omega: read in line: %s" % line)
                 if 'O20' in line:
                     # send next line of data
@@ -227,18 +224,18 @@ class Omega():
                             self._logger.info("FINISHED LOADING LAST DRIVE")
                     elif "U0" in line:
                         if "D0" in line:
+                            self.currentStatus = "Palette work completed: all splices prepared"
+                            self.updateUI()
+                            self._logger.info("Palette work is done.")
+                        elif "D2" in line:
                             self._logger.info("CANCELLING START")
                             self._printer.cancel_print()
                             self.currentStatus = "Cancelling Print"
                             self.updateUI()
-                        elif "D1" in line:
+                        elif "D3" in line:
                             self._logger.info("CANCELLING END")
                             self.currentStatus = "Print Cancelled"
                             self.updateUI()
-                        else:
-                            self.currentStatus = "Palette work completed: all splices prepared"
-                            self.updateUI()
-                            self._logger.info("Palette work is done.")
                 elif "Connection Okay" in line:
                     self.heartbeat = True
                 elif "UI:" in line:
@@ -266,6 +263,7 @@ class Omega():
                 line = line + "\n"
                 self._logger.info("Omega Write Thread: Sending: %s" % line)
                 serialConnection.write(line.encode())
+                self._logger.info(line.encode())
             except:
                 pass
         self.writeThread = None
@@ -405,7 +403,7 @@ class Omega():
 
         self.stopReadThread()
         self.stopWriteThread()
-        self.stopHeartbeatThread()
+        # self.stopHeartbeatThread()
         if not self._settings.get(["autoconnect"]):
             self.stopConnectionThread()
 
@@ -497,7 +495,10 @@ class Omega():
         self._printer.commands(["M83", "G1 E50.00 F200"])
 
     def gotOmegaCmd(self, cmd):
-        if "O21" in cmd:
+        if "O0" in cmd:
+            self._logger.info("IN O0")
+            self.enqueueCmd("O0")
+        elif "O21" in cmd:
             self.header[0] = cmd
             self._logger.info("Omega: Got Version: %s" % self.header[0])
         elif "O22" in cmd:
@@ -551,7 +552,7 @@ class Omega():
         elif "O32" in cmd:
             self.algorithms.append(cmd)
             self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
-        elif "O9" in cmd and "O99" not in cmd:
+        elif "O9" is cmd:
             # reset values
             self.resetOmega()
             self.enqueueCmd(cmd)
