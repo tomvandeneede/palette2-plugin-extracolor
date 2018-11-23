@@ -241,27 +241,6 @@ class Omega():
     def enqueueCmd(self, line):
         self.writeQueue.put(line)
 
-    def startJog(self, drive, dist):
-        self._logger.info("Jog command received")
-        jogCmd = None
-
-        distBinary = bin(int(dist) & 0xffff)
-        distHex = "%04X" % int(distBinary, 2)
-
-        if dist == 999:  # drive indef inwards
-            jogCmd = "O%s D1 D1" % (drive)
-        elif dist == -999:  # drive indef outwards
-            jogCmd = "O%s D1 D0" % (drive)
-        else:  # drive a certain distance
-            jogCmd = "O%s D0 D%s" % (drive, distHex)
-
-        self.enqueueCmd(jogCmd)
-
-    def stopIndefJog(self):
-        self._logger.info("Stop indef jog")
-        jogCmd = "O10 D1 D2"
-        self.enqueueCmd(jogCmd)
-
     def cut(self):
         self._logger.info("Omega: Sending Cut command")
         cutCmd = "O10 D5"
@@ -273,14 +252,6 @@ class Omega():
                      "O10 D2 D0 D0 DFFE1", "O10 D3 D0 D0 DFFE1", "O10 D4 D0 D0 D0069"]
         for command in clearCmds:
             self.enqueueCmd(command)
-
-    def sendCmd(self, cmd):
-        self._logger.info("Omega: Sending '%s'" % cmd)
-        try:
-            self.enqueueCmd(cmd)
-        except:
-            self._logger.info("Omega: Error sending cmd")
-            self.omegaSerial.close()
 
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
@@ -312,11 +283,7 @@ class Omega():
                 self._identifier, "UI:Finished Pong")
 
     def sendNextData(self, dataNum):
-        # self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
-        # self._logger.info(self.sentCounter)
-
         if dataNum == 0:
-            # cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
             self.enqueueCmd(self.header[self.sentCounter])
             self._logger.info("Omega: Sent '%s'" % self.sentCounter)
             self.sentCounter = self.sentCounter + 1
@@ -339,7 +306,6 @@ class Omega():
 
         self.stopReadThread()
         self.stopWriteThread()
-        # self.stopHeartbeatThread()
         if not self._settings.get(["autoconnect"]):
             self.stopConnectionThread()
 
@@ -390,8 +356,6 @@ class Omega():
         self.connectionStop = False
         self.heartbeat = False
 
-        self.heartbeatThread = None
-
     def resetOmega(self):
         self.resetConnection()
         self.resetVariables()
@@ -405,30 +369,9 @@ class Omega():
         self.resetOmega()
         self.updateUI()
 
-    def setActiveDrive(self, drive):
-        self.activeDrive = drive
-        self._logger.info("Omega: active drive set to: %s" % self.activeDrive)
-
-    def startSingleColor(self):
-        self._logger.info(
-            "Omega: start Single Color Mode with drive %s" % self.activeDrive)
-        cmdStr = "O4 D%s\n" % self.activeDrive
-        self.omegaSerial.write(cmdStr.encode())
-        self._logger.info("Omega: Sent %s" % cmdStr)
-
     def sendPrintStart(self):
         self._logger.info("Omega toggle pause")
         self._printer.toggle_pause_print()
-
-    def sendAutoloadOn(self):
-        self.omegaSerial.write("O38\n")
-
-    def sendAutoloadOff(self):
-        self.omegaSerial.write("O37\n")
-
-    def printerTest(self):
-        self._logger.info("Sending commands from Omega")
-        self._printer.commands(["M83", "G1 E50.00 F200"])
 
     def gotOmegaCmd(self, cmd):
         if "O0" in cmd:

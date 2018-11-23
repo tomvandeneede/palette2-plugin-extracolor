@@ -51,14 +51,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             connectOmega=["port"],
             disconnectPalette2=[],
             printStart=[],
-            sdwpStart=[],
             sendCutCmd=[],
             sendOmegaCmd=["cmd"],
-            sendJogCmd=["drive", "dist"],
-            setActiveDrive=["drive"],
-            startSingleColor=[],
-            stopIndefJog=[],
-            testPrinterCommands=[],
             uiUpdate=[],
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
@@ -66,10 +60,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_api_command(self, command, data):
         self._logger.info("Got a command %s" % command)
-
         if command == "cancelPalette2":
             self._logger.info("Cancelling print")
-            # self.palette.gotOmegaCmd("O0")
             self.palette.enqueueCmd("O0")
         elif command == "clearPalette2":
             self.palette.clear()
@@ -84,25 +76,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.cut()
         elif command == "sendOmegaCmd":
             self.palette.enqueueCmd(data["cmd"])
-        elif command == "sendJogCmd":
-            self._logger.info("Sending jog command")
-            self.palette.startJog(data["drive"], data["dist"])
-        elif command == "setActiveDrive":
-            self._logger.info("Setting active drive to %s" % data["drive"])
-            # set the active drive in the Omega class to the drive that was passed
-            self.palette.setActiveDrive(data["drive"])
-        elif command == "startSingleColor":
-            self._logger.info("Got Start Single Color Mode command")
-            if "drive" in data:
-                self._logger.info(
-                    "Starting single color with drive %s" % data["drive"])
-                self.palette.setActiveDrive(data["drive"])
-            self.palette.startSingleColor()
-        elif command == "stopIndefJog":
-            self._logger.info("Stopping indef jog")
-            self.palette.stopIndefJog()
-        elif command == "testPrinterCommands":
-            self.palette.printerTest()
         elif command == "connectWifi":
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "uiUpdate":
