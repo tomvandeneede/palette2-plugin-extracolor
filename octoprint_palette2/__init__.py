@@ -207,7 +207,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 command="/home/pi/test-version.sh",
 
                 # update method: pip
-                pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/plugin-refactor/palette-2-plugin-master.zip"
+                pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/master/palette-2-plugin-master.zip"
             )
         )
 
