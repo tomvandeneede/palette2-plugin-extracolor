@@ -62,18 +62,11 @@ $(function() {
     self.jogDrives = ko.observableArray(["1", "2", "3", "4", "Out"]);
     self.files = ko.observableArray([]);
 
-    //self.jogDists = ko.observableArray(['1', '10', '100', '-1', '-10', '-100']);
-    self.jogDists = ko.observableArray([
-      new JogDistance(999, "∞"),
-      new JogDistance(100, "100"),
-      new JogDistance(10, "10"),
-      new JogDistance(1, "1"),
-      new JogDistance(null, "Distance (mm)"),
-      new JogDistance(-1, "-1"),
-      new JogDistance(-10, "-10"),
-      new JogDistance(-100, "-100"),
-      new JogDistance(-999, "-∞")
-    ]);
+    self.resetValues = function() {
+      self.amountLeftToExtrude = "";
+      self.firstTime = false;
+      self.actualPrintStarted = false;
+    };
 
     self.selectedJogDistance = ko.observable();
     self.selectedDemoFile = ko.observable();
@@ -191,49 +184,6 @@ $(function() {
       });
     };
 
-    self.sendJogCmd = function() {
-      var drive = parseInt(self.selectedJogDriveObs());
-      var dist = parseInt(self.selectedJogDistance());
-
-      if (self.selectedJogDriveObs().includes("Out")) {
-        drive = 18;
-      } else if (self.jogWithOutgoing()) {
-        drive += 13;
-      } else {
-        drive += 9;
-      }
-
-      if (dist) {
-        var payload = {
-          command: "sendJogCmd",
-          drive: drive,
-          dist: dist
-        };
-        $.ajax({
-          url: API_BASEURL + "plugin/palette2",
-          type: "POST",
-          dataType: "json",
-          data: JSON.stringify(payload),
-          contentType: "application/json; charset=UTF-8",
-          success: self.fromResponse
-        });
-      }
-    };
-
-    self.sendStopIndefJogCmd = function() {
-      var payload = {
-        command: "stopIndefJog"
-      };
-      $.ajax({
-        url: API_BASEURL + "plugin/palette2",
-        type: "POST",
-        dataType: "json",
-        data: JSON.stringify(payload),
-        contentType: "application/json; charset=UTF-8",
-        success: self.fromResponse
-      });
-    };
-
     self.sendCutCmd = function() {
       var payload = {
         command: "sendCutCmd"
@@ -267,20 +217,6 @@ $(function() {
       self.omegaCommand("O0");
       self.sendOmegaCmd();
       self.omegaCommand("");
-    };
-
-    self.sendSDWPrinterStart = function() {
-      var payload = {
-        command: "sdwpStart"
-      };
-      $.ajax({
-        url: API_BASEURL + "plugin/palette2",
-        type: "POST",
-        dataType: "json",
-        data: JSON.stringify(payload),
-        contentType: "application/json; charset=UTF-8",
-        success: self.fromResponse
-      });
     };
 
     self.sendPrintStart = function() {
@@ -491,40 +427,8 @@ $(function() {
       }
     };
 
-    self.showOmegaDialog = function() {
-      self.loadingColor("Blue");
-      self.omegaDialog
-        .modal({
-          minHeight: function() {
-            return Math.max($.fn.modal.defaults.maxHeight() - 80, 250);
-          }
-        })
-        .css({
-          width: "auto",
-          "margin-left": function() {
-            return -($(this).width() / 2);
-          }
-        });
-    };
-
-    self.onEventPrintDone = function(payload) {};
-
-    self.startSingleColor = function() {
-      var activeDrive = $("#omega-mod-ad button.active")[0].innerHTML;
-      activeDrive = activeDrive - 1;
-      var payload = {
-        command: "startSingleColor",
-        drive: activeDrive
-      };
-
-      $.ajax({
-        url: API_BASEURL + "plugin/palette2",
-        type: "POST",
-        dataType: "json",
-        data: JSON.stringify(payload),
-        contentType: "application/json; charset=UTF-8",
-        success: self.fromResponse
-      });
+    self.onEventPrintDone = function(payload) {
+      self.resetValues();
     };
 
     self.updateFilamentUsed = function() {
@@ -591,8 +495,6 @@ $(function() {
         }
       } else if (self.currentStatus === "Loading filament into extruder") {
         if (self.displayAlerts) {
-          console.log("INSIDE EXTRUDE INSTRUCTIONS");
-          console.log(self.firstTime);
           let base_url = window.location.origin;
           window.location.href = `${base_url}/#control`;
           if (self.firstTime) {
@@ -612,7 +514,8 @@ $(function() {
               self.extrusionHighlight();
             });
           }
-          let notification = $(`<li id="jog-filament-notification" class="popup-notification remove-popup">
+          let notification = $(`<li id="jog-filament-notification" class="popup-notification">
+              <i class="material-icons remove-popup">clear</i>
               <h6>Remaining length to extrude:</h6>
               <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
               </li>`).hide();
@@ -670,7 +573,6 @@ $(function() {
 
     self.onDataUpdaterPluginMessage = function(pluginIdent, message) {
       if (pluginIdent === "palette2") {
-        console.log(message);
         if (message.includes("UI:currentSplice")) {
           var num = message.substring(17);
           self.currentSplice(num);
@@ -790,13 +692,9 @@ $(function() {
             }
           }
         } else if (message.includes("UI:FirstTime")) {
-          console.log(message);
           let firstTime = message.substring(13);
-          console.log(firstTime);
           if (firstTime === "True") {
-            console.log(firstTime);
             self.firstTime = true;
-            console.log(self.firstTime);
           } else {
             self.firstTime = false;
           }

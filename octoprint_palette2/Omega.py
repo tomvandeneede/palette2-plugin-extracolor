@@ -128,10 +128,8 @@ class Omega():
         self._logger.info("Omega Read Thread: Starting thread")
         try:
             while self.readThreadStop is False:
-                # self._logger.info('TRYING TO READ')
                 line = serialConnection.readline()
                 line = line.strip()
-                self._logger.info(line)
                 if line:
                     self._logger.info("Omega: read in line: %s" % line)
                 if 'O20' in line:
@@ -194,11 +192,11 @@ class Omega():
                         elif "D2" in line:
                             self._logger.info("CANCELLING START")
                             self._printer.cancel_print()
-                            self.currentStatus = "Cancelling Print"
+                            self.currentStatus = "Cancelling print"
                             self.updateUI()
                         elif "D3" in line:
                             self._logger.info("CANCELLING END")
-                            self.currentStatus = "Print Cancelled"
+                            self.currentStatus = "Print cancelled"
                             self.updateUI()
                 elif "Connection Okay" in line:
                     self.heartbeat = True
