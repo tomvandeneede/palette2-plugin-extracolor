@@ -28,11 +28,7 @@ class Omega():
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
             omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
-            # MAC OS
             omegaPort += glob.glob('/dev/*usbserial*')
-            # WINDOWS
-            # LINUX
-            # PLACEHOLDER
             if len(omegaPort) > 0:
                 try:
                     self.omegaSerial = serial.Serial(
@@ -70,6 +66,7 @@ class Omega():
                 self.resetVariables()
                 self.resetConnection()
                 self.updateUI()
+            # self.startHeartbeatThread()
 
     def setFilename(self, name):
         self.filename = name
@@ -138,6 +135,10 @@ class Omega():
                 if 'O20' in line:
                     # send next line of data
                     self.sendNextData(int(line[5]))
+                    if "D5" in line:
+                        self._logger.info("FIRST TIME USE WITH PALETTE")
+                        self.firstTime = True
+                        self.updateUI()
                 elif "O40" in line:
                     self.printPaused = False
                     self.currentStatus = "Preparing splices"
@@ -184,9 +185,19 @@ class Omega():
                             self.updateUI()
                             self._logger.info("FINISHED LOADING LAST DRIVE")
                     elif "U0" in line:
-                        self.currentStatus = "Palette work completed: all splices prepared"
-                        self.updateUI()
-                        self._logger.info("Palette work is done.")
+                        if "D0" in line:
+                            self.currentStatus = "Palette work completed: all splices prepared"
+                            self.updateUI()
+                            self._logger.info("Palette work is done.")
+                        elif "D2" in line:
+                            self._logger.info("CANCELLING START")
+                            self._printer.cancel_print()
+                            self.currentStatus = "Cancelling print"
+                            self.updateUI()
+                        elif "D3" in line:
+                            self._logger.info("CANCELLING END")
+                            self.currentStatus = "Print cancelled"
+                            self.updateUI()
                 elif "Connection Okay" in line:
                     self.heartbeat = True
                 elif "UI:" in line:
@@ -215,6 +226,7 @@ class Omega():
                 line = line + "\n"
                 self._logger.info("Omega Write Thread: Sending: %s" % line)
                 serialConnection.write(line.encode())
+                self._logger.info(line.encode())
             except:
                 pass
         self.writeThread = None
@@ -228,55 +240,6 @@ class Omega():
     def enqueueCmd(self, line):
         self.writeQueue.put(line)
 
-    def startSpliceDemo(self, fileName, path, withPrinter):
-        self._logger.info("Starting splice demo")
-        f = open(path, "r")
-        for line in f:
-            if "cu" in line:
-                self.msfCU = line[3:7]
-                self._logger.info("Omega: setting CU to %s" % self.msfCU)
-            elif "ns" in line:
-                self.msfNS = line[3:7]
-                self._logger.info("Omega: setting NS to %s" % self.msfNS)
-            elif "(" in line:
-                splice = (line[2:3], line[4:12])
-                self._logger.info(
-                    "Omega: Adding Splice D: %s, Dist: %s" % (splice[0], splice[1]))
-                self.splices.append(splice)
-        f.close()
-        print(withPrinter)
-        if withPrinter is True:
-            self._logger.info("Omega: start Splice Demo w/ Printer")
-            if self.connected:
-                cmd = "O3 D" + fileName + "\n"
-                self.enqueueCmd(cmd)
-        else:
-            self._logger.info("Omega: start Splice Demo w/o printer")
-            if self.connected:
-                cmd = "O3 D" + fileName + "\n"
-                self.enqueueCmd(cmd)
-
-    def startJog(self, drive, dist):
-        self._logger.info("Jog command received")
-        jogCmd = None
-
-        distBinary = bin(int(dist) & 0xffff)
-        distHex = "%04X" % int(distBinary, 2)
-
-        if dist == 999:  # drive indef inwards
-            jogCmd = "O%s D1 D1" % (drive)
-        elif dist == -999:  # drive indef outwards
-            jogCmd = "O%s D1 D0" % (drive)
-        else:  # drive a certain distance
-            jogCmd = "O%s D0 D%s" % (drive, distHex)
-
-        self.enqueueCmd(jogCmd)
-
-    def stopIndefJog(self):
-        self._logger.info("Stop indef jog")
-        jogCmd = "O10 D1 D2"
-        self.enqueueCmd(jogCmd)
-
     def cut(self):
         self._logger.info("Omega: Sending Cut command")
         cutCmd = "O10 D5"
@@ -289,17 +252,12 @@ class Omega():
         for command in clearCmds:
             self.enqueueCmd(command)
 
-    def sendCmd(self, cmd):
-        self._logger.info("Omega: Sending '%s'" % cmd)
-        try:
-            self.enqueueCmd(cmd)
-        except:
-            self._logger.info("Omega: Error sending cmd")
-            self.omegaSerial.close()
-
     def updateUI(self):
-
         self._logger.info("Sending UIUpdate from Palette")
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:FirstTime=%s" % self.firstTime)
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:PrinterCon=%s" % self.printerConnection)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:DisplayAlerts=%s" % self.displayAlerts)
         self._plugin_manager.send_plugin_message(
@@ -324,11 +282,7 @@ class Omega():
                 self._identifier, "UI:Finished Pong")
 
     def sendNextData(self, dataNum):
-        # self._logger.info("Sending next line, dataNum: " + str(dataNum) + " sentCount : " + str(self.sentCounter))
-        # self._logger.info(self.sentCounter)
-
         if dataNum == 0:
-            # cmdStr = "O25 D%s\n" % self.msfCU.replace(':', ';')
             self.enqueueCmd(self.header[self.sentCounter])
             self._logger.info("Omega: Sent '%s'" % self.sentCounter)
             self.sentCounter = self.sentCounter + 1
@@ -390,6 +344,8 @@ class Omega():
         self.drivesInUse = []
         self.amountLeftToExtrude = ""
         self.printPaused = ""
+        self.printerConnection = ""
+        self.firstTime = False
 
         self.displayAlerts = self._settings.get(["palette2Alerts"])
 
@@ -416,33 +372,15 @@ class Omega():
         self.resetOmega()
         self.updateUI()
 
-    def setActiveDrive(self, drive):
-        self.activeDrive = drive
-        self._logger.info("Omega: active drive set to: %s" % self.activeDrive)
-
-    def startSingleColor(self):
-        self._logger.info(
-            "Omega: start Single Color Mode with drive %s" % self.activeDrive)
-        cmdStr = "O4 D%s\n" % self.activeDrive
-        self.omegaSerial.write(cmdStr.encode())
-        self._logger.info("Omega: Sent %s" % cmdStr)
-
     def sendPrintStart(self):
         self._logger.info("Omega toggle pause")
         self._printer.toggle_pause_print()
 
-    def sendAutoloadOn(self):
-        self.omegaSerial.write("O38\n")
-
-    def sendAutoloadOff(self):
-        self.omegaSerial.write("O37\n")
-
-    def printerTest(self):
-        self._logger.info("Sending commands from Omega")
-        self._printer.commands(["M83", "G1 E50.00 F200"])
-
     def gotOmegaCmd(self, cmd):
-        if "O21" in cmd:
+        if "O0" in cmd:
+            self._logger.info("IN O0")
+            self.enqueueCmd("O0")
+        elif "O21" in cmd:
             self.header[0] = cmd
             self._logger.info("Omega: Got Version: %s" % self.header[0])
         elif "O22" in cmd:
@@ -496,7 +434,7 @@ class Omega():
         elif "O32" in cmd:
             self.algorithms.append(cmd)
             self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
-        elif "O9" in cmd and "O99" not in cmd:
+        elif "O9" is cmd:
             # reset values
             self.resetOmega()
             self.enqueueCmd(cmd)
