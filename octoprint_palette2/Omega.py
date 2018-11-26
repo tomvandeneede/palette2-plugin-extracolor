@@ -66,7 +66,6 @@ class Omega():
                 self.resetVariables()
                 self.resetConnection()
                 self.updateUI()
-            # self.startHeartbeatThread()
 
     def setFilename(self, name):
         self.filename = name
