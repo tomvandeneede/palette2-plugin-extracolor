@@ -28,14 +28,7 @@ omegaApp.loadingOverlay = condition => {
   }
 };
 
-/* 2. REMOVE NOTIFICATION POPUP */
-omegaApp.removeNotification = () => {
-  $(self.jogId).fadeOut(500, () => {
-    this.remove();
-  });
-};
-
-/* 3. DISABLE PRINT ICON SMALL */
+/* 2. DISABLE PRINT ICON SMALL */
 omegaApp.disableSmallPrintIcon = condition => {
   if (condition) {
     $(".palette-tag")
@@ -52,16 +45,19 @@ omegaApp.disableSmallPrintIcon = condition => {
   }
 };
 
-/* 3.1 DISABLE PRINT ICON LARGE */
+/* 2.1 DISABLE PRINT ICON LARGE */
 omegaApp.disableLargePrintIcon = condition => {
-  if (condition) {
-    $("#job_print").attr("disabled", condition);
-  } else {
-    $("#job_print").attr("disabled", condition);
-  }
+  $("#job_print").attr("disabled", condition);
 };
 
-/* 4. HIGHLIGHT TO HELP USER USE TEMP CONTROLS */
+/* 2.2 DISABLE PAUSE ICON LARGE */
+omegaApp.disablePause = condition => {
+  $("body")
+    .find("#job_pause")
+    .attr("disabled", condition);
+};
+
+/* 3. HIGHLIGHT TO HELP USER USE TEMP CONTROLS */
 omegaApp.temperatureHighlight = () => {
   $("body")
     .find(`#temperature-table .input-mini.input-nospin:first`)
@@ -71,7 +67,7 @@ omegaApp.temperatureHighlight = () => {
     });
 };
 
-/* 4.1 HIGHLIGHT TO HELP USER USE EXTRUSION CONTROLS */
+/* 3.1 HIGHLIGHT TO HELP USER USE EXTRUSION CONTROLS */
 omegaApp.extrusionHighlight = () => {
   $("body")
     .find("#control-jog-extrusion .input-mini.text-right")
@@ -85,6 +81,75 @@ omegaApp.extrusionHighlight = () => {
     .on("focus", event => {
       $(event.target).removeClass("highlight-glow-border");
     });
+};
+
+/* 4. ALERT TEXTS */
+omegaApp.cannotConnectAlert = () => {
+  return swal({
+    title: "Could not connect to Palette 2",
+    text: `Please make sure Palette 2 is turned on. Please wait 5 seconds before trying again.`,
+    type: "error"
+  });
+};
+
+omegaApp.palette2PrintStartAlert = () => {
+  return swal({
+    title: "You are about to print with Palette 2",
+    text:
+      "Your print will temporarily be paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
+    type: "info"
+  });
+};
+
+omegaApp.preheatAlert = () => {
+  return swal({
+    title: "Pre-heat your printer",
+    text:
+      "Palette 2 is now making filament. In the meantime, please pre-heat your printer using the controls in the Temperature Tab.",
+    type: "info"
+  });
+};
+
+omegaApp.extrusionAlert = firstTime => {
+  if (firstTime) {
+    return swal({
+      title: "Follow instructions on Palette 2 ",
+      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder until you see the desired color. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+      type: "info"
+    });
+  } else {
+    return swal({
+      title: "Follow instructions on Palette 2 ",
+      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+      type: "info"
+    });
+  }
+};
+
+omegaApp.readyToStartAlert = () => {
+  return swal({
+    title: "Filament in place and ready to go",
+    text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
+    type: "info",
+    input: "checkbox",
+    inputPlaceholder: "Don't show me these setup alerts anymore"
+  });
+};
+
+omegaApp.printCancelAlert = () => {
+  return swal({
+    title: "Print cancelling ",
+    text: `Please remove filament from the extruder.`,
+    type: "info"
+  });
+};
+
+omegaApp.palette2NotConnectedAlert = () => {
+  return swal({
+    title: "Palette 2 not connected",
+    text: "You have selected an .mcf file. Please enable the connection to Palette 2 before printing.",
+    type: "info"
+  });
 };
 
 /* ======================
@@ -194,7 +259,7 @@ function OmegaViewModel(parameters) {
   self.disconnectPalette2 = () => {
     omegaApp.loadingOverlay(true);
     self.connected(false);
-    omegaApp.removeNotification();
+    self.removeNotification();
     var payload = {
       command: "disconnectPalette2"
     };
@@ -341,7 +406,7 @@ function OmegaViewModel(parameters) {
           if (count > 20) {
             clearInterval(applyDisabling3);
           }
-          $("#job_print").attr("disabled", true);
+          omegaApp.disableLargePrintIcon(true);
           count++;
         }, 100);
       } else {
@@ -434,12 +499,7 @@ function OmegaViewModel(parameters) {
       if (self.displayAlerts) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#temp`;
-        swal({
-          title: "Pre-heat your printer",
-          text:
-            "Palette 2 is now making filament. In the meantime, please pre-heat your printer using the controls in the Temperature Tab.",
-          type: "info"
-        }).then(res => {
+        omegaApp.preheatAlert().then(res => {
           omegaApp.temperatureHighlight();
         });
       }
@@ -448,39 +508,50 @@ function OmegaViewModel(parameters) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#control`;
         if (self.firstTime) {
-          swal({
-            title: "Follow instructions on Palette 2 ",
-            text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder until you see the desired color. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
-            type: "info"
-          }).then(res => {
+          omegaApp.extrusionAlert(true).then(res => {
             omegaApp.extrusionHighlight();
           });
         } else {
-          swal({
-            title: "Follow instructions on Palette 2 ",
-            text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
-            type: "info"
-          }).then(res => {
+          omegaApp.extrusionAlert(false).then(res => {
             omegaApp.extrusionHighlight();
           });
         }
-        let notification = $(`<li id="jog-filament-notification" class="popup-notification">
+        self.displayFilamentCountdown();
+      }
+    } else if (self.currentStatus === "Cancelling Print") {
+      omegaApp.printCancelAlert();
+    } else if (self.currentStatus === "Preparing splices") {
+      self.actualPrintStarted = true;
+    }
+  };
+
+  self.displayFilamentCountdown = () => {
+    let notification = $(`<li id="jog-filament-notification" class="popup-notification">
               <i class="material-icons remove-popup">clear</i>
               <h6>Remaining length to extrude:</h6>
               <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
               </li>`).hide();
-        self.jogId = "#jog-filament-notification";
-        $(".side-notifications-list").append(notification);
-      }
-    } else if (self.currentStatus === "Cancelling Print") {
-      swal({
-        title: "Print cancelling ",
-        text: `Please remove filament from the extruder.`,
-        type: "info"
-      });
-    } else if (self.currentStatus === "Preparing splices") {
-      self.actualPrintStarted = true;
+    self.jogId = "#jog-filament-notification";
+    $(".side-notifications-list").append(notification);
+  };
+
+  self.updateFilamentCountdown = firstValue => {
+    if (firstValue) {
+      $(self.jogId)
+        .fadeIn(200)
+        .find(".jog-filament-value")
+        .text(`${self.amountLeftToExtrude}mm`);
+    } else {
+      $(self.jogId)
+        .find(".jog-filament-value")
+        .text(`${self.amountLeftToExtrude}mm`);
     }
+  };
+
+  self.removeNotification = () => {
+    $(self.jogId).fadeOut(500, function() {
+      this.remove();
+    });
   };
 
   /* OCTOPRINT-SPECIFIC EVENT HANDLERS */
@@ -536,11 +607,7 @@ function OmegaViewModel(parameters) {
     if (self.currentFile.includes(".mcf.gcode")) {
       self.applyPaletteDisabling();
       if (!self.connected()) {
-        swal({
-          title: "Palette 2 not connected",
-          text: "You have selected an .mcf file. Please enable the connection to Palette 2 before printing.",
-          type: "info"
-        });
+        omegaApp.palette2NotConnectedAlert();
       }
     }
   };
@@ -553,12 +620,7 @@ function OmegaViewModel(parameters) {
     if (payload.name.includes(".mcf.gcode")) {
       if (self.connected()) {
         if (self.displayAlerts) {
-          swal({
-            title: "You are about to print with Palette 2",
-            text:
-              "Your print will temporarily be paused. This is normal - please follow the instructions on Palette 2's screen. The print will resume automatically once everything is ready.",
-            type: "info"
-          });
+          omegaApp.palette2PrintStartAlert();
         }
       }
     }
@@ -571,9 +633,7 @@ function OmegaViewModel(parameters) {
         if (count > 50) {
           clearInterval(applyDisablingResume);
         }
-        $("body")
-          .find("#job_pause")
-          .attr("disabled", true);
+        omegaApp.disablePause(true);
         count++;
       }, 100);
     }
@@ -586,9 +646,7 @@ function OmegaViewModel(parameters) {
         if (count > 50) {
           clearInterval(applyDisablingResume2);
         }
-        $("body")
-          .find("#job_pause")
-          .attr("disabled", false);
+        omegaApp.disablePause(false);
         omegaApp.disableLargePrintIcon(true);
         count++;
       }, 100);
@@ -647,11 +705,7 @@ function OmegaViewModel(parameters) {
             $("body").on("click", "#swal2-checkbox", event => {
               self.changeAlertSettings(event.target.checked);
             });
-            swal({
-              title: "Could not connect to Palette 2",
-              text: `Please make sure Palette 2 is turned on. Please wait 5 seconds before trying again.`,
-              type: "error"
-            });
+            omegaApp.cannotConnectAlert();
           }
         }
       } else if (message.includes("UI:Refresh Demo List")) {
@@ -667,25 +721,14 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:AmountLeftToExtrude")) {
         self.amountLeftToExtrude = message.substring(23);
         if (self.amountLeftToExtrude === "0") {
-          omegaApp.removeNotification();
+          self.removeNotification();
           if (self.displayAlerts) {
-            swal({
-              title: "Filament in place and ready to go",
-              text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
-              type: "info",
-              input: "checkbox",
-              inputPlaceholder: "Don't show me these setup alerts anymore"
-            });
+            omegaApp.readyToStartAlert();
           }
         } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
-          $(self.jogId)
-            .fadeIn(200)
-            .find(".jog-filament-value")
-            .text(`${self.amountLeftToExtrude}mm`);
+          self.updateFilamentCountdown(true);
         } else if (self.amountLeftToExtrude.length && $("#jog-filament-notification").is(":visible")) {
-          $(self.jogId)
-            .find(".jog-filament-value")
-            .text(`${self.amountLeftToExtrude}mm`);
+          self.updateFilamentCountdown(false);
         }
       } else if (message.includes("UI:PalettePausedPrint")) {
         self.printPaused = message.substring(22);
