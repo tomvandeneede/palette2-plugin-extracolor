@@ -670,7 +670,6 @@ function OmegaViewModel(parameters) {
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      console.log(message);
       if (message.includes("UI:currentSplice")) {
         var num = message.substring(17);
         self.currentSplice(num);
