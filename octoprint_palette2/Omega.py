@@ -281,6 +281,9 @@ class Omega():
             self.enqueueCmd(self.header[self.sentCounter])
             self._logger.info("Omega: Sent '%s'" % self.sentCounter)
             self.sentCounter = self.sentCounter + 1
+        elif dataNum == 2:
+            self._logger.info("Sending ping: %s to Palette on request" % self.currentPingCmd)
+            self.enqueueCmd(self.currentPingCmd)
         elif dataNum == 4:
             self._logger.info("Omega: send algo")
             self.enqueueCmd(self.algorithms[self.algoCounter])
@@ -296,6 +299,11 @@ class Omega():
         elif dataNum == 8:
             self._logger.info("Need to resend last line")
             self.enqueueCmd(self.lastCommandSent)
+
+    def handlePing(self, pingCmd):
+        self.currentPingCmd = pingCmd
+        self.enqueueCmd("O31")
+        self._logger.info("Got a ping cmd, saving it")
 
     def resetConnection(self):
         self._logger.info("Resetting read and write threads")
@@ -340,6 +348,8 @@ class Omega():
         self.printPaused = ""
         self.printerConnection = ""
         self.firstTime = False
+        self.lastCommandSent = ""
+        self.currentPingCmd = ""
 
         self.displayAlerts = self._settings.get(["palette2Alerts"])
 
@@ -351,7 +361,6 @@ class Omega():
         self.connectionThread = None
         self.connectionStop = False
         self.heartbeat = False
-        self.lastCommandSent = ""
 
     def resetOmega(self):
         self.resetConnection()

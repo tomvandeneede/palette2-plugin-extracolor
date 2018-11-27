@@ -124,7 +124,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode, tags=None):
         if "O31" in cmd:
-            self.palette.enqueueCmd(cmd.strip())
+            self.palette.handlePing(cmd.strip())
             return "G4 P10",
         elif 'O' in cmd[0]:
             self.palette.gotOmegaCmd(cmd)
