@@ -20,7 +20,7 @@ class Omega():
         self.resetVariables()
         self.resetConnection()
 
-        # Trys to automatically connect to palette first
+        # Tries to automatically connect to palette first
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
 
@@ -49,10 +49,9 @@ class Omega():
             self.connected = False
             self.startReadThread()
             self.startWriteThread()
-            # send an O99 to handshake
             self.enqueueCmd("O99")
 
-            timeout = 5   # [seconds]
+            timeout = 5
             timeout_start = time.time()
             # Wait for Palette to respond with a handshake within 5 seconds
             while time.time() < timeout_start + timeout:
@@ -147,7 +146,6 @@ class Omega():
                     self._printer.toggle_pause_print()
                     self._logger.info("Splices being prepared.")
                 elif "O50" in line:
-                    # get file list
                     pass
                 elif "O97" in line:
                     if "U26" in line:
@@ -202,19 +200,13 @@ class Omega():
                 elif "Connection Okay" in line:
                     self.heartbeat = True
                 elif "UI:" in line:
-                    # send a message to the front end
-                    self._logger.info(line)
                     if "Ponging" in line:
                         self.inPong = True
                     elif "Finished Pong" in line:
                         self.inPong = False
-                    # elif "S=" in line:
-                    #     self.currentSplice = line[5:]
-                    # self.updateUI()
             serialConnection.close()
         except Exception as e:
             # Something went wrong with the connection to Palette2
-            # self.disconnect()
             print e
 
     def omegaWriteThread(self, serialConnection):
@@ -307,7 +299,6 @@ class Omega():
 
     def resetConnection(self):
         self._logger.info("Resetting read and write threads")
-        # stop read and write threads
 
         self.stopReadThread()
         self.stopWriteThread()
