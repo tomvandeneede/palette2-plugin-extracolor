@@ -179,6 +179,7 @@ function OmegaViewModel(parameters) {
   self.printerConnected = false;
   self.firstTime = false;
   self.actualPrintStarted = false;
+  self.autoconnect = false;
 
   self.files = ko.observableArray([]);
 
@@ -477,16 +478,29 @@ function OmegaViewModel(parameters) {
       self.connectionStateMsg("Connected");
       self.applyPaletteDisabling();
     } else {
-      $("#connection-state-msg")
-        .removeClass("text-success")
-        .addClass("text-muted")
-        .css("color", "red");
-      $(".connect-palette-button")
-        .text("Connect to Palette 2")
-        .removeClass("disabled")
-        .attr("disabled", false);
-      self.connectionStateMsg("Not Connected");
-      self.applyPaletteDisabling();
+      if (self.autoconnect) {
+        $("#connection-state-msg")
+          .removeClass("text-success")
+          .addClass("text-muted")
+          .css("color", "red");
+        $(".connect-palette-button")
+          .text("Connected")
+          .addClass("disabled")
+          .attr("disabled", true);
+        self.connectionStateMsg("Not Connected - Trying To Connect...");
+        self.applyPaletteDisabling();
+      } else {
+        $("#connection-state-msg")
+          .removeClass("text-success")
+          .addClass("text-muted")
+          .css("color", "red");
+        $(".connect-palette-button")
+          .text("Connect to Palette 2")
+          .removeClass("disabled")
+          .attr("disabled", false);
+        self.connectionStateMsg("Not Connected");
+        self.applyPaletteDisabling();
+      }
     }
   };
 
@@ -670,7 +684,6 @@ function OmegaViewModel(parameters) {
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      console.log(message);
       if (message.includes("UI:currentSplice")) {
         var num = message.substring(17);
         self.currentSplice(num);
@@ -747,6 +760,13 @@ function OmegaViewModel(parameters) {
           self.firstTime = true;
         } else {
           self.firstTime = false;
+        }
+      } else if (message.includes("UI:AutoConnect=")) {
+        self.autoconnect = message.substring(15);
+        if (self.autoconnect === "True") {
+          self.autoconnect = true;
+        } else {
+          self.autoconnect = false;
         }
       }
     }
