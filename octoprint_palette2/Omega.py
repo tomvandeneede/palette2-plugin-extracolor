@@ -46,6 +46,7 @@ class Omega():
             self.updateUI()
 
         if self.connected:
+            self.connected = False
             self.startReadThread()
             self.startWriteThread()
             # send an O99 to handshake
@@ -56,6 +57,7 @@ class Omega():
             # Wait for Palette to respond with a handshake within 5 seconds
             while time.time() < timeout_start + timeout:
                 if self.heartbeat:
+                    self.connected = True
                     self._logger.info("Connected to Omega")
                     self.updateUI()
                     break
@@ -253,6 +255,8 @@ class Omega():
 
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:AutoConnect=%s" % self._settings.get(["autoconnect"]))
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:FirstTime=%s" % self.firstTime)
         self._plugin_manager.send_plugin_message(
