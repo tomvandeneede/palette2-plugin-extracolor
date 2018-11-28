@@ -180,6 +180,7 @@ function OmegaViewModel(parameters) {
   self.firstTime = false;
   self.actualPrintStarted = false;
   self.autoconnect = false;
+  self.filaLength = "";
 
   self.files = ko.observableArray([]);
 
@@ -377,12 +378,6 @@ function OmegaViewModel(parameters) {
     self.currentFile = $("#state_wrapper")
       .find(`strong[title]`)
       .text();
-  };
-
-  self.resetValues = () => {
-    self.amountLeftToExtrude = "";
-    self.firstTime = false;
-    self.actualPrintStarted = false;
   };
 
   self.applyPaletteDisabling = () => {
@@ -672,13 +667,13 @@ function OmegaViewModel(parameters) {
       self.currentStatus = "Print cancelled";
       self.updateCurrentStatus();
       self.sendCancelCmd();
-      self.resetValues();
+      self.actualPrintStarted = false;
     }
   };
 
   self.onEventPrintDone = payload => {
     if (payload.name.includes(".mcf.gcode")) {
-      self.resetValues();
+      self.actualPrintStarted = false;
     }
   };
 

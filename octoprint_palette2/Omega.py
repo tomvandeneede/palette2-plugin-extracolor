@@ -282,7 +282,8 @@ class Omega():
             self._logger.info("Omega: Sent '%s'" % self.sentCounter)
             self.sentCounter = self.sentCounter + 1
         elif dataNum == 2:
-            self._logger.info("Sending ping: %s to Palette on request" % self.currentPingCmd)
+            self._logger.info(
+                "Sending ping: %s to Palette on request" % self.currentPingCmd)
             self.enqueueCmd(self.currentPingCmd)
         elif dataNum == 4:
             self._logger.info("Omega: send algo")
@@ -361,6 +362,11 @@ class Omega():
         self.connectionThread = None
         self.connectionStop = False
         self.heartbeat = False
+
+    def resetPrintValues(self):
+        self.firstTime = False
+        self.filamentLength = 0
+        self.currentSplice = "0"
 
     def resetOmega(self):
         self.resetConnection()

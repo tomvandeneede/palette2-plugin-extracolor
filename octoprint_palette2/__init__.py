@@ -101,7 +101,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                                   payload["name"].split('.')[0])
                 self.palette.setFilename(payload["name"].split(".")[0])
                 self.palette.currentStatus = "Initializing ..."
+                self.palette.resetPrintValues()
                 self.palette.updateUI()
+        elif "PrintDone" in event:
+            if ".mcf.gcode" in payload["name"]:
+                self.palette.resetPrintValues()
+        elif "PrintCancelled" in event:
+            if ".mcf.gcode" in payload["name"]:
+                self.palette.resetPrintValues()
         elif "FileAdded" in event:
             # User uploads a new file to Octoprint, we should update the demo list of files
             self._plugin_manager.send_plugin_message(
