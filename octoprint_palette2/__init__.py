@@ -91,6 +91,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_event(self, event, payload):
         if "ClientOpened" in event:
+            if self.palette.connected:
+                self.palette.sendAllFilenamesToOmega()
             self.palette.printerConnection = self._printer.get_current_connection()[
                 0]
             self.palette.updateUI()
@@ -102,6 +104,15 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.setFilename(payload["name"].split(".")[0])
                 self.palette.currentStatus = "Initializing ..."
                 self.palette.resetPrintValues()
+                self.palette.palette2SetupStarted = True
+                self.palette.updateUI()
+        elif "PrintPaused" in event:
+            if ".mcf.gcode" in payload["name"]:
+                self.palette.printPaused = True
+                self.palette.updateUI()
+        elif "PrintResumed" in event:
+            if ".mcf.gcode" in payload["name"]:
+                self.palette.palette2SetupStarted = False
                 self.palette.updateUI()
         elif "PrintDone" in event:
             if ".mcf.gcode" in payload["name"]:

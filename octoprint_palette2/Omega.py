@@ -4,6 +4,7 @@ import time
 import threading
 import subprocess
 import os
+import binascii
 from Queue import Queue
 
 
@@ -57,6 +58,7 @@ class Omega():
             while time.time() < timeout_start + timeout:
                 if self.heartbeat:
                     self.connected = True
+                    self.sendAllFilenamesToOmega()
                     self._logger.info("Connected to Omega")
                     self.updateUI()
                     break
@@ -248,6 +250,8 @@ class Omega():
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:Palette2SetupStarted=%s" % self.palette2SetupStarted)
+        self._plugin_manager.send_plugin_message(
             self._identifier, "UI:AutoConnect=%s" % self._settings.get(["autoconnect"]))
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:FirstTime=%s" % self.firstTime)
@@ -351,6 +355,7 @@ class Omega():
         self.firstTime = False
         self.lastCommandSent = ""
         self.currentPingCmd = ""
+        self.palette2SetupStarted = False
 
         self.displayAlerts = self._settings.get(["palette2Alerts"])
 
@@ -367,6 +372,7 @@ class Omega():
         self.firstTime = False
         self.filamentLength = 0
         self.currentSplice = "0"
+        self.palette2SetupStarted = False
 
     def resetOmega(self):
         self.resetConnection()
@@ -454,3 +460,27 @@ class Omega():
     def changeAlertSettings(self, condition):
         self._settings.set(["palette2Alerts"], condition)
         self._settings.save()
+
+    def sendAllFilenamesToOmega(self):
+        self.getAllFilenames()
+        for file in self.allFiles:
+            # filename = binascii.hexlify(file.replace(".mcf.gcode", ""))
+            filename = file.replace(".mcf.gcode", "")
+            self.enqueueCmd("O51 D" + filename)
+        self.enqueueCmd("O52")
+
+    def getAllFilenames(self):
+        uploads_path = self._settings.global_get_basefolder("uploads")
+        self.allFiles = []
+        self.iterateThroughFolder(uploads_path)
+        self._logger.info(self.allFiles)
+
+    def iterateThroughFolder(self, folder_path):
+        for file in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, file)
+            # If file is an .mcf.gcode file
+            if (os.path.isfile(file_path) and ".mcf.gcode" in file):
+                self.allFiles.append(file)
+            # If file is a folder, go through that folder again
+            elif (os.path.isdir(file_path)):
+                self.iterateThroughFolder(file_path)

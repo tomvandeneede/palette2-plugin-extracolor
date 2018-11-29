@@ -152,6 +152,8 @@ omegaApp.palette2NotConnectedAlert = () => {
   });
 };
 
+/* 5. GET ALL FILENAMES */
+
 /* ======================
 OMEGA VIEWMODEL FOR OCTOPRINT
 ======================= */
@@ -205,7 +207,7 @@ function OmegaViewModel(parameters) {
       headers: {
         "X-Api-Key": UI_API_KEY
       },
-      url: API_BASEURL + "files",
+      url: API_BASEURL + "files?recursive=true",
       type: "GET",
       dataType: "json",
       data: JSON.stringify(payload),
@@ -381,6 +383,12 @@ function OmegaViewModel(parameters) {
   };
 
   self.applyPaletteDisabling = () => {
+    console.log(self.printerConnected);
+    console.log(self.connected());
+    console.log(self.currentFile);
+    console.log(self.actualPrintStarted);
+    console.log(self.printPaused);
+
     if (self.printerConnected) {
       if (!self.connected()) {
         let count = 0;
@@ -388,32 +396,42 @@ function OmegaViewModel(parameters) {
           if (count > 20) {
             clearInterval(applyDisabling);
           }
-          omegaApp.disableSmallPrintIcon(true);
           count++;
           if (self.currentFile.includes(".mcf.gcode")) {
             omegaApp.disableLargePrintIcon(true);
+            omegaApp.disableSmallPrintIcon(true);
           } else if (self.currentFile && !self.currentFile.includes(".mcf.gcode")) {
             omegaApp.disableLargePrintIcon(false);
           }
         }, 100);
-      } else if (!self.currentFile) {
-        let count = 0;
-        let applyDisabling3 = setInterval(function() {
-          if (count > 20) {
-            clearInterval(applyDisabling3);
-          }
-          omegaApp.disableLargePrintIcon(true);
-          count++;
-        }, 100);
-      } else {
+      }
+      // else if (!self.currentFile) {
+      //   let count = 0;
+      //   let applyDisabling3 = setInterval(function() {
+      //     if (count > 20) {
+      //       clearInterval(applyDisabling3);
+      //     }
+      //     omegaApp.disableLargePrintIcon(true);
+      //     count++;
+      //   }, 100);
+      // }
+      else {
         let count = 0;
         let applyDisabling2 = setInterval(function() {
           if (count > 20) {
             clearInterval(applyDisabling2);
           }
-          omegaApp.disableSmallPrintIcon(false);
-          omegaApp.disableLargePrintIcon(false);
           count++;
+          if (!self.currentFile || self.actualPrintStarted) {
+            if (self.printPaused) {
+              omegaApp.disableLargePrintIcon(false);
+            } else {
+              omegaApp.disableLargePrintIcon(true);
+            }
+          } else {
+            omegaApp.disableSmallPrintIcon(false);
+            omegaApp.disableLargePrintIcon(false);
+          }
         }, 100);
       }
     } else {
@@ -573,6 +591,17 @@ function OmegaViewModel(parameters) {
   };
 
   self.onAfterBinding = () => {
+    self.refreshDemoList();
+    if (self.palette2SetupStarted) {
+      let count = 0;
+      let applyDisablingResume = setInterval(function() {
+        if (count > 50) {
+          clearInterval(applyDisablingResume);
+        }
+        omegaApp.disablePause(true);
+        count++;
+      }, 100);
+    }
     self.settings = parameters[0];
     var payload = { command: "uiUpdate" };
 
@@ -589,6 +618,7 @@ function OmegaViewModel(parameters) {
     self.findCurrentFilename();
     self.removeFolderBinding();
     self.handleGCODEFolders();
+    self.applyPaletteDisabling();
   };
 
   self.onEventConnected = payload => {
@@ -636,15 +666,26 @@ function OmegaViewModel(parameters) {
   };
 
   self.onEventPrintPaused = payload => {
-    if (self.connected() && payload.name.includes(".mcf.gcode") && !self.actualPrintStarted) {
-      let count = 0;
-      let applyDisablingResume = setInterval(function() {
-        if (count > 50) {
-          clearInterval(applyDisablingResume);
-        }
-        omegaApp.disablePause(true);
-        count++;
-      }, 100);
+    if (self.connected() && payload.name.includes(".mcf.gcode")) {
+      if (!self.actualPrintStarted) {
+        let count = 0;
+        let applyDisablingResume = setInterval(function() {
+          if (count > 50) {
+            clearInterval(applyDisablingResume);
+          }
+          omegaApp.disablePause(true);
+          count++;
+        }, 100);
+      } else {
+        let count = 0;
+        let applyDisablingResume = setInterval(function() {
+          if (count > 50) {
+            clearInterval(applyDisablingResume);
+          }
+          omegaApp.disableLargePrintIcon(false);
+          count++;
+        }, 100);
+      }
     }
   };
 
@@ -675,6 +716,10 @@ function OmegaViewModel(parameters) {
     if (payload.name.includes(".mcf.gcode")) {
       self.actualPrintStarted = false;
     }
+  };
+
+  self.onEventClientOpened = () => {
+    // self.applyPaletteDisabling();
   };
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
@@ -740,6 +785,13 @@ function OmegaViewModel(parameters) {
         }
       } else if (message.includes("UI:PalettePausedPrint")) {
         self.printPaused = message.substring(22);
+        console.log("INSIDE UDPATEDATA");
+        console.log(self.printPaused);
+        if (self.printPaused === "True") {
+          self.printPaused = true;
+        } else {
+          self.printPaused = false;
+        }
       } else if (message.includes("UI:PrinterCon")) {
         let printerState = message.substring(14);
         if (printerState) {
@@ -762,6 +814,13 @@ function OmegaViewModel(parameters) {
           self.autoconnect = true;
         } else {
           self.autoconnect = false;
+        }
+      } else if (message.includes("UI:Palette2SetupStarted=")) {
+        self.palette2SetupStarted = message.substring(24);
+        if (self.palette2SetupStarted === "True") {
+          self.palette2SetupStarted = true;
+        } else {
+          self.palette2SetupStarted = false;
         }
       }
     }
