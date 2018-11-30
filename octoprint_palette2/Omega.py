@@ -5,7 +5,6 @@ import threading
 import subprocess
 import os
 import binascii
-# import requests
 from Queue import Queue
 
 
