@@ -383,11 +383,11 @@ function OmegaViewModel(parameters) {
   };
 
   self.applyPaletteDisabling = () => {
-    console.log(self.printerConnected);
-    console.log(self.connected());
-    console.log(self.currentFile);
-    console.log(self.actualPrintStarted);
-    console.log(self.printPaused);
+    // console.log(self.printerConnected);
+    // console.log(self.connected());
+    // console.log(self.currentFile);
+    // console.log(self.actualPrintStarted);
+    // console.log(self.printPaused);
 
     if (self.printerConnected) {
       if (!self.connected()) {
@@ -785,8 +785,8 @@ function OmegaViewModel(parameters) {
         }
       } else if (message.includes("UI:PalettePausedPrint")) {
         self.printPaused = message.substring(22);
-        console.log("INSIDE UDPATEDATA");
-        console.log(self.printPaused);
+        // console.log("INSIDE UDPATEDATA");
+        // console.log(self.printPaused);
         if (self.printPaused === "True") {
           self.printPaused = true;
         } else {

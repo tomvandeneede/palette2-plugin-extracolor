@@ -5,6 +5,7 @@ import threading
 import subprocess
 import os
 import binascii
+# import requests
 from Queue import Queue
 
 
@@ -58,7 +59,6 @@ class Omega():
             while time.time() < timeout_start + timeout:
                 if self.heartbeat:
                     self.connected = True
-                    self.sendAllFilenamesToOmega()
                     self._logger.info("Connected to Omega")
                     self.updateUI()
                     break
@@ -148,7 +148,12 @@ class Omega():
                     self._printer.toggle_pause_print()
                     self._logger.info("Splices being prepared.")
                 elif "O50" in line:
-                    pass
+                    self.sendAllMCFFilenamesToOmega()
+                elif "O53" in line:
+                    if "D1" in line:
+                        index_to_print = int(line[8:], 16)
+                        file = self.allMCFFiles[index_to_print]
+                        self.startPrintFromP2(file)
                 elif "O97" in line:
                     if "U26" in line:
                         self.filamentLength = int(line[9:], 16)
@@ -356,6 +361,7 @@ class Omega():
         self.lastCommandSent = ""
         self.currentPingCmd = ""
         self.palette2SetupStarted = False
+        self.allMCFFiles = []
 
         self.displayAlerts = self._settings.get(["palette2Alerts"])
 
@@ -461,26 +467,35 @@ class Omega():
         self._settings.set(["palette2Alerts"], condition)
         self._settings.save()
 
-    def sendAllFilenamesToOmega(self):
-        self.getAllFilenames()
-        for file in self.allFiles:
-            # filename = binascii.hexlify(file.replace(".mcf.gcode", ""))
+    def sendAllMCFFilenamesToOmega(self):
+        self.getAllMCFFilenames()
+        for file in self.allMCFFiles:
             filename = file.replace(".mcf.gcode", "")
             self.enqueueCmd("O51 D" + filename)
         self.enqueueCmd("O52")
 
-    def getAllFilenames(self):
+    def getAllMCFFilenames(self):
+        self.allMCFFiles = []
         uploads_path = self._settings.global_get_basefolder("uploads")
-        self.allFiles = []
-        self.iterateThroughFolder(uploads_path)
-        self._logger.info(self.allFiles)
+        self.iterateThroughFolder(uploads_path, "")
 
-    def iterateThroughFolder(self, folder_path):
+    def iterateThroughFolder(self, folder_path, folder_name):
         for file in os.listdir(folder_path):
             file_path = os.path.join(folder_path, file)
             # If file is an .mcf.gcode file
-            if (os.path.isfile(file_path) and ".mcf.gcode" in file):
-                self.allFiles.append(file)
+            if os.path.isfile(file_path) and ".mcf.gcode" in file:
+                if folder_name != "":
+                    cumulative_folder_name = folder_name + "/" + file
+                else:
+                    cumulative_folder_name = file
+                self.allMCFFiles.append(cumulative_folder_name)
             # If file is a folder, go through that folder again
-            elif (os.path.isdir(file_path)):
-                self.iterateThroughFolder(file_path)
+            # elif os.path.isdir(file_path):
+            #     if folder_name != "":
+            #         cumulative_folder_name = folder_name + "/" + file
+            #     else:
+            #         cumulative_folder_name = file
+            #     self.iterateThroughFolder(file_path, cumulative_folder_name)
+
+    def startPrintFromP2(self, file):
+        self._printer.select_file(file, False, printAfterSelect=True)

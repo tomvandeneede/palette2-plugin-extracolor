@@ -91,8 +91,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_event(self, event, payload):
         if "ClientOpened" in event:
-            if self.palette.connected:
-                self.palette.sendAllFilenamesToOmega()
+            # if self.palette.connected:
+            #     self.palette.sendAllFilenamesToOmega()
             self.palette.printerConnection = self._printer.get_current_connection()[
                 0]
             self.palette.updateUI()
@@ -122,10 +122,12 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.resetPrintValues()
         elif "FileAdded" in event:
             # User uploads a new file to Octoprint, we should update the demo list of files
+            self.palette.getAllMCFFilenames()
             self._plugin_manager.send_plugin_message(
                 self._identifier, "UI:Refresh Demo List")
         elif "FileRemoved" in event:
             # User removed a file from Octoprint, we should update the demo list of files
+            self.palette.getAllMCFFilenames()
             self._plugin_manager.send_plugin_message(
                 self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
