@@ -545,8 +545,9 @@ function OmegaViewModel(parameters) {
         }
         self.displayFilamentCountdown();
       }
-    } else if (self.currentStatus === "Cancelling Print") {
+    } else if (self.currentStatus === "Cancelling print") {
       omegaApp.printCancelAlert();
+      self.removeNotification();
     } else if (self.currentStatus === "Preparing splices") {
       self.actualPrintStarted = true;
     }
