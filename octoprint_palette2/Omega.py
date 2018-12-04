@@ -1,10 +1,12 @@
 import serial
+import serial.tools.list_ports
 import glob
 import time
 import threading
 import subprocess
 import os
 import binascii
+import sys
 from Queue import Queue
 
 
@@ -28,8 +30,18 @@ class Omega():
     def connectOmega(self, port=300):
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
-            omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
-            omegaPort += glob.glob('/dev/*usbserial*')
+            omegaPort = []
+            self._logger.info("platform type: %s" % sys.platform)
+            if 'win32' in sys.platform:
+                # use windows com stuff
+                self._logger.info("Using a windows machine")
+                for port in serial.tools.list_ports.grep('.*0403:6015.*'):
+                    self._logger.info("got port %s" % port.device)
+                    omegaPort.append(port.device)
+            else:
+                #either linux or mac so use their paths
+                omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
+                omegaPort += glob.glob('/dev/*usbserial*')
             if len(omegaPort) > 0:
                 try:
                     self.omegaSerial = serial.Serial(
