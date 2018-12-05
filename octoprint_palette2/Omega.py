@@ -1,9 +1,12 @@
 import serial
+import serial.tools.list_ports
 import glob
 import time
 import threading
 import subprocess
 import os
+import binascii
+import sys
 from Queue import Queue
 
 
@@ -27,8 +30,18 @@ class Omega():
     def connectOmega(self, port=300):
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
-            omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
-            omegaPort += glob.glob('/dev/*usbserial*')
+            omegaPort = []
+            self._logger.info("platform type: %s" % sys.platform)
+            if 'win32' in sys.platform:
+                # use windows com stuff
+                self._logger.info("Using a windows machine")
+                for port in serial.tools.list_ports.grep('.*0403:6015.*'):
+                    self._logger.info("got port %s" % port.device)
+                    omegaPort.append(port.device)
+            else:
+                # either linux or mac so use their paths
+                omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
+                omegaPort += glob.glob('/dev/*usbserial*')
             if len(omegaPort) > 0:
                 try:
                     self.omegaSerial = serial.Serial(
@@ -146,7 +159,12 @@ class Omega():
                     self._printer.toggle_pause_print()
                     self._logger.info("Splices being prepared.")
                 elif "O50" in line:
-                    pass
+                    self.sendAllMCFFilenamesToOmega()
+                elif "O53" in line:
+                    if "D1" in line:
+                        index_to_print = int(line[8:], 16)
+                        file = self.allMCFFiles[index_to_print]
+                        self.startPrintFromP2(file)
                 elif "O97" in line:
                     if "U26" in line:
                         self.filamentLength = int(line[9:], 16)
@@ -248,6 +266,8 @@ class Omega():
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:Palette2SetupStarted=%s" % self.palette2SetupStarted)
+        self._plugin_manager.send_plugin_message(
             self._identifier, "UI:AutoConnect=%s" % self._settings.get(["autoconnect"]))
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:FirstTime=%s" % self.firstTime)
@@ -282,7 +302,8 @@ class Omega():
             self._logger.info("Omega: Sent '%s'" % self.sentCounter)
             self.sentCounter = self.sentCounter + 1
         elif dataNum == 2:
-            self._logger.info("Sending ping: %s to Palette on request" % self.currentPingCmd)
+            self._logger.info(
+                "Sending ping: %s to Palette on request" % self.currentPingCmd)
             self.enqueueCmd(self.currentPingCmd)
         elif dataNum == 4:
             self._logger.info("Omega: send algo")
@@ -350,6 +371,8 @@ class Omega():
         self.firstTime = False
         self.lastCommandSent = ""
         self.currentPingCmd = ""
+        self.palette2SetupStarted = False
+        self.allMCFFiles = []
 
         self.displayAlerts = self._settings.get(["palette2Alerts"])
 
@@ -361,6 +384,19 @@ class Omega():
         self.connectionThread = None
         self.connectionStop = False
         self.heartbeat = False
+
+    def resetPrintValues(self):
+        self.firstTime = False
+        self.filamentLength = 0
+        self.currentSplice = "0"
+        self.palette2SetupStarted = False
+        self.splices = []
+        self.algorithms = []
+        self.sentCounter = 0
+        self.algoCounter = 0
+        self.spliceCounter = 0
+        self.lastCommandSent = ""
+        self.currentPingCmd = ""
 
     def resetOmega(self):
         self.resetConnection()
@@ -448,3 +484,36 @@ class Omega():
     def changeAlertSettings(self, condition):
         self._settings.set(["palette2Alerts"], condition)
         self._settings.save()
+
+    def sendAllMCFFilenamesToOmega(self):
+        self.getAllMCFFilenames()
+        for file in self.allMCFFiles:
+            filename = file.replace(".mcf.gcode", "")
+            self.enqueueCmd("O51 D" + filename)
+        self.enqueueCmd("O52")
+
+    def getAllMCFFilenames(self):
+        self.allMCFFiles = []
+        uploads_path = self._settings.global_get_basefolder("uploads")
+        self.iterateThroughFolder(uploads_path, "")
+
+    def iterateThroughFolder(self, folder_path, folder_name):
+        for file in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, file)
+            # If file is an .mcf.gcode file
+            if os.path.isfile(file_path) and ".mcf.gcode" in file:
+                if folder_name != "":
+                    cumulative_folder_name = folder_name + "/" + file
+                else:
+                    cumulative_folder_name = file
+                self.allMCFFiles.append(cumulative_folder_name)
+            # If file is a folder, go through that folder again
+            # elif os.path.isdir(file_path):
+            #     if folder_name != "":
+            #         cumulative_folder_name = folder_name + "/" + file
+            #     else:
+            #         cumulative_folder_name = file
+            #     self.iterateThroughFolder(file_path, cumulative_folder_name)
+
+    def startPrintFromP2(self, file):
+        self._printer.select_file(file, False, printAfterSelect=True)

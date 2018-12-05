@@ -139,7 +139,7 @@ omegaApp.readyToStartAlert = () => {
 omegaApp.printCancelAlert = () => {
   return swal({
     title: "Print cancelling ",
-    text: `Please remove filament from the extruder.`,
+    text: `Please remove filament from the extruder and from Palette 2.`,
     type: "info"
   });
 };
@@ -180,6 +180,7 @@ function OmegaViewModel(parameters) {
   self.firstTime = false;
   self.actualPrintStarted = false;
   self.autoconnect = false;
+  self.filaLength = "";
 
   self.files = ko.observableArray([]);
 
@@ -204,7 +205,7 @@ function OmegaViewModel(parameters) {
       headers: {
         "X-Api-Key": UI_API_KEY
       },
-      url: API_BASEURL + "files",
+      url: API_BASEURL + "files?recursive=true",
       type: "GET",
       dataType: "json",
       data: JSON.stringify(payload),
@@ -379,12 +380,6 @@ function OmegaViewModel(parameters) {
       .text();
   };
 
-  self.resetValues = () => {
-    self.amountLeftToExtrude = "";
-    self.firstTime = false;
-    self.actualPrintStarted = false;
-  };
-
   self.applyPaletteDisabling = () => {
     if (self.printerConnected) {
       if (!self.connected()) {
@@ -393,22 +388,13 @@ function OmegaViewModel(parameters) {
           if (count > 20) {
             clearInterval(applyDisabling);
           }
-          omegaApp.disableSmallPrintIcon(true);
           count++;
           if (self.currentFile.includes(".mcf.gcode")) {
             omegaApp.disableLargePrintIcon(true);
+            omegaApp.disableSmallPrintIcon(true);
           } else if (self.currentFile && !self.currentFile.includes(".mcf.gcode")) {
             omegaApp.disableLargePrintIcon(false);
           }
-        }, 100);
-      } else if (!self.currentFile) {
-        let count = 0;
-        let applyDisabling3 = setInterval(function() {
-          if (count > 20) {
-            clearInterval(applyDisabling3);
-          }
-          omegaApp.disableLargePrintIcon(true);
-          count++;
         }, 100);
       } else {
         let count = 0;
@@ -416,9 +402,17 @@ function OmegaViewModel(parameters) {
           if (count > 20) {
             clearInterval(applyDisabling2);
           }
-          omegaApp.disableSmallPrintIcon(false);
-          omegaApp.disableLargePrintIcon(false);
           count++;
+          if (!self.currentFile || self.actualPrintStarted) {
+            if (self.printPaused) {
+              omegaApp.disableLargePrintIcon(false);
+            } else {
+              omegaApp.disableLargePrintIcon(true);
+            }
+          } else {
+            omegaApp.disableSmallPrintIcon(false);
+            omegaApp.disableLargePrintIcon(false);
+          }
         }, 100);
       }
     } else {
@@ -532,8 +526,9 @@ function OmegaViewModel(parameters) {
         }
         self.displayFilamentCountdown();
       }
-    } else if (self.currentStatus === "Cancelling Print") {
+    } else if (self.currentStatus === "Cancelling print") {
       omegaApp.printCancelAlert();
+      self.removeNotification();
     } else if (self.currentStatus === "Preparing splices") {
       self.actualPrintStarted = true;
     }
@@ -542,7 +537,7 @@ function OmegaViewModel(parameters) {
   self.displayFilamentCountdown = () => {
     let notification = $(`<li id="jog-filament-notification" class="popup-notification">
               <i class="material-icons remove-popup">clear</i>
-              <h6>Remaining length to extrude:</h6>
+              <h6>Remaining Length To Extrude:</h6>
               <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
               </li>`).hide();
     self.jogId = "#jog-filament-notification";
@@ -578,6 +573,17 @@ function OmegaViewModel(parameters) {
   };
 
   self.onAfterBinding = () => {
+    self.refreshDemoList();
+    if (self.palette2SetupStarted) {
+      let count = 0;
+      let applyDisablingResume = setInterval(function() {
+        if (count > 50) {
+          clearInterval(applyDisablingResume);
+        }
+        omegaApp.disablePause(true);
+        count++;
+      }, 100);
+    }
     self.settings = parameters[0];
     var payload = { command: "uiUpdate" };
 
@@ -594,6 +600,7 @@ function OmegaViewModel(parameters) {
     self.findCurrentFilename();
     self.removeFolderBinding();
     self.handleGCODEFolders();
+    self.applyPaletteDisabling();
   };
 
   self.onEventConnected = payload => {
@@ -641,15 +648,26 @@ function OmegaViewModel(parameters) {
   };
 
   self.onEventPrintPaused = payload => {
-    if (self.connected() && payload.name.includes(".mcf.gcode") && !self.actualPrintStarted) {
-      let count = 0;
-      let applyDisablingResume = setInterval(function() {
-        if (count > 50) {
-          clearInterval(applyDisablingResume);
-        }
-        omegaApp.disablePause(true);
-        count++;
-      }, 100);
+    if (self.connected() && payload.name.includes(".mcf.gcode")) {
+      if (!self.actualPrintStarted) {
+        let count = 0;
+        let applyDisablingResume = setInterval(function() {
+          if (count > 50) {
+            clearInterval(applyDisablingResume);
+          }
+          omegaApp.disablePause(true);
+          count++;
+        }, 100);
+      } else {
+        let count = 0;
+        let applyDisablingResume = setInterval(function() {
+          if (count > 50) {
+            clearInterval(applyDisablingResume);
+          }
+          omegaApp.disableLargePrintIcon(false);
+          count++;
+        }, 100);
+      }
     }
   };
 
@@ -672,13 +690,13 @@ function OmegaViewModel(parameters) {
       self.currentStatus = "Print cancelled";
       self.updateCurrentStatus();
       self.sendCancelCmd();
-      self.resetValues();
+      self.actualPrintStarted = false;
     }
   };
 
   self.onEventPrintDone = payload => {
     if (payload.name.includes(".mcf.gcode")) {
-      self.resetValues();
+      self.actualPrintStarted = false;
     }
   };
 
@@ -745,6 +763,11 @@ function OmegaViewModel(parameters) {
         }
       } else if (message.includes("UI:PalettePausedPrint")) {
         self.printPaused = message.substring(22);
+        if (self.printPaused === "True") {
+          self.printPaused = true;
+        } else {
+          self.printPaused = false;
+        }
       } else if (message.includes("UI:PrinterCon")) {
         let printerState = message.substring(14);
         if (printerState) {
@@ -767,6 +790,13 @@ function OmegaViewModel(parameters) {
           self.autoconnect = true;
         } else {
           self.autoconnect = false;
+        }
+      } else if (message.includes("UI:Palette2SetupStarted=")) {
+        self.palette2SetupStarted = message.substring(24);
+        if (self.palette2SetupStarted === "True") {
+          self.palette2SetupStarted = true;
+        } else {
+          self.palette2SetupStarted = false;
         }
       }
     }
