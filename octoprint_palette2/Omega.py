@@ -39,7 +39,7 @@ class Omega():
                     self._logger.info("got port %s" % port.device)
                     omegaPort.append(port.device)
             else:
-                #either linux or mac so use their paths
+                # either linux or mac so use their paths
                 omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
                 omegaPort += glob.glob('/dev/*usbserial*')
             if len(omegaPort) > 0:
@@ -390,6 +390,13 @@ class Omega():
         self.filamentLength = 0
         self.currentSplice = "0"
         self.palette2SetupStarted = False
+        self.splices = []
+        self.algorithms = []
+        self.sentCounter = 0
+        self.algoCounter = 0
+        self.spliceCounter = 0
+        self.lastCommandSent = ""
+        self.currentPingCmd = ""
 
     def resetOmega(self):
         self.resetConnection()

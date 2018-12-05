@@ -139,7 +139,7 @@ omegaApp.readyToStartAlert = () => {
 omegaApp.printCancelAlert = () => {
   return swal({
     title: "Print cancelling ",
-    text: `Please remove filament from the extruder.`,
+    text: `Please remove filament from the extruder and from Palette 2.`,
     type: "info"
   });
 };
@@ -151,8 +151,6 @@ omegaApp.palette2NotConnectedAlert = () => {
     type: "info"
   });
 };
-
-/* 5. GET ALL FILENAMES */
 
 /* ======================
 OMEGA VIEWMODEL FOR OCTOPRINT
@@ -383,12 +381,6 @@ function OmegaViewModel(parameters) {
   };
 
   self.applyPaletteDisabling = () => {
-    // console.log(self.printerConnected);
-    // console.log(self.connected());
-    // console.log(self.currentFile);
-    // console.log(self.actualPrintStarted);
-    // console.log(self.printPaused);
-
     if (self.printerConnected) {
       if (!self.connected()) {
         let count = 0;
@@ -404,18 +396,7 @@ function OmegaViewModel(parameters) {
             omegaApp.disableLargePrintIcon(false);
           }
         }, 100);
-      }
-      // else if (!self.currentFile) {
-      //   let count = 0;
-      //   let applyDisabling3 = setInterval(function() {
-      //     if (count > 20) {
-      //       clearInterval(applyDisabling3);
-      //     }
-      //     omegaApp.disableLargePrintIcon(true);
-      //     count++;
-      //   }, 100);
-      // }
-      else {
+      } else {
         let count = 0;
         let applyDisabling2 = setInterval(function() {
           if (count > 20) {
@@ -556,7 +537,7 @@ function OmegaViewModel(parameters) {
   self.displayFilamentCountdown = () => {
     let notification = $(`<li id="jog-filament-notification" class="popup-notification">
               <i class="material-icons remove-popup">clear</i>
-              <h6>Remaining length to extrude:</h6>
+              <h6>Remaining Length To Extrude:</h6>
               <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
               </li>`).hide();
     self.jogId = "#jog-filament-notification";
@@ -719,10 +700,6 @@ function OmegaViewModel(parameters) {
     }
   };
 
-  self.onEventClientOpened = () => {
-    // self.applyPaletteDisabling();
-  };
-
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
       if (message.includes("UI:currentSplice")) {
@@ -786,8 +763,6 @@ function OmegaViewModel(parameters) {
         }
       } else if (message.includes("UI:PalettePausedPrint")) {
         self.printPaused = message.substring(22);
-        // console.log("INSIDE UDPATEDATA");
-        // console.log(self.printPaused);
         if (self.printPaused === "True") {
           self.printPaused = true;
         } else {
