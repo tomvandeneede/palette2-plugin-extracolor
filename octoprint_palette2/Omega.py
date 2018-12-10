@@ -47,6 +47,7 @@ class Omega():
                     self.omegaSerial = serial.Serial(
                         omegaPort[0], 250000, timeout=0.5)
                     self.connected = True
+                    self.tryHeartbeat()
                 except:
                     self._logger.info(
                         "Another resource is connected to Palette")
@@ -58,6 +59,7 @@ class Omega():
             self._logger.info("Already Connected")
             self.updateUI()
 
+    def tryHeartbeat(self):
         if self.connected:
             self.connected = False
             self.startReadThread()
@@ -155,6 +157,7 @@ class Omega():
                 elif "O40" in line:
                     self.printPaused = False
                     self.currentStatus = "Preparing splices"
+                    self.actualPrintStarted = True
                     self.updateUI()
                     self._printer.toggle_pause_print()
                     self._logger.info("Splices being prepared.")
@@ -266,6 +269,8 @@ class Omega():
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
+            self._identifier, "UI:ActualPrintStarted=%s" % self.actualPrintStarted)
+        self._plugin_manager.send_plugin_message(
             self._identifier, "UI:Palette2SetupStarted=%s" % self.palette2SetupStarted)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:AutoConnect=%s" % self._settings.get(["autoconnect"]))
@@ -373,6 +378,7 @@ class Omega():
         self.currentPingCmd = ""
         self.palette2SetupStarted = False
         self.allMCFFiles = []
+        self.actualPrintStarted = False
 
         self.displayAlerts = self._settings.get(["palette2Alerts"])
 
@@ -386,6 +392,7 @@ class Omega():
         self.heartbeat = False
 
     def resetPrintValues(self):
+        self.actualPrintStarted = False
         self.firstTime = False
         self.filamentLength = 0
         self.currentSplice = "0"

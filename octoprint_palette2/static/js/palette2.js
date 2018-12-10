@@ -399,7 +399,7 @@ function OmegaViewModel(parameters) {
       } else {
         let count = 0;
         let applyDisabling2 = setInterval(function() {
-          if (count > 20) {
+          if (count > 30) {
             clearInterval(applyDisabling2);
           }
           count++;
@@ -412,6 +412,9 @@ function OmegaViewModel(parameters) {
           } else {
             omegaApp.disableSmallPrintIcon(false);
             omegaApp.disableLargePrintIcon(false);
+            if (self.printPaused && !self.actualPrintStarted) {
+              omegaApp.disablePause(true);
+            }
           }
         }, 100);
       }
@@ -502,7 +505,6 @@ function OmegaViewModel(parameters) {
     $(".current-status").text(self.currentStatus);
     if (self.currentStatus === "Palette work completed: all splices prepared") {
       $(".current-status").text(self.currentStatus);
-      self.actualPrintStarted = false;
     } else if (self.currentStatus === "Loading filament through outgoing tube") {
       if (self.displayAlerts) {
         let base_url = window.location.origin;
@@ -529,8 +531,6 @@ function OmegaViewModel(parameters) {
     } else if (self.currentStatus === "Cancelling print") {
       omegaApp.printCancelAlert();
       self.removeNotification();
-    } else if (self.currentStatus === "Preparing splices") {
-      self.actualPrintStarted = true;
     }
   };
 
@@ -690,13 +690,6 @@ function OmegaViewModel(parameters) {
       self.currentStatus = "Print cancelled";
       self.updateCurrentStatus();
       self.sendCancelCmd();
-      self.actualPrintStarted = false;
-    }
-  };
-
-  self.onEventPrintDone = payload => {
-    if (payload.name.includes(".mcf.gcode")) {
-      self.actualPrintStarted = false;
     }
   };
 
@@ -797,6 +790,13 @@ function OmegaViewModel(parameters) {
           self.palette2SetupStarted = true;
         } else {
           self.palette2SetupStarted = false;
+        }
+      } else if (message.includes("UI:ActualPrintStarted")) {
+        self.actualPrintStarted = message.substring(22);
+        if (self.actualPrintStarted === "True") {
+          self.actualPrintStarted = true;
+        } else {
+          self.actualPrintStarted = false;
         }
       }
     }
