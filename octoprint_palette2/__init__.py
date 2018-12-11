@@ -97,11 +97,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.printerConnection = ""
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
+                self.palette.resetPrintValues()
                 self._logger.info("Filename: %s" %
                                   payload["name"].split('.')[0])
                 self.palette.setFilename(payload["name"].split(".")[0])
                 self.palette.currentStatus = "Initializing ..."
-                self.palette.resetPrintValues()
                 self.palette.palette2SetupStarted = True
                 self.palette.updateUI()
         elif "PrintPaused" in event:
@@ -111,16 +111,20 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "PrintResumed" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.palette2SetupStarted = False
+                self.palette.printPaused = False
                 self.palette.updateUI()
         elif "PrintDone" in event:
             if ".mcf.gcode" in payload["name"]:
-                self.palette.resetPrintValues()
-        elif "PrintCancelled" in event:
-            if ".mcf.gcode" in payload["name"]:
-                self.palette.resetPrintValues()
+                self.palette.actualPrintStarted = False
+                self.palette.updateUI()
         elif "PrintFailed" in event:
             if ".mcf.gcode" in payload["name"]:
-                self.palette.resetPrintValues()
+                self.palette.actualPrintStarted = False
+                self.palette.updateUI()
+        elif "PrintCancelled" in event:
+            if ".mcf.gcode" in payload["name"]:
+                self.palette.actualPrintStarted = False
+                self.palette.updateUI()
         elif "FileAdded" in event:
             # User uploads a new file to Octoprint, we should update the demo list of files
             self.palette.getAllMCFFilenames()
