@@ -726,9 +726,9 @@ function OmegaViewModel(parameters) {
           self.updateConnection();
           if (self.tryingToConnect) {
             self.tryingToConnect = false;
-            $("body").on("click", "#swal2-checkbox", event => {
-              self.changeAlertSettings(event.target.checked);
-            });
+            // $("body").on("click", "#swal2-checkbox", event => {
+            //   self.changeAlertSettings(event.target.checked);
+            // });
             omegaApp.cannotConnectAlert();
           }
         }
@@ -747,6 +747,9 @@ function OmegaViewModel(parameters) {
         if (self.amountLeftToExtrude === "0") {
           self.removeNotification();
           if (self.displayAlerts) {
+            $("body").on("click", "#swal2-checkbox", event => {
+              self.changeAlertSettings(event.target.checked);
+            });
             omegaApp.readyToStartAlert();
           }
         } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {

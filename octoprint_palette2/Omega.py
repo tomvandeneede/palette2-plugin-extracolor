@@ -279,7 +279,7 @@ class Omega():
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:PrinterCon=%s" % self.printerConnection)
         self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:DisplayAlerts=%s" % self.displayAlerts)
+            self._identifier, "UI:DisplayAlerts=%s" % self._settings.get(["palette2Alerts"]))
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:currentStatus=%s" % self.currentStatus)
         self._plugin_manager.send_plugin_message(
@@ -379,8 +379,6 @@ class Omega():
         self.palette2SetupStarted = False
         self.allMCFFiles = []
         self.actualPrintStarted = False
-
-        self.displayAlerts = self._settings.get(["palette2Alerts"])
 
         self.filename = ""
 
