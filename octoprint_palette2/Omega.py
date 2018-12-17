@@ -313,7 +313,7 @@ class Omega():
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
             if self.connected is False:
-                self.connectOmega()
+                self.connectOmega(self.selectedPort)
             time.sleep(1)
 
     def enqueueCmd(self, line):
