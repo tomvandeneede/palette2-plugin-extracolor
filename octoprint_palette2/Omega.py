@@ -50,7 +50,7 @@ class Omega():
             + glob.glob("/dev/cuaU*") \
             + glob.glob("/dev/rfcomm*") \
             + glob.glob('/dev/serial/by-id/*FTDI*') \
-            + glob.glob('/dev/*usbserial*')
+            + glob.glob('/dev/*usbserial*') \
 
         if 'win32' in sys.platform:
             # use windows com stuff
@@ -79,7 +79,7 @@ class Omega():
         self.ports = self.getAllPorts()
         self._logger.info(self.ports)
         if self.ports and not self.selectedPort:
-            self.selectedPort = self.ports[-1]
+            self.selectedPort = self.ports[0]
         self._logger.info(self.selectedPort)
         self._plugin_manager.send_plugin_message(
             self._identifier, {"command": "ports", "data": self.ports})

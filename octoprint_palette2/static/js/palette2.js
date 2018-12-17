@@ -152,6 +152,14 @@ omegaApp.palette2NotConnectedAlert = () => {
   });
 };
 
+omegaApp.noSerialPortsAlert = () => {
+  return swal({
+    title: "No serial ports detected",
+    text: `Please make sure all cables are inserted properly into your Hub.`,
+    type: "error"
+  });
+};
+
 /* ======================
 OMEGA VIEWMODEL FOR OCTOPRINT
 ======================= */
@@ -717,23 +725,13 @@ function OmegaViewModel(parameters) {
     if (pluginIdent === "palette2") {
       if (message.command === "selectedPort") {
         selectedPort = message.data;
-        if (!selectedPort) {
-          swal({
-            title: "No serial ports detected",
-            text: `Please make sure all cables are properly plugged in.`,
-            type: "info"
-          });
-        } else {
+        if (selectedPort) {
           self.selectedPort(selectedPort);
         }
       } else if (message.command === "ports") {
         allPorts = message.data;
-        if (!allPorts) {
-          swal({
-            title: "No serial ports detected",
-            text: `Please make sure all cables are properly plugged in.`,
-            type: "info"
-          });
+        if (allPorts.length === 0) {
+          omegaApp.noSerialPortsAlert();
         } else {
           self.ports(allPorts);
           $(".serial-ports-list").toggle(125);
@@ -769,9 +767,6 @@ function OmegaViewModel(parameters) {
           self.updateConnection();
           if (self.tryingToConnect) {
             self.tryingToConnect = false;
-            // $("body").on("click", "#swal2-checkbox", event => {
-            //   self.changeAlertSettings(event.target.checked);
-            // });
             omegaApp.cannotConnectAlert();
           }
         }
