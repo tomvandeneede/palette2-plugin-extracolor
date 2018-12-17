@@ -87,7 +87,7 @@ omegaApp.extrusionHighlight = () => {
 omegaApp.cannotConnectAlert = () => {
   return swal({
     title: "Could not connect to Palette 2",
-    text: `Please make sure Palette 2 is turned on. Please wait 5 seconds before trying again.`,
+    text: `Please make sure Palette 2 is turned on and that the selected port corresponds to it. Please wait 5 seconds before trying again.`,
     type: "error"
   });
 };
@@ -186,6 +186,9 @@ function OmegaViewModel(parameters) {
 
   self.selectedDemoFile = ko.observable();
 
+  self.ports = ko.observableArray([]);
+  self.selectedPort = ko.observable();
+
   /* COMMUNICATION TO BACK-END FUNCTIONS */
 
   window.onload = () => {
@@ -198,6 +201,19 @@ function OmegaViewModel(parameters) {
     });
     return filteredFiles;
   });
+
+  self.displayPorts = () => {
+    var payload = {
+      command: "displayPorts"
+    };
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
 
   self.refreshDemoList = () => {
     var payload = {};
@@ -242,10 +258,14 @@ function OmegaViewModel(parameters) {
     self.tryingToConnect = true;
     omegaApp.loadingOverlay(true);
 
-    var payload = {
-      command: "connectOmega",
-      port: ""
-    };
+    if (self.selectedPort()) {
+      var payload = {
+        command: "connectOmega",
+        port: self.selectedPort()
+      };
+    } else {
+      var payload = { command: "connectOmega", port: "" };
+    }
 
     $.ajax({
       url: API_BASEURL + "plugin/palette2",
@@ -695,7 +715,14 @@ function OmegaViewModel(parameters) {
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      if (message.includes("UI:currentSplice")) {
+      if (message.command === "selectedPort") {
+        selectedPort = message.data;
+        self.selectedPort(selectedPort);
+      } else if (message.command === "ports") {
+        allPorts = message.data;
+        self.ports(allPorts);
+        $(".serial-ports-list").toggle(125);
+      } else if (message.includes("UI:currentSplice")) {
         var num = message.substring(17);
         self.currentSplice(num);
         self.updateCurrentSplice();

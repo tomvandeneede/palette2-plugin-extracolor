@@ -18,6 +18,9 @@ class Omega():
         self._identifier = plugin._identifier
         self._settings = plugin._settings
 
+        self.ports = []
+        self.selectedPort = ""
+
         self.writeQueue = Queue()
 
         self.resetVariables()
@@ -27,7 +30,63 @@ class Omega():
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
 
-    def connectOmega(self, port=300):
+    def getAllPorts(self):
+        baselist = []
+        if os.name == "nt":
+            try:
+                key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
+                                      "HARDWARE\\DEVICEMAP\\SERIALCOMM")
+                i = 0
+                while(1):
+                    baselist += [_winreg.EnumValue(key, i)[1]]
+                    i += 1
+            except:
+                pass
+        baselist = baselist \
+            + glob.glob("/dev/ttyUSB*") \
+            + glob.glob("/dev/ttyACM*") \
+            + glob.glob("/dev/tty.usb*") \
+            + glob.glob("/dev/cu.*") \
+            + glob.glob("/dev/cuaU*") \
+            + glob.glob("/dev/rfcomm*") \
+            + glob.glob('/dev/serial/by-id/*FTDI*') \
+            + glob.glob('/dev/*usbserial*')
+
+        if 'win32' in sys.platform:
+            # use windows com stuff
+            self._logger.info("Using a windows machine")
+            for port in serial.tools.list_ports.grep('.*0403:6015.*'):
+                self._logger.info("got port %s" % port.device)
+                baselist.append(port.device)
+
+        additionalPorts = self._settings.get(["serial", "additionalPorts"])
+        if additionalPorts:
+            for additional in additionalPorts:
+                baselist += glob.glob(additional)
+
+        prev = self._settings.get(["serial", "port"])
+        if prev in baselist:
+            baselist.remove(prev)
+            baselist.insert(0, prev)
+        if self._settings.getBoolean(["devel", "virtualPrinter", "enabled"]):
+            baselist.append("VIRTUAL")
+
+        # get unique values only
+        baselist = list(set(baselist))
+        return baselist
+
+    def displayPorts(self):
+        self.ports = self.getAllPorts()
+        self._logger.info(self.ports)
+        if not self.selectedPort:
+            self.selectedPort = self.ports[-1]
+        self._logger.info(self.selectedPort)
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"command": "ports", "data": self.ports})
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"command": "selectedPort", "data": self.selectedPort})
+
+    def connectOmega(self, port):
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
             omegaPort = []
@@ -42,24 +101,28 @@ class Omega():
                 # either linux or mac so use their paths
                 omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
                 omegaPort += glob.glob('/dev/*usbserial*')
+                self._logger.info(omegaPort)
             if len(omegaPort) > 0:
                 try:
+                    if not port:
+                        port = omegaPort[0]
+                    self._logger.info(port)
                     self.omegaSerial = serial.Serial(
-                        omegaPort[0], 250000, timeout=0.5)
+                        port, 250000, timeout=0.5)
                     self.connected = True
-                    self.tryHeartbeat()
+                    self.tryHeartbeat(port)
                 except:
                     self._logger.info(
                         "Another resource is connected to Palette")
                     self.updateUI()
             else:
-                self._logger.info("Unable to find Omega port")
+                self._logger.info("Unable to find port")
                 self.updateUI()
         else:
             self._logger.info("Already Connected")
             self.updateUI()
 
-    def tryHeartbeat(self):
+    def tryHeartbeat(self, port):
         if self.connected:
             self.connected = False
             self.startReadThread()
@@ -73,12 +136,14 @@ class Omega():
                 if self.heartbeat:
                     self.connected = True
                     self._logger.info("Connected to Omega")
+                    self.selectedPort = port
                     self.updateUI()
                     break
                 else:
                     pass
             if not self.heartbeat:
-                self._logger.info("Palette is not turned on.")
+                self._logger.info(
+                    "Palette is not turned on OR this is not the serial port for Palette.")
                 self.resetVariables()
                 self.resetConnection()
                 self.updateUI()
