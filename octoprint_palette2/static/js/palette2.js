@@ -717,11 +717,27 @@ function OmegaViewModel(parameters) {
     if (pluginIdent === "palette2") {
       if (message.command === "selectedPort") {
         selectedPort = message.data;
-        self.selectedPort(selectedPort);
+        if (!selectedPort) {
+          swal({
+            title: "No serial ports detected",
+            text: `Please make sure all cables are properly plugged in.`,
+            type: "info"
+          });
+        } else {
+          self.selectedPort(selectedPort);
+        }
       } else if (message.command === "ports") {
         allPorts = message.data;
-        self.ports(allPorts);
-        $(".serial-ports-list").toggle(125);
+        if (!allPorts) {
+          swal({
+            title: "No serial ports detected",
+            text: `Please make sure all cables are properly plugged in.`,
+            type: "info"
+          });
+        } else {
+          self.ports(allPorts);
+          $(".serial-ports-list").toggle(125);
+        }
       } else if (message.includes("UI:currentSplice")) {
         var num = message.substring(17);
         self.currentSplice(num);

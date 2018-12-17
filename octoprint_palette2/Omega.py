@@ -78,7 +78,7 @@ class Omega():
     def displayPorts(self):
         self.ports = self.getAllPorts()
         self._logger.info(self.ports)
-        if not self.selectedPort:
+        if self.ports and not self.selectedPort:
             self.selectedPort = self.ports[-1]
         self._logger.info(self.selectedPort)
         self._plugin_manager.send_plugin_message(
