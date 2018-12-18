@@ -67,7 +67,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "clearPalette2":
             self.palette.clear()
         elif command == "connectOmega":
-            self._logger.info("Command recieved")
+            self._logger.info("Command received")
             self.palette.connectOmega(data["port"])
         elif command == "disconnectPalette2":
             self.palette.disconnect()

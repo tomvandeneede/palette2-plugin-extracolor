@@ -732,6 +732,7 @@ function OmegaViewModel(parameters) {
         allPorts = message.data;
         if (allPorts.length === 0) {
           omegaApp.noSerialPortsAlert();
+          $(".serial-ports-list").hide(125);
         } else {
           self.ports(allPorts);
           $(".serial-ports-list").toggle(125);
