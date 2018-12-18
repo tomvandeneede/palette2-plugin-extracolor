@@ -44,6 +44,7 @@ class Omega():
             + glob.glob('/dev/serial/by-id/*FTDI*') \
             + glob.glob('/dev/*usbserial*') \
 
+        baselist = self.getRealPaths(baselist)
         # get unique values only
         baselist = list(set(baselist))
         return baselist
@@ -59,6 +60,15 @@ class Omega():
         self._plugin_manager.send_plugin_message(
             self._identifier, {"command": "selectedPort", "data": self.selectedPort})
 
+    def getRealPaths(self, ports):
+        for index, port in enumerate(ports):
+            self._logger.info(index)
+            self._logger.info(port)
+            port = os.path.realpath(port)
+            ports[index] = port
+        self._logger.info(ports)
+        return ports
+
     def connectOmega(self, port):
         if self.connected is False:
             self.ports = self.getAllPorts()
@@ -67,10 +77,9 @@ class Omega():
                 if not port:
                     port = self.ports[0]
                 self._logger.info("Trying %s port" % port)
-                printer_port = os.path.realpath(
-                    self._printer.get_current_connection()[1])
+                printer_port = self._printer.get_current_connection()[1]
                 self._logger.info(printer_port)
-                if port == printer_port:
+                if os.path.realpath(port) == printer_port:
                     self._logger.info(
                         "This is the printer port. Will not connect to this.")
                     self.updateUI()
