@@ -69,6 +69,28 @@ class Omega():
         self._logger.info(ports)
         return ports
 
+    def isPrinterPort(self, selected_port):
+        selected_port = os.path.realpath(selected_port)
+        printer_port = self._printer.get_current_connection()[1]
+        self._logger.info(printer_port)
+        # because ports usually have a second available one (.tty or .cu)
+        printer_port_alt = ""
+        if printer_port == None:
+            return False
+        else:
+            if "tty." in printer_port:
+                printer_port_alt = printer_port.replace("tty.", "cu.", 1)
+            elif "cu." in printer_port:
+                printer_port_alt = printer_port.replace("cu.", "tty.", 1)
+
+            self._logger.info(selected_port)
+            self._logger.info(printer_port)
+            self._logger.info(printer_port_alt)
+            if selected_port == printer_port or selected_port == printer_port_alt:
+                return True
+            else:
+                return False
+
     def connectOmega(self, port):
         if self.connected is False:
             self.ports = self.getAllPorts()
@@ -77,9 +99,10 @@ class Omega():
                 if not port:
                     port = self.ports[0]
                 self._logger.info("Trying %s port" % port)
-                printer_port = self._printer.get_current_connection()[1]
-                self._logger.info(printer_port)
-                if os.path.realpath(port) == printer_port:
+                # printer_port = self._printer.get_current_connection()[1]
+                # self._logger.info(printer_port)
+                # if os.path.realpath(port) == printer_port:
+                if self.isPrinterPort(port):
                     self._logger.info(
                         "This is the printer port. Will not connect to this.")
                     self.updateUI()
