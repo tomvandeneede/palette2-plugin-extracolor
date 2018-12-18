@@ -67,7 +67,8 @@ class Omega():
                 if not port:
                     port = self.ports[0]
                 self._logger.info("Trying %s port" % port)
-                printer_port = self._printer.get_current_connection()[1]
+                printer_port = os.path.realpath(
+                    self._printer.get_current_connection()[1])
                 self._logger.info(printer_port)
                 if port == printer_port:
                     self._logger.info(
