@@ -28,6 +28,52 @@
 						<h5 class="single-status-title">Filament Used: </h5>
 						<span class="single-status-value">-</span>
 					</li>
+					<li class="single-status pings-container">
+						<div class="ping-overview" data-bind="click: togglePingHistory">
+							<h5 class="single-status-title">Latest Ping: </h5>
+							<p class="current-ping">
+								Ping
+								<span class="single-status-value" data-bind="text: latestPing"></span>
+							 	/
+								<span class="single-status-value total-pings" data-bind="text: totalPings"></span>
+							</p>
+							<span class="separator">---</span>
+							<p class="current-ping-percentage">
+								<span class="single-status-value" data-bind="text: latestPingPercent"></span>%
+							</p>
+						</div>
+						<ul class="ping-history" data-bind="foreach: pings">
+							<li class="single-ping">
+								<p class="ping-number">
+									Ping
+									<span data-bind="text: number"></span>
+								</p>
+								<p class="ping-percent"><span class="ping-percent" data-bind="text: percent"></span>%</p>
+							</li>
+						</ul>
+					</li>
+					<li class="single-status pongs-container">
+						<div class="pong-overview" data-bind="click: togglePongHistory">
+							<h5 class="single-status-title">Latest Pong: </h5>
+							<p class="current-pong">
+								Pong
+								<span class="single-status-value" data-bind="text: latestPong"></span>
+							</p>
+							<span class="separator">---</span>
+							<p class="current-pong-percentage">
+								<span class="single-status-value" data-bind="text: latestPongPercent"></span>%
+							</p>
+						</div>
+						<ul class="pong-history" data-bind="foreach: pongs">
+							<li class="single-pong">
+								<p class="ping-number">
+									Pong
+									<span data-bind="text: number"></span>
+								</p>
+								<p class="ping-percent"><span class="pong-percent" data-bind="text: percent"></span>%</p>
+							</li>
+						</ul>
+					</li>
 				</ul>
 			</div>
 			<hr>

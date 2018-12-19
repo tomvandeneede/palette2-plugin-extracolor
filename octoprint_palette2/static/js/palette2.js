@@ -197,7 +197,27 @@ function OmegaViewModel(parameters) {
   self.ports = ko.observableArray([]);
   self.selectedPort = ko.observable();
 
+  self.latestPing = ko.observable(0);
+  self.totalPings = ko.observable();
+  self.latestPingPercent = ko.observable();
+  self.latestPong = ko.observable(0);
+  self.latestPongPercent = ko.observable();
+  self.pings = ko.observableArray([]);
+  self.pongs = ko.observableArray([]);
+
   /* COMMUNICATION TO BACK-END FUNCTIONS */
+
+  self.togglePingHistory = () => {
+    if (self.pings().length) {
+      $(".ping-history").slideToggle();
+    }
+  };
+
+  self.togglePongHistory = () => {
+    if (self.pongs().length) {
+      $(".pong-history").slideToggle();
+    }
+  };
 
   window.onload = () => {
     self.refreshDemoList();
@@ -723,7 +743,27 @@ function OmegaViewModel(parameters) {
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      if (message.command === "selectedPort") {
+      if (message.command === "pings") {
+        if (message.data.length) {
+          self.pings(message.data.reverse());
+          self.latestPing(self.pings()[0].number);
+          self.latestPingPercent(self.pings()[0].percent);
+        } else {
+          self.latestPing(0);
+          self.latestPingPercent("");
+        }
+      } else if (message.command === "totalPings") {
+        self.totalPings(message.data);
+      } else if (message.command === "pongs") {
+        if (message.data.length) {
+          self.pongs(message.data.reverse());
+          self.latestPong(self.pongs()[0].number);
+          self.latestPongPercent(self.pongs()[0].percent);
+        } else {
+          self.latestPong(0);
+          self.latestPongPercent("");
+        }
+      } else if (message.command === "selectedPort") {
         selectedPort = message.data;
         if (selectedPort) {
           self.selectedPort(selectedPort);
@@ -861,10 +901,8 @@ $(function() {
   OmegaViewModel();
   OCTOPRINT_VIEWMODELS.push({
     // This is the constructor to call for instantiating the plugin
-    construct: OmegaViewModel,
-    // This is a list of dependencies to inject into the plugin. The order will correspond to the "parameters" arguments above
-    dependencies: ["settingsViewModel"],
-    // Finally, this is the list of selectors for all elements we want this view model to be bound to.
+    construct: OmegaViewModel, // This is a list of dependencies to inject into the plugin. The order will correspond to the "parameters" arguments above
+    dependencies: ["settingsViewModel"], // Finally, this is the list of selectors for all elements we want this view model to be bound to.
     elements: ["#tab_plugin_palette2"]
   });
 });

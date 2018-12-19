@@ -215,6 +215,19 @@ class Omega():
                         self._logger.info("FIRST TIME USE WITH PALETTE")
                         self.firstTime = True
                         self.updateUI()
+                elif "O34" in line:
+                    commands = [command.strip() for command in line.split('D')]
+                    nature = commands[1]
+                    percent = commands[2]
+                    number = int(commands[3], 16)
+                    current = {"number": number, "percent": percent}
+                    # if ping
+                    if nature == "1":
+                        self.pings.append(current)
+                    # else pong
+                    elif nature == "2":
+                        self.pongs.append(current)
+                    self.updateUI()
                 elif "O40" in line:
                     self.printPaused = False
                     self.currentStatus = "Preparing splices"
@@ -330,6 +343,12 @@ class Omega():
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
+            self._identifier, {"command": "pings", "data": self.pings})
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"command": "totalPings", "data": self.totalPings})
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"command": "pongs", "data": self.pongs})
+        self._plugin_manager.send_plugin_message(
             self._identifier, "UI:ActualPrintStarted=%s" % self.actualPrintStarted)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:Palette2SetupStarted=%s" % self.palette2SetupStarted)
@@ -440,6 +459,9 @@ class Omega():
         self.palette2SetupStarted = False
         self.allMCFFiles = []
         self.actualPrintStarted = False
+        self.totalPings = 0
+        self.pings = []
+        self.pongs = []
 
         self.filename = ""
 
@@ -463,6 +485,9 @@ class Omega():
         self.spliceCounter = 0
         self.lastCommandSent = ""
         self.currentPingCmd = ""
+        self.totalPings = 0
+        self.pings = []
+        self.pongs = []
 
     def resetOmega(self):
         self.resetConnection()
@@ -522,7 +547,10 @@ class Omega():
             self.updateUI()
         elif "O27" in cmd:
             self.header[6] = cmd
+            self.totalPings = int(cmd[5:], 16)
             self._logger.info("Omega: Got NP: %s" % self.header[6])
+            self._logger.info("TOTAL PINGS: %s" % self.totalPings)
+            self.updateUI()
         elif "O28" in cmd:
             self.msfNA = cmd[5:]
             self.nAlgorithms = int(self.msfNA)

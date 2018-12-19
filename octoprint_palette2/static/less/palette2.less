@@ -67,6 +67,77 @@ input[type="text"] {
   margin-top: 5px;
 }
 
+.pings-container,
+.pongs-container {
+  flex-direction: column;
+
+  .single-status-title {
+    width: 15%;
+  }
+}
+
+.ping-overview,
+.pong-overview {
+  display: flex;
+  &:hover {
+    cursor: pointer;
+    background-color: whitesmoke;
+  }
+
+  .click-arrow {
+    font-size: 16px;
+    margin-left: -5px;
+    align-self: center;
+  }
+}
+
+.current-ping,
+.current-pong {
+  align-self: flex-end;
+}
+
+.current-ping-percentage,
+.current-pong-percentage {
+  align-self: flex-end;
+}
+
+.separator {
+  margin: 0 10px;
+}
+
+.ping-history,
+.pong-history {
+  display: none;
+  background-color: #fcfcfc;
+  border-radius: 1px;
+  border: 1px solid rgba(54, 54, 54, 1);
+  padding: 10px;
+  margin-left: 0;
+  margin-right: 55%;
+  list-style: none;
+
+  .single-ping,
+  .single-pong {
+    width: 100%;
+    display: inline-flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(54, 54, 54, 1);
+
+    .ping-number,
+    .pong-number,
+    .ping-percent,
+    .pong-percent {
+      margin: 0;
+      display: inline;
+    }
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+  }
+}
+
 @keyframes highlight {
   0% {
     background: #ffff99;
