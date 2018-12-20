@@ -22,6 +22,7 @@ class Omega():
         self.selectedPort = ""
 
         self.writeQueue = Queue()
+        self.gcodeQueue = Queue()
 
         self.resetVariables()
         self.resetConnection()
@@ -143,6 +144,30 @@ class Omega():
                 self.resetVariables()
                 self.resetConnection()
                 self.updateUI()
+
+    def tryHeartbeatBeforePrint(self):
+        self.heartbeat = False
+        self.enqueueCmd("O99")
+        self.printHeartbeatCheck = "Checking"
+
+        timeout = 5
+        timeout_start = time.time()
+        while time.time() < timeout_start + timeout:
+            if self.heartbeat:
+                self._logger.info("Palette responded to O99")
+                self.printHeartbeatCheck = "P2Responded"
+                return True
+                break
+            else:
+                pass
+        if not self.heartbeat:
+            self._logger.info("Palette did not respond to O99")
+            self.printHeartbeatCheck = "P2NotConnected"
+            while not self.writeQueue.empty():
+                self.writeQueue.get()
+            while not self.gcodeQueue.empty():
+                self.gcodeQueue.get()
+            return False
 
     def setFilename(self, name):
         self.filename = name
@@ -306,7 +331,7 @@ class Omega():
 
     def omegaWriteThread(self, serialConnection):
         self._logger.info("Omega Write Thread: Starting Thread")
-        while self.writeThreadStop is False:
+        while self.writeThreadStop is False and self.gcodeQueue.empty():
             try:
                 line = self.writeQueue.get(True, 0.5)
                 self.lastCommandSent = line
@@ -315,6 +340,11 @@ class Omega():
                 self._logger.info("Omega Write Thread: Sending: %s" % line)
                 serialConnection.write(line.encode())
                 self._logger.info(line.encode())
+                if "O99" in line:
+                    self._logger.info("GOT A O99")
+                    while self.printHeartbeatCheck == "Checking":
+                        self._logger.info("WAITING FOR HEARTBEAT")
+                        time.sleep(1)
             except:
                 pass
         self.writeThread = None
@@ -343,9 +373,9 @@ class Omega():
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "pings", "data": self.pings})
+            self._identifier, {"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
         self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "totalPings", "data": self.totalPings})
+            self._identifier, {"command": "pings", "data": self.pings})
         self._plugin_manager.send_plugin_message(
             self._identifier, {"command": "pongs", "data": self.pongs})
         self._plugin_manager.send_plugin_message(
@@ -427,6 +457,8 @@ class Omega():
         # clear command queue
         while not self.writeQueue.empty():
             self.writeQueue.get()
+        while not self.gcodeQueue.empty():
+            self.gcodeQueue.get()
 
     def resetVariables(self):
         self._logger.info("Omega: Resetting print values")
@@ -462,6 +494,7 @@ class Omega():
         self.totalPings = 0
         self.pings = []
         self.pongs = []
+        self.printHeartbeatCheck = ""
 
         self.filename = ""
 

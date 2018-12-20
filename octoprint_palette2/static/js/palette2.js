@@ -18,9 +18,19 @@ HELPER FUNCTIONS
 const omegaApp = {};
 
 /* 1. LOADER */
-omegaApp.loadingOverlay = condition => {
+omegaApp.loadingOverlay = (condition, status) => {
   if (condition) {
-    $("body").append(`<div class="loading-overlay-container"><div class="loader"></div></div>`);
+    if (status === "connect") {
+      message = `<h1 class="loading-overlay-message">Trying to connect to Palette 2...</h1>`;
+    } else if (status === "disconnect") {
+      message = `<h1 class="loading-overlay-message">Disconnecting Palette 2...</h1>`;
+    } else if (status === "heartbeat") {
+      message = `<h1 class="loading-overlay-message">Verifying Palette 2 connection before starting print...</h1>`;
+    }
+    $("body").append(`<div class="loading-overlay-container">
+    <div class="loader"></div>
+    ${message}
+    </div>`);
   } else {
     $("body")
       .find(".loading-overlay-container")
@@ -160,6 +170,18 @@ omegaApp.noSerialPortsAlert = () => {
   });
 };
 
+omegaApp.displayHeartbeatAlert = status => {
+  if (status === "P2NotConnected") {
+    return swal({
+      title: "No response from Palette 2",
+      text: `Please make sure Palette 2 is turned on and try reconnecting to it in the Palette 2 tab before starting another print.`,
+      type: "error"
+    });
+  } else if (status === "P2Responded") {
+    omegaApp.palette2PrintStartAlert();
+  }
+};
+
 /* ======================
 OMEGA VIEWMODEL FOR OCTOPRINT
 ======================= */
@@ -198,7 +220,6 @@ function OmegaViewModel(parameters) {
   self.selectedPort = ko.observable();
 
   self.latestPing = ko.observable(0);
-  self.totalPings = ko.observable();
   self.latestPingPercent = ko.observable();
   self.latestPong = ko.observable(0);
   self.latestPongPercent = ko.observable();
@@ -284,7 +305,7 @@ function OmegaViewModel(parameters) {
 
   self.connectOmega = () => {
     self.tryingToConnect = true;
-    omegaApp.loadingOverlay(true);
+    omegaApp.loadingOverlay(true, "connect");
 
     if (self.selectedPort()) {
       var payload = {
@@ -307,7 +328,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.disconnectPalette2 = () => {
-    omegaApp.loadingOverlay(true);
+    omegaApp.loadingOverlay(true, "disconnect");
     self.connected(false);
     self.removeNotification();
     var payload = {
@@ -433,7 +454,7 @@ function OmegaViewModel(parameters) {
       if (!self.connected()) {
         let count = 0;
         let applyDisabling = setInterval(function() {
-          if (count > 20) {
+          if (count > 30) {
             clearInterval(applyDisabling);
           }
           count++;
@@ -689,7 +710,7 @@ function OmegaViewModel(parameters) {
     if (payload.name.includes(".mcf.gcode")) {
       if (self.connected()) {
         if (self.displayAlerts) {
-          omegaApp.palette2PrintStartAlert();
+          omegaApp.loadingOverlay(true, "heartbeat");
         }
       }
     }
@@ -736,6 +757,7 @@ function OmegaViewModel(parameters) {
   self.onEventPrintCancelled = payload => {
     if (payload.name.includes(".mcf.gcode")) {
       self.currentStatus = "Print cancelled";
+      self.findCurrentFilename();
       self.updateCurrentStatus();
       self.sendCancelCmd();
     }
@@ -743,7 +765,16 @@ function OmegaViewModel(parameters) {
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      if (message.command === "pings") {
+      if (message.command === "printHeartbeatCheck") {
+        omegaApp.loadingOverlay(false);
+        if (message.data === "P2NotConnected") {
+          let base_url = window.location.origin;
+          window.location.href = `${base_url}/#tab_plugin_palette2`;
+        }
+        omegaApp.displayHeartbeatAlert(message.data);
+        self.findCurrentFilename();
+        self.applyPaletteDisabling();
+      } else if (message.command === "pings") {
         if (message.data.length) {
           self.pings(message.data.reverse());
           self.latestPing(self.pings()[0].number);
@@ -752,8 +783,6 @@ function OmegaViewModel(parameters) {
           self.latestPing(0);
           self.latestPingPercent("");
         }
-      } else if (message.command === "totalPings") {
-        self.totalPings(message.data);
       } else if (message.command === "pongs") {
         if (message.data.length) {
           self.pongs(message.data.reverse());

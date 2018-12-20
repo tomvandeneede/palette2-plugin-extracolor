@@ -100,13 +100,23 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.printerConnection = ""
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
-                self.palette.resetPrintValues()
-                self._logger.info("Filename: %s" %
-                                  payload["name"].split('.')[0])
-                self.palette.setFilename(payload["name"].split(".")[0])
-                self.palette.currentStatus = "Initializing ..."
-                self.palette.palette2SetupStarted = True
-                self.palette.updateUI()
+                self._logger.info("PRINT STARTED P2")
+                if self.palette.tryHeartbeatBeforePrint():
+                    self.palette.resetPrintValues()
+                    self._logger.info("Filename: %s" %
+                                      payload["name"].split('.')[0])
+                    self.palette.setFilename(payload["name"].split(".")[0])
+                    self.palette.currentStatus = "Initializing ..."
+                    self.palette.palette2SetupStarted = True
+                    self.palette.updateUI()
+                    while not self.palette.gcodeQueue.empty():
+                        self.palette.gotOmegaCmd(self.palette.gcodeQueue.get())
+                else:
+                    self.palette.updateUI()
+                    self.palette.disconnect()
+                    self._logger.info("NO P2 detected. Cancelling print")
+                    self._printer.cancel_print()
+                self.palette.printHeartbeatCheck = ""
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True
@@ -155,7 +165,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.handlePing(cmd.strip())
             return "G4 P10",
         elif 'O' in cmd[0]:
-            self.palette.gotOmegaCmd(cmd)
+            self.palette.gcodeQueue.put(cmd)
+            # self.palette.gotOmegaCmd(cmd)
             return None,
         elif 'M0' in cmd[0]:
             return None,
