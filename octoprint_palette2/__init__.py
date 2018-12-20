@@ -109,14 +109,15 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                     self.palette.currentStatus = "Initializing ..."
                     self.palette.palette2SetupStarted = True
                     self.palette.updateUI()
+                    self.palette.printHeartbeatCheck = ""
                     while not self.palette.gcodeQueue.empty():
                         self.palette.gotOmegaCmd(self.palette.gcodeQueue.get())
                 else:
                     self.palette.updateUI()
+                    self.palette.printHeartbeatCheck = ""
                     self.palette.disconnect()
                     self._logger.info("NO P2 detected. Cancelling print")
                     self._printer.cancel_print()
-                self.palette.printHeartbeatCheck = ""
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True
