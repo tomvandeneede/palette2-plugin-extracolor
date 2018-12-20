@@ -541,7 +541,6 @@ class Omega():
 
     def gotOmegaCmd(self, cmd):
         if "O0" in cmd:
-            self._logger.info("IN O0")
             self.enqueueCmd("O0")
         elif "O21" in cmd:
             self.header[0] = cmd

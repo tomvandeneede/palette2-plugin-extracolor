@@ -166,7 +166,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             return "G4 P10",
         elif 'O' in cmd[0]:
             self.palette.gcodeQueue.put(cmd)
-            # self.palette.gotOmegaCmd(cmd)
             return None,
         elif 'M0' in cmd[0]:
             return None,
