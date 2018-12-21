@@ -185,7 +185,7 @@ class Omega():
                         self._logger.info(self.filamentLength)
                         self.updateUI()
                     elif "U25" in line:
-                        if "U25 D0" in line:
+                        if "D0" in line:
                             normal_speed = self._settings.get(["feedratenormalpct"]) | 100
                             slow_speed = self._settings.get(["feedrateslowpct"]) | 50
                             is_slowed = self._settings.get(["feedrateslowed"]) | False
@@ -205,7 +205,6 @@ class Omega():
                             else:
                                 self._logger.info("P2PP: Feed-rate control on plugin: Disabled")
                             self.updateUI()
-
                         if "D1" in line:
                             if self._settings.get(["feedratecontrol"]):
                                 if self._settings.get(["feedrateslowed"]):
