@@ -175,13 +175,21 @@ class Omega():
                         self.updateUI()
                     elif "U25" in line:
                         if "U25 D0" in line:
-                            self._logger.info("P2PP: Injecting M220 Speed 50% splice start")
-                            self._printer.commands("M220 S50 B")
+                            if self._settings.get(["feedrate_slowdown"]):
+                                self._logger.info("P2PP: Speed already 50% for splice start")
+                            else:
+                                self._logger.info("P2PP: Setting M220 feedrate to 50% for splice start")
+                                self._settings.set(["feedrate_slowdown"], True)
+                                self._printer.commands("M220 S50 B")
                             self.updateUI()
                         if "D1" in line:
-                            self._logger.info("P2PP: Injecting M220 Speed 100% for splice end")
-                            self._printer.commands("M220 R")
-                            self.updateUI()
+                            if self._settings.get(["feedrate_slowdown"]):
+                                self._logger.info("P2PP: Restoring M220 feedrate for splice end")
+                                self._settings.set(["feedrate_slowdown"], False)
+                            else:
+                                self._settings.set(["feedrate_slowdown"], False)
+                                self._logger.info("P2PP: M220 should already be restored, Setting to 100% for splice end")
+                                self._printer.commands("M220 S100")
                             self.currentSplice = int(line[12:], 16)
                             self._logger.info(self.currentSplice)
                             self.updateUI()
@@ -390,6 +398,8 @@ class Omega():
         self.displayAlerts = self._settings.get(["palette2Alerts"])
 
         self.filename = ""
+
+        self.feedrate_slowdown = False
 
         self.connected = False
         self.readThread = None
