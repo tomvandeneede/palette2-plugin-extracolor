@@ -18,7 +18,11 @@ class Omega():
         self._identifier = plugin._identifier
         self._settings = plugin._settings
 
+        self.ports = []
+        self.selectedPort = ""
+
         self.writeQueue = Queue()
+        # self.gcodeQueue = Queue()
 
         self.resetVariables()
         self.resetConnection()
@@ -27,39 +31,93 @@ class Omega():
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
 
-    def connectOmega(self, port=300):
-        self._logger.info("Trying to connect to Omega")
+    def getAllPorts(self):
+        baselist = []
+
+        if 'win32' in sys.platform:
+            # use windows com stuff
+            self._logger.info("Using a windows machine")
+            for port in serial.tools.list_ports.grep('.*0403:6015.*'):
+                self._logger.info("got port %s" % port.device)
+                baselist.append(port.device)
+
+        baselist = baselist \
+            + glob.glob('/dev/serial/by-id/*FTDI*') \
+            + glob.glob('/dev/*usbserial*') \
+
+        baselist = self.getRealPaths(baselist)
+        # get unique values only
+        baselist = list(set(baselist))
+        return baselist
+
+    def displayPorts(self):
+        self.ports = self.getAllPorts()
+        self._logger.info(self.ports)
+        if self.ports and not self.selectedPort:
+            self.selectedPort = self.ports[0]
+        self._logger.info(self.selectedPort)
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"command": "ports", "data": self.ports})
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"command": "selectedPort", "data": self.selectedPort})
+
+    def getRealPaths(self, ports):
+        self._logger.info(ports)
+        for index, port in enumerate(ports):
+            port = os.path.realpath(port)
+            ports[index] = port
+        self._logger.info(ports)
+        return ports
+
+    def isPrinterPort(self, selected_port):
+        selected_port = os.path.realpath(selected_port)
+        printer_port = self._printer.get_current_connection()[1]
+        self._logger.info("Trying %s" % selected_port)
+        self._logger.info(printer_port)
+        # because ports usually have a second available one (.tty or .cu)
+        printer_port_alt = ""
+        if printer_port == None:
+            return False
+        else:
+            if "tty." in printer_port:
+                printer_port_alt = printer_port.replace("tty.", "cu.", 1)
+            elif "cu." in printer_port:
+                printer_port_alt = printer_port.replace("cu.", "tty.", 1)
+            self._logger.info(printer_port_alt)
+            if selected_port == printer_port or selected_port == printer_port_alt:
+                return True
+            else:
+                return False
+
+    def connectOmega(self, port):
         if self.connected is False:
-            omegaPort = []
-            self._logger.info("platform type: %s" % sys.platform)
-            if 'win32' in sys.platform:
-                # use windows com stuff
-                self._logger.info("Using a windows machine")
-                for port in serial.tools.list_ports.grep('.*0403:6015.*'):
-                    self._logger.info("got port %s" % port.device)
-                    omegaPort.append(port.device)
-            else:
-                # either linux or mac so use their paths
-                omegaPort = glob.glob('/dev/serial/by-id/*FTDI*')
-                omegaPort += glob.glob('/dev/*usbserial*')
-            if len(omegaPort) > 0:
-                try:
-                    self.omegaSerial = serial.Serial(
-                        omegaPort[0], 250000, timeout=0.5)
-                    self.connected = True
-                    self.tryHeartbeat()
-                except:
+            self.ports = self.getAllPorts()
+            self._logger.info("Potential ports: %s" % self.ports)
+            if len(self.ports) > 0:
+                if not port:
+                    port = self.ports[0]
+                if self.isPrinterPort(port):
                     self._logger.info(
-                        "Another resource is connected to Palette")
+                        "This is the printer port. Will not connect to this.")
                     self.updateUI()
+                else:
+                    try:
+                        self.omegaSerial = serial.Serial(
+                            port, 250000, timeout=0.5)
+                        self.connected = True
+                        self.tryHeartbeat(port)
+                    except:
+                        self._logger.info(
+                            "Another resource is connected to port")
+                        self.updateUI()
             else:
-                self._logger.info("Unable to find Omega port")
+                self._logger.info("Unable to find port")
                 self.updateUI()
         else:
             self._logger.info("Already Connected")
             self.updateUI()
 
-    def tryHeartbeat(self):
+    def tryHeartbeat(self, port):
         if self.connected:
             self.connected = False
             self.startReadThread()
@@ -73,15 +131,24 @@ class Omega():
                 if self.heartbeat:
                     self.connected = True
                     self._logger.info("Connected to Omega")
+                    self.selectedPort = port
+                    self._plugin_manager.send_plugin_message(
+                        self._identifier, {"command": "selectedPort", "data": self.selectedPort})
                     self.updateUI()
                     break
                 else:
                     pass
             if not self.heartbeat:
-                self._logger.info("Palette is not turned on.")
+                self._logger.info(
+                    "Palette is not turned on OR this is not the serial port for Palette.")
                 self.resetVariables()
                 self.resetConnection()
                 self.updateUI()
+
+    def tryHeartbeatBeforePrint(self):
+        self.heartbeat = False
+        self.enqueueCmd("O99")
+        self.printHeartbeatCheck = "Checking"
 
     def setFilename(self, name):
         self.filename = name
@@ -154,6 +221,19 @@ class Omega():
                         self._logger.info("FIRST TIME USE WITH PALETTE")
                         self.firstTime = True
                         self.updateUI()
+                elif "O34" in line:
+                    commands = [command.strip() for command in line.split('D')]
+                    nature = commands[1]
+                    percent = commands[2]
+                    number = int(commands[3], 16)
+                    current = {"number": number, "percent": percent}
+                    # if ping
+                    if nature == "1":
+                        self.pings.append(current)
+                    # else pong
+                    elif nature == "2":
+                        self.pongs.append(current)
+                    self.updateUI()
                 elif "O40" in line:
                     self.printPaused = False
                     self.currentStatus = "Preparing splices"
@@ -241,6 +321,11 @@ class Omega():
                 self._logger.info("Omega Write Thread: Sending: %s" % line)
                 serialConnection.write(line.encode())
                 self._logger.info(line.encode())
+                if "O99" in line:
+                    self._logger.info("GOT A O99")
+                    while self.printHeartbeatCheck == "Checking":
+                        self._logger.info("WAITING FOR HEARTBEAT")
+                        time.sleep(1)
             except:
                 pass
         self.writeThread = None
@@ -248,7 +333,7 @@ class Omega():
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
             if self.connected is False:
-                self.connectOmega()
+                self.connectOmega(self.selectedPort)
             time.sleep(1)
 
     def enqueueCmd(self, line):
@@ -269,6 +354,12 @@ class Omega():
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
         self._plugin_manager.send_plugin_message(
+            self._identifier, {"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"command": "pings", "data": self.pings})
+        self._plugin_manager.send_plugin_message(
+            self._identifier, {"command": "pongs", "data": self.pongs})
+        self._plugin_manager.send_plugin_message(
             self._identifier, "UI:ActualPrintStarted=%s" % self.actualPrintStarted)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:Palette2SetupStarted=%s" % self.palette2SetupStarted)
@@ -279,7 +370,7 @@ class Omega():
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:PrinterCon=%s" % self.printerConnection)
         self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:DisplayAlerts=%s" % self.displayAlerts)
+            self._identifier, "UI:DisplayAlerts=%s" % self._settings.get(["palette2Alerts"]))
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:currentStatus=%s" % self.currentStatus)
         self._plugin_manager.send_plugin_message(
@@ -379,8 +470,10 @@ class Omega():
         self.palette2SetupStarted = False
         self.allMCFFiles = []
         self.actualPrintStarted = False
-
-        self.displayAlerts = self._settings.get(["palette2Alerts"])
+        self.totalPings = 0
+        self.pings = []
+        self.pongs = []
+        self.printHeartbeatCheck = ""
 
         self.filename = ""
 
@@ -404,6 +497,9 @@ class Omega():
         self.spliceCounter = 0
         self.lastCommandSent = ""
         self.currentPingCmd = ""
+        self.totalPings = 0
+        self.pings[:] = []
+        self.pongs[:] = []
 
     def resetOmega(self):
         self.resetConnection()
@@ -424,8 +520,29 @@ class Omega():
 
     def gotOmegaCmd(self, cmd):
         if "O0" in cmd:
-            self._logger.info("IN O0")
             self.enqueueCmd("O0")
+        elif "O1 " in cmd:
+            timeout = 5
+            timeout_start = time.time()
+            # Wait for Palette to respond with a handshake within 5 seconds
+            while not self.heartbeat and time.time() < timeout_start + timeout:
+                pass
+            if self.heartbeat:
+                self._logger.info("Palette did respond to O99")
+                self.enqueueCmd(cmd)
+                self.currentStatus = "Initializing ..."
+                self.palette2SetupStarted = True
+                self.printHeartbeatCheck = "P2Responded"
+                self.updateUI()
+                self.printHeartbeatCheck = ""
+            else:
+                self._logger.info("Palette did not respond to O99")
+                self.printHeartbeatCheck = "P2NotConnected"
+                self.updateUI()
+                self.printHeartbeatCheck = ""
+                self.disconnect()
+                self._logger.info("NO P2 detected. Cancelling print")
+                self._printer.cancel_print()
         elif "O21" in cmd:
             self.header[0] = cmd
             self._logger.info("Omega: Got Version: %s" % self.header[0])
@@ -463,7 +580,10 @@ class Omega():
             self.updateUI()
         elif "O27" in cmd:
             self.header[6] = cmd
+            self.totalPings = int(cmd[5:], 16)
             self._logger.info("Omega: Got NP: %s" % self.header[6])
+            self._logger.info("TOTAL PINGS: %s" % self.totalPings)
+            self.updateUI()
         elif "O28" in cmd:
             self.msfNA = cmd[5:]
             self.nAlgorithms = int(self.msfNA)

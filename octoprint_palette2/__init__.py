@@ -56,6 +56,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             uiUpdate=[],
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
+            displayPorts=[]
         )
 
     def on_api_command(self, command, data):
@@ -66,7 +67,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "clearPalette2":
             self.palette.clear()
         elif command == "connectOmega":
-            self._logger.info("Command recieved")
+            self._logger.info("Command received")
             self.palette.connectOmega(data["port"])
         elif command == "disconnectPalette2":
             self.palette.disconnect()
@@ -82,6 +83,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.updateUI()
         elif command == "changeAlertSettings":
             self.palette.changeAlertSettings(data["condition"])
+        elif command == "displayPorts":
+            self.palette.displayPorts()
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -97,13 +100,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.printerConnection = ""
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
+                self._logger.info("PRINT STARTED P2")
                 self.palette.resetPrintValues()
+                self.palette.tryHeartbeatBeforePrint()
                 self._logger.info("Filename: %s" %
                                   payload["name"].split('.')[0])
                 self.palette.setFilename(payload["name"].split(".")[0])
-                self.palette.currentStatus = "Initializing ..."
-                self.palette.palette2SetupStarted = True
                 self.palette.updateUI()
+                self.palette.printHeartbeatCheck = ""
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True

@@ -18,9 +18,19 @@ HELPER FUNCTIONS
 const omegaApp = {};
 
 /* 1. LOADER */
-omegaApp.loadingOverlay = condition => {
+omegaApp.loadingOverlay = (condition, status) => {
   if (condition) {
-    $("body").append(`<div class="loading-overlay-container"><div class="loader"></div></div>`);
+    if (status === "connect") {
+      message = `<h1 class="loading-overlay-message">Trying to connect to Palette 2...</h1>`;
+    } else if (status === "disconnect") {
+      message = `<h1 class="loading-overlay-message">Disconnecting Palette 2...</h1>`;
+    } else if (status === "heartbeat") {
+      message = `<h1 class="loading-overlay-message">Verifying Palette 2 connection before starting print...</h1>`;
+    }
+    $("body").append(`<div class="loading-overlay-container">
+    <div class="loader"></div>
+    ${message}
+    </div>`);
   } else {
     $("body")
       .find(".loading-overlay-container")
@@ -87,7 +97,7 @@ omegaApp.extrusionHighlight = () => {
 omegaApp.cannotConnectAlert = () => {
   return swal({
     title: "Could not connect to Palette 2",
-    text: `Please make sure Palette 2 is turned on. Please wait 5 seconds before trying again.`,
+    text: `Please make sure Palette 2 is turned on and that the selected port corresponds to it. Please wait 5 seconds before trying again.`,
     type: "error"
   });
 };
@@ -152,6 +162,28 @@ omegaApp.palette2NotConnectedAlert = () => {
   });
 };
 
+omegaApp.noSerialPortsAlert = () => {
+  return swal({
+    title: "No serial ports detected",
+    text: `Please make sure all cables are inserted properly into your Hub.`,
+    type: "error"
+  });
+};
+
+omegaApp.displayHeartbeatAlert = status => {
+  if (status === "P2NotConnected") {
+    omegaApp.loadingOverlay(false);
+    return swal({
+      title: "No response from Palette 2",
+      text: `Please make sure Palette 2 is turned on and try reconnecting to it in the Palette 2 tab before starting another print.`,
+      type: "error"
+    });
+  } else if (status === "P2Responded") {
+    omegaApp.loadingOverlay(false);
+    omegaApp.palette2PrintStartAlert();
+  }
+};
+
 /* ======================
 OMEGA VIEWMODEL FOR OCTOPRINT
 ======================= */
@@ -186,7 +218,29 @@ function OmegaViewModel(parameters) {
 
   self.selectedDemoFile = ko.observable();
 
+  self.ports = ko.observableArray([]);
+  self.selectedPort = ko.observable();
+
+  self.latestPing = ko.observable(0);
+  self.latestPingPercent = ko.observable();
+  self.latestPong = ko.observable(0);
+  self.latestPongPercent = ko.observable();
+  self.pings = ko.observableArray([]);
+  self.pongs = ko.observableArray([]);
+
   /* COMMUNICATION TO BACK-END FUNCTIONS */
+
+  self.togglePingHistory = () => {
+    if (self.pings().length) {
+      $(".ping-history").slideToggle();
+    }
+  };
+
+  self.togglePongHistory = () => {
+    if (self.pongs().length) {
+      $(".pong-history").slideToggle();
+    }
+  };
 
   window.onload = () => {
     self.refreshDemoList();
@@ -198,6 +252,19 @@ function OmegaViewModel(parameters) {
     });
     return filteredFiles;
   });
+
+  self.displayPorts = () => {
+    var payload = {
+      command: "displayPorts"
+    };
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
 
   self.refreshDemoList = () => {
     var payload = {};
@@ -240,12 +307,16 @@ function OmegaViewModel(parameters) {
 
   self.connectOmega = () => {
     self.tryingToConnect = true;
-    omegaApp.loadingOverlay(true);
+    omegaApp.loadingOverlay(true, "connect");
 
-    var payload = {
-      command: "connectOmega",
-      port: ""
-    };
+    if (self.selectedPort()) {
+      var payload = {
+        command: "connectOmega",
+        port: self.selectedPort()
+      };
+    } else {
+      var payload = { command: "connectOmega", port: "" };
+    }
 
     $.ajax({
       url: API_BASEURL + "plugin/palette2",
@@ -259,7 +330,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.disconnectPalette2 = () => {
-    omegaApp.loadingOverlay(true);
+    omegaApp.loadingOverlay(true, "disconnect");
     self.connected(false);
     self.removeNotification();
     var payload = {
@@ -385,7 +456,7 @@ function OmegaViewModel(parameters) {
       if (!self.connected()) {
         let count = 0;
         let applyDisabling = setInterval(function() {
-          if (count > 20) {
+          if (count > 30) {
             clearInterval(applyDisabling);
           }
           count++;
@@ -640,9 +711,7 @@ function OmegaViewModel(parameters) {
   self.onEventPrintStarted = payload => {
     if (payload.name.includes(".mcf.gcode")) {
       if (self.connected()) {
-        if (self.displayAlerts) {
-          omegaApp.palette2PrintStartAlert();
-        }
+        omegaApp.loadingOverlay(true, "heartbeat");
       }
     }
   };
@@ -688,6 +757,7 @@ function OmegaViewModel(parameters) {
   self.onEventPrintCancelled = payload => {
     if (payload.name.includes(".mcf.gcode")) {
       self.currentStatus = "Print cancelled";
+      self.findCurrentFilename();
       self.updateCurrentStatus();
       self.sendCancelCmd();
     }
@@ -695,7 +765,47 @@ function OmegaViewModel(parameters) {
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      if (message.includes("UI:currentSplice")) {
+      if (message.command === "printHeartbeatCheck") {
+        if (message.data === "P2NotConnected") {
+          let base_url = window.location.origin;
+          window.location.href = `${base_url}/#tab_plugin_palette2`;
+        }
+        omegaApp.displayHeartbeatAlert(message.data);
+        self.findCurrentFilename();
+        self.applyPaletteDisabling();
+      } else if (message.command === "pings") {
+        if (message.data.length) {
+          self.pings(message.data.reverse());
+          self.latestPing(self.pings()[0].number);
+          self.latestPingPercent(self.pings()[0].percent);
+        } else {
+          self.latestPing(0);
+          self.latestPingPercent("");
+        }
+      } else if (message.command === "pongs") {
+        if (message.data.length) {
+          self.pongs(message.data.reverse());
+          self.latestPong(self.pongs()[0].number);
+          self.latestPongPercent(self.pongs()[0].percent);
+        } else {
+          self.latestPong(0);
+          self.latestPongPercent("");
+        }
+      } else if (message.command === "selectedPort") {
+        selectedPort = message.data;
+        if (selectedPort) {
+          self.selectedPort(selectedPort);
+        }
+      } else if (message.command === "ports") {
+        allPorts = message.data;
+        if (allPorts.length === 0) {
+          omegaApp.noSerialPortsAlert();
+          $(".serial-ports-list").hide(125);
+        } else {
+          self.ports(allPorts);
+          $(".serial-ports-list").toggle(125);
+        }
+      } else if (message.includes("UI:currentSplice")) {
         var num = message.substring(17);
         self.currentSplice(num);
         self.updateCurrentSplice();
@@ -716,7 +826,9 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:Finished Pong")) {
         self.updatePongMsg(false);
       } else if (message.includes("UI:Con=")) {
-        omegaApp.loadingOverlay(false);
+        if (self.tryingToConnect) {
+          omegaApp.loadingOverlay(false);
+        }
         if (message.includes("True")) {
           self.tryingToConnect = false;
           self.connected(true);
@@ -724,11 +836,9 @@ function OmegaViewModel(parameters) {
         } else {
           self.connected(false);
           self.updateConnection();
+          omegaApp.loadingOverlay(false);
           if (self.tryingToConnect) {
             self.tryingToConnect = false;
-            $("body").on("click", "#swal2-checkbox", event => {
-              self.changeAlertSettings(event.target.checked);
-            });
             omegaApp.cannotConnectAlert();
           }
         }
@@ -747,6 +857,9 @@ function OmegaViewModel(parameters) {
         if (self.amountLeftToExtrude === "0") {
           self.removeNotification();
           if (self.displayAlerts) {
+            $("body").on("click", "#swal2-checkbox", event => {
+              self.changeAlertSettings(event.target.checked);
+            });
             omegaApp.readyToStartAlert();
           }
         } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
@@ -819,10 +932,8 @@ $(function() {
   OmegaViewModel();
   OCTOPRINT_VIEWMODELS.push({
     // This is the constructor to call for instantiating the plugin
-    construct: OmegaViewModel,
-    // This is a list of dependencies to inject into the plugin. The order will correspond to the "parameters" arguments above
-    dependencies: ["settingsViewModel"],
-    // Finally, this is the list of selectors for all elements we want this view model to be bound to.
+    construct: OmegaViewModel, // This is a list of dependencies to inject into the plugin. The order will correspond to the "parameters" arguments above
+    dependencies: ["settingsViewModel"], // Finally, this is the list of selectors for all elements we want this view model to be bound to.
     elements: ["#tab_plugin_palette2"]
   });
 });
