@@ -140,6 +140,7 @@ class Omega():
         self.connectionThread = None
 
     def omegaReadThread(self, serialConnection):
+        feedrateslowed = False
         self._logger.info("Omega Read Thread: Starting thread")
         try:
             while self.readThreadStop is False:
@@ -186,35 +187,28 @@ class Omega():
                         self.updateUI()
                     elif "U25" in line:
                         if "D0" in line:
-                            normal_speed = self._settings.get(["feedratenormalpct"]) | 100
-                            slow_speed = self._settings.get(["feedrateslowpct"]) | 50
-                            is_slowed = self._settings.get(["feedrateslowed"]) | False
-                            if self._settings.get(["feedratecontrol"]):
+                            if self.feedratecontrol:
                                 self._logger.info("P2PP: Feed-rate control on plugin: Active")
-                                self._logger.info(self._settings.get(["feedrateslowed"]))
-                                self._logger.info(self._settings.get(["feedratenormalpct"]))
-                                self._logger.info(self._settings.get(["feedrateslowpct"]))
-                                if is_slowed:
-                                    self._logger.info("P2PP: Feed-rate should already be at" + slow_speed + "%")
-                                    self._printer.commands("M220 S" + slow_speed)
+                                if self.feedrateslowed:
+                                    self._logger.info("P2PP: Feed-rate should already be at" + self.feedrateslowpct + "%")
+                                    self._printer.commands("M220 S" + self.feedrateslowpct)
                                 else:
                                     self._logger.info("P2PP: Setting Feed-rate to " + slow_speed + "% for splice start")
-                                    self._printer.commands("M220 S" + slow_speed +" B")
-                                self._settings.set(["feedrateslowed"], True)
-                                self._settings.save()
+                                    self._printer.commands("M220 S" + self.feedrateslowpct + " B")
+                                self.feedrateslowed = True
                             else:
                                 self._logger.info("P2PP: Feed-rate control on plugin: Disabled")
                             self.updateUI()
+
                         if "D1" in line:
-                            if self._settings.get(["feedratecontrol"]):
-                                if self._settings.get(["feedrateslowed"]):
+                            if self.feedratecontrol:
+                                if self.feedrateslowed:
                                     self._logger.info("P2PP: Restoring Feed-rate for splice end")
                                     self._printer.commands("M220 R")
                                 else:
-                                    self._logger.info(
-                                        "P2PP: M220 should already be restored, Setting to 100% for splice end")
-                                    self._printer.commands("M220 S" + normal_speed)
-                                self._settings.set(["feedrateslowed"], False)
+                                    self._logger.info("P2PP: M220 should already be restored, Setting to 100% for splice end")
+                                    self._printer.commands("M220 S" + self.feedratenormalpct)
+                                self.feedrateslowed = False
                             else:
                                 self._logger.info("P2PP: Feed-rate control on plugin: Disabled")
 
@@ -428,9 +422,9 @@ class Omega():
         
         self.filename = ""
 
-        self.feedratecontrol = self._settings.get(["feedratecontrol"])        
-        self.feedratenormalpct = self._settings.get(["feedratenormalpct"])      # 100
-        self.feedrateslowpct = self._settings.get(["feedrateslowpct"])          # 50
+        self.feedratecontrol = self._settings.get(["feedratecontrol"])
+        self.feedratenormalpct = self._settings.get(["feedratenormalpct"])
+        self.feedrateslowpct = self._settings.get(["feedrateslowpct"])
         self.feedrateslowed = False
 
         self.connected = False
