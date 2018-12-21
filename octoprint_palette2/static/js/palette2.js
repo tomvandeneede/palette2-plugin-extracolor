@@ -172,12 +172,14 @@ omegaApp.noSerialPortsAlert = () => {
 
 omegaApp.displayHeartbeatAlert = status => {
   if (status === "P2NotConnected") {
+    omegaApp.loadingOverlay(false);
     return swal({
       title: "No response from Palette 2",
       text: `Please make sure Palette 2 is turned on and try reconnecting to it in the Palette 2 tab before starting another print.`,
       type: "error"
     });
   } else if (status === "P2Responded") {
+    omegaApp.loadingOverlay(false);
     omegaApp.palette2PrintStartAlert();
   }
 };
@@ -764,7 +766,6 @@ function OmegaViewModel(parameters) {
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
       if (message.command === "printHeartbeatCheck") {
-        omegaApp.loadingOverlay(false);
         if (message.data === "P2NotConnected") {
           let base_url = window.location.origin;
           window.location.href = `${base_url}/#tab_plugin_palette2`;
@@ -825,7 +826,9 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:Finished Pong")) {
         self.updatePongMsg(false);
       } else if (message.includes("UI:Con=")) {
-        omegaApp.loadingOverlay(false);
+        if (self.tryingToConnect) {
+          omegaApp.loadingOverlay(false);
+        }
         if (message.includes("True")) {
           self.tryingToConnect = false;
           self.connected(true);
@@ -833,6 +836,7 @@ function OmegaViewModel(parameters) {
         } else {
           self.connected(false);
           self.updateConnection();
+          omegaApp.loadingOverlay(false);
           if (self.tryingToConnect) {
             self.tryingToConnect = false;
             omegaApp.cannotConnectAlert();

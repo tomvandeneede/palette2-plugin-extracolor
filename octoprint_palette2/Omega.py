@@ -22,7 +22,7 @@ class Omega():
         self.selectedPort = ""
 
         self.writeQueue = Queue()
-        self.gcodeQueue = Queue()
+        # self.gcodeQueue = Queue()
 
         self.resetVariables()
         self.resetConnection()
@@ -149,28 +149,6 @@ class Omega():
         self.heartbeat = False
         self.enqueueCmd("O99")
         self.printHeartbeatCheck = "Checking"
-
-        timeout = 5
-        timeout_start = time.time()
-        while time.time() < timeout_start + timeout:
-            if self.heartbeat:
-                self._logger.info("Palette responded to O99")
-                self.printHeartbeatCheck = "P2Responded"
-                while not self.gcodeReady:
-                    pass
-                self._logger.info("Gcode is ready to be written")
-                return True
-                break
-            else:
-                pass
-        if not self.heartbeat:
-            self._logger.info("Palette did not respond to O99")
-            self.printHeartbeatCheck = "P2NotConnected"
-            while not self.writeQueue.empty():
-                self.writeQueue.get()
-            while not self.gcodeQueue.empty():
-                self.gcodeQueue.get()
-            return False
 
     def setFilename(self, name):
         self.filename = name
@@ -460,8 +438,6 @@ class Omega():
         # clear command queue
         while not self.writeQueue.empty():
             self.writeQueue.get()
-        while not self.gcodeQueue.empty():
-            self.gcodeQueue.get()
 
     def resetVariables(self):
         self._logger.info("Omega: Resetting print values")
@@ -498,7 +474,6 @@ class Omega():
         self.pings = []
         self.pongs = []
         self.printHeartbeatCheck = ""
-        self.gcodeReady = False
 
         self.filename = ""
 
@@ -525,7 +500,6 @@ class Omega():
         self.totalPings = 0
         self.pings = []
         self.pongs = []
-        self.gcodeReady = False
 
     def resetOmega(self):
         self.resetConnection()
@@ -547,6 +521,28 @@ class Omega():
     def gotOmegaCmd(self, cmd):
         if "O0" in cmd:
             self.enqueueCmd("O0")
+        elif "O1 " in cmd:
+            timeout = 5
+            timeout_start = time.time()
+            # Wait for Palette to respond with a handshake within 5 seconds
+            while not self.heartbeat and time.time() < timeout_start + timeout:
+                pass
+            if self.heartbeat:
+                self._logger.info("Palette did respond to O99")
+                self.enqueueCmd(cmd)
+                self.currentStatus = "Initializing ..."
+                self.palette2SetupStarted = True
+                self.printHeartbeatCheck = "P2Responded"
+                self.updateUI()
+                self.printHeartbeatCheck = ""
+            else:
+                self._logger.info("Palette did not respond to O99")
+                self.printHeartbeatCheck = "P2NotConnected"
+                self.updateUI()
+                self.printHeartbeatCheck = ""
+                self.disconnect()
+                self._logger.info("NO P2 detected. Cancelling print")
+                self._printer.cancel_print()
         elif "O21" in cmd:
             self.header[0] = cmd
             self._logger.info("Omega: Got Version: %s" % self.header[0])

@@ -101,29 +101,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
                 self._logger.info("PRINT STARTED P2")
-                self.palette.gcodeReady = False
-                while not self.writeQueue.empty():
-                    self.palette.writeQueue.get()
-                while not self.gcodeQueue.empty():
-                    self.palette.gcodeQueue.get()
-                if self.palette.tryHeartbeatBeforePrint():
-                    self.palette.resetPrintValues()
-                    self._logger.info("Filename: %s" %
-                                      payload["name"].split('.')[0])
-                    self.palette.setFilename(payload["name"].split(".")[0])
-                    self.palette.currentStatus = "Initializing ..."
-                    self.palette.palette2SetupStarted = True
-                    self.palette.updateUI()
-                    self.palette.printHeartbeatCheck = ""
-                    self._logger.info("Emptying Gcode Queue")
-                    while not self.palette.gcodeQueue.empty():
-                        self.palette.gotOmegaCmd(self.palette.gcodeQueue.get())
-                else:
-                    self.palette.updateUI()
-                    self.palette.printHeartbeatCheck = ""
-                    self.palette.disconnect()
-                    self._logger.info("NO P2 detected. Cancelling print")
-                    self._printer.cancel_print()
+                self.palette.resetPrintValues()
+                self.palette.tryHeartbeatBeforePrint()
+                self._logger.info("Filename: %s" %
+                                  payload["name"].split('.')[0])
+                self.palette.setFilename(payload["name"].split(".")[0])
+                self.palette.updateUI()
+                self.palette.printHeartbeatCheck = ""
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True
@@ -172,10 +156,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.handlePing(cmd.strip())
             return "G4 P10",
         elif 'O' in cmd[0]:
-            if "O1 " in cmd:
-                self.palette.gcodeReady = True
-                self._logger.info("O1 detected")
-            self.palette.gcodeQueue.put(cmd)
+            self.palette.gotOmegaCmd(cmd)
             return None,
         elif 'M0' in cmd[0]:
             return None,
