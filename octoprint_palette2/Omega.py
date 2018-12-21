@@ -10,6 +10,7 @@ import sys
 from Queue import Queue
 
 
+
 class Omega():
     def __init__(self, plugin):
         self._logger = plugin._logger
@@ -139,7 +140,10 @@ class Omega():
             self.connectionThread.join()
         self.connectionThread = None
 
+        speedReduced = False
+
     def omegaReadThread(self, serialConnection):
+        global speedReduced
         self._logger.info("Omega Read Thread: Starting thread")
         try:
             while self.readThreadStop is False:
@@ -147,6 +151,15 @@ class Omega():
                 line = line.strip()
                 if line:
                     self._logger.info("Omega: read in line: %s" % line)
+                if 'O34 D1' in line:
+                    # filter out ping offset information
+                    idx = line.find("O34")
+                    parms = line[idx+7:].split(" ")
+                    try:
+                       self._printer.commands("M117 Ping {}: {}%".format(parms[1][1:], parms[0][1:]))
+                    except:
+                        self._printer.commands("M117 {}".format(line[idx+7:]))
+
                 if 'O20' in line:
                     # send next line of data
                     self.sendNextData(int(line[5]))
@@ -175,12 +188,17 @@ class Omega():
                         self.updateUI()
                     elif "U25" in line:
                         if "U25 D0" in line:
-                            self._logger.info("P2PP: Injecting M220 Speed 50% splice start")
-                            self._printer.commands("M220 S50 B")
+                            if not speedReduced:
+                                self._logger.info("P2PP: Injecting M220 Speed 50% splice start")
+                                self._printer.commands("M220 S50 B")
+                                speedReduced = True
                             self.updateUI()
                         if "D1" in line:
-                            self._logger.info("P2PP: Injecting M220 Speed 100% for splice end")
-                            self._printer.commands("M220 R")
+
+                            if speedReduced:
+                                self._logger.info("P2PP: Injecting M220 Speed 100% for splice end")
+                                self._printer.commands("M220 R")
+                                speedReduced = False
                             self.updateUI()
                             self.currentSplice = int(line[12:], 16)
                             self._logger.info(self.currentSplice)
