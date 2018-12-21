@@ -193,6 +193,7 @@ class Omega():
                             self.currentSplice = int(line[12:], 16)
                             self._logger.info(self.currentSplice)
                             self.updateUI()
+                        self._settings.save()
                     elif "U39" in line:
                         if "D-" in line:
                             self.amountLeftToExtrude = int(line[10:])
