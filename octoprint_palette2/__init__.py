@@ -29,7 +29,12 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=0, palette2Alerts=True)
+        return dict(autoconnect=0,
+                    palette2Alerts=True,
+                    feedratecontrol=False,
+                    feedratenormalpct=100,
+                    feedrateslowpct=50
+                    )
 
     def get_template_configs(self):
         return [
@@ -57,8 +62,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
             changeFeedrateControlSettings=["condition"],
-            changeFeedrateNormalPctSettings=["value"],
-            changeFeedrateSlowPctSettings=["value"],
+            changeFeedrateNormalPct=["value"],
+            changeFeedrateSlowPct=["value"],
         )
 
     def on_api_command(self, command, data):
@@ -87,9 +92,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.changeAlertSettings(data["condition"])
         elif command == "changeFeedrateControlSettings":
             self.palette.changeFeedrateControlSettings(data["condition"])
-        elif command == "changeFeedrateNormalPctSettings":
+        elif command == "changeFeedrateNormalPct":
             self.palette.changeFeedrateNormalSettings(data["number"])
-        elif command == "changeFeedrateSlowPctSettings":
+        elif command == "changeFeedrateSlowPct":
             self.palette.changeFeedrateSlowSettings(data["number"])
         return flask.jsonify(foo="bar")
 
@@ -147,6 +152,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "SettingsUpdated" in event:
             self.palette.displayAlerts = self._settings.get(
                 ["palette2Alerts"])
+
+            self.palette.feedratecontrol = self._settings.get(
+                ["feedratecontrol"])
+            self.palette.feedratenormalpct = self._settings.get(
+                ["feedratenormalpct"])
+            self.palette.feedrateslowpct = self._settings.get(
+                ["feedrateslowpct"])
+
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()

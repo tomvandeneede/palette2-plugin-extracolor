@@ -547,12 +547,12 @@ class Omega():
         self._settings.set(["feedratecontrol"], condition)
         self._settings.save()
 
-    def changeFeedrateSlowPctSettings(self, condition):
-        self._settings.set(["feedrateslowpct"], condition)
+    def changeFeedrateSlowPctSettings(self, pct):
+        self._settings.set(["feedrateslowpct"], pct)
         self._settings.save()
         
-    def changeFeedrateNormalPctSettings(self, condition):
-        self._settings.set(["feedratenormalpct"], condition)
+    def changeFeedrateNormalPctSettings(self, pct):
+        self._settings.set(["feedratenormalpct"], pct)
         self._settings.save()
 
     def sendAllMCFFilenamesToOmega(self):
