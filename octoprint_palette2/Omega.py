@@ -147,6 +147,17 @@ class Omega():
                 line = line.strip()
                 if line:
                     self._logger.info("Omega: read in line: %s" % line)
+                if 'O34 D1' in line:
+                    try:
+                        # filter out ping offset information
+                        idx = line.find("O34")
+                        if not idx == -1:
+                            idx += len("O34 D1")+1
+                            params = line[idx:].split(" ")
+                            self._printer.commands("M117 Ping {}: {}%".format(params[1][1:], params[0][1:]))
+                    except:
+                        self._logger.info("Failed info to send line to printer: %s")
+
                 if 'O20' in line:
                     # send next line of data
                     self.sendNextData(int(line[5]))
