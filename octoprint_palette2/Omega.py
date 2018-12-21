@@ -186,37 +186,42 @@ class Omega():
                         self._logger.info(self.filamentLength)
                         self.updateUI()
                     elif "U25" in line:
-                        if "D0" in line:
-                            if self.feedratecontrol:
-                                self._logger.info("P2PP: Feed-rate control on plugin: Active")
-                                self._logger.info("Feed Rate Normal:" + self.feedratenormalpct)
-                                self._logger.info("Feed Rate Slow:" + self.feedrateslowpct)
-                                if self.feedrateslowed:
-                                    self._logger.info("P2PP: Feed-rate should already be at" + self.feedrateslowpct + "pct")
-                                    self._printer.commands("M220 S" + self.feedrateslowpct)
+                        if self._settings.get(["feedratecontrol"]):
+                            self._logger.info("P2PP: Feed-rate control on plugin: Active :: Feed Rate Normal/Slow: "
+                                              + self._settings.get(["feedratenormalpct"])
+                                              + "/"
+                                              + self._settings.get(["feedrateslowpct"])
+                                              )
+                            if "U25 D0" in line:
+                                if self._settings.get(["feedrateslowed"]):
+                                    self._logger.info("P2PP: Feed-rate should already be at" + self._settings.get(["feedrateslowpct"]) + "pct")
+                                    self._printer.commands("M220 S" + self._settings.get(["feedrateslowpct"]))
                                 else:
-                                    self._logger.info("P2PP: Setting Feed-rate to " + slow_speed + "pct for splice start")
-                                    self._printer.commands("M220 S" + self.feedrateslowpct + " B")
-                                self.feedrateslowed = True
-                            else:
-                                self._logger.info("P2PP: Feed-rate control on plugin: Disabled")
-                            self.updateUI()
-
-                        if "D1" in line:
-                            if self.feedratecontrol:
+                                    self._logger.info("P2PP: Setting Feed-rate to "
+                                                      + self._settings.get(["feedrateslowpct"])
+                                                      + "pct for splice start"
+                                                      )
+                                    self._printer.commands("M220 S"
+                                                           + self._settings.get(["feedrateslowpct"])
+                                                           + " B"
+                                                           )
+                                self._settings.set(["feedrateslowed"], True)
+                                self._settings.save()
+                            if "D1" in line:
                                 if self.feedrateslowed:
                                     self._logger.info("P2PP: Restoring Feed-rate for splice end")
                                     self._printer.commands("M220 R")
                                 else:
-                                    self._logger.info("P2PP: M220 should already be restored, Setting to " + self.feedratenormalpct + " for splice end")
-                                    self._printer.commands("M220 S" + self.feedratenormalpct)
-                                self.feedrateslowed = False
-                            else:
-                                self._logger.info("P2PP: Feed-rate control on plugin: Disabled")
-
-                            self.currentSplice = int(line[12:], 16)
-                            self._logger.info(self.currentSplice)
-                            self.updateUI()
+                                    self._logger.info("P2PP: Flow should already restored, Setting to: "
+                                                      + self._settings.get(["feedratenormalpct"])
+                                                      + "Pct ")
+                                    self._printer.commands("M220 S" + self._settings.get(["feedratenormalpct"]))
+                                self._settings.set(["feedrateslowed"], False)
+                        else:
+                            self._logger.info("P2PP: Feed-rate control on plugin: Disabled")
+                        self.currentSplice = int(line[12:], 16)
+                        self._logger.info(self.currentSplice)
+                        self.updateUI()
                         self._settings.save()
                     elif "U39" in line:
                         if "D-" in line:
