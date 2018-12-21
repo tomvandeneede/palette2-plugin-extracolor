@@ -158,7 +158,6 @@ class Omega():
                 self.printHeartbeatCheck = "P2Responded"
                 while not self.gcodeReady:
                     pass
-                self.gcodeReady = False
                 self._logger.info("Gcode is ready to be written")
                 return True
                 break
