@@ -175,21 +175,35 @@ class Omega():
                         self.updateUI()
                     elif "U25" in line:
                         if "U25 D0" in line:
-                            if self._settings.get(["feedrate_slowdown"]):
-                                self._logger.info("P2PP: Speed already 50% for splice start")
-                            else:
-                                self._logger.info("P2PP: Setting M220 feedrate to 50% for splice start")
+                            if self._settings.get(["feedratecontrol"]):
+                                self._logger.info("P2PP: Feed-rate control on splice: Active")
+                                if self._settings.get(["feedrate_slowdown"]):
+                                    self._logger.info("P2PP: Feed-rate should already be at" +
+                                                      self._settings.get(["feedrateslowpct"]) +
+                                                      "%")
+                                    self._printer.commands("M220 S" + self._settings.get(["feedrateslowpct"]))
+                                else:
+                                    self._logger.info("P2PP: Setting Feed-rate to " +
+                                                      self._settings.get(["feedrateslowpct"]) +
+                                                      "% for splice start")
+                                    self._printer.commands("M220 S" + self._settings.get(["feedrateslowpct"])+" B")
                                 self._settings.set(["feedrate_slowdown"], True)
-                                self._printer.commands("M220 S50 B")
+                            else:
+                                self._logger.info("P2PP: Feed-rate control on splice: Disabled")
+                            self._settings.save()
                             self.updateUI()
                         if "D1" in line:
-                            if self._settings.get(["feedrate_slowdown"]):
-                                self._logger.info("P2PP: Restoring M220 feedrate for splice end")
+                            if self._settings.get(["feedratecontrol"]):
+                                if self._settings.get(["feedrate_slowdown"]):
+                                    self._logger.info("P2PP: Restoring Feed-rate for splice end")
+                                    self._printer.commands("M220 R")
+                                else:
+                                    self._logger.info(
+                                        "P2PP: M220 should already be restored, Setting to 100% for splice end")
+                                    self._printer.commands("M220 S" + self._settings.get(["feedratenormalpct"]))
                                 self._settings.set(["feedrate_slowdown"], False)
                             else:
-                                self._settings.set(["feedrate_slowdown"], False)
-                                self._logger.info("P2PP: M220 should already be restored, Setting to 100% for splice end")
-                                self._printer.commands("M220 S100")
+                                self._logger.info("P2PP: Feed-rate control on splice: Disabled")
                             self.currentSplice = int(line[12:], 16)
                             self._logger.info(self.currentSplice)
                             self.updateUI()
@@ -400,6 +414,8 @@ class Omega():
 
         self.filename = ""
 
+        self.feedrate_control = False
+        self.feedrate_pct = 50
         self.feedrate_slowdown = False
 
         self.connected = False
