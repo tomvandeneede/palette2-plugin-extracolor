@@ -174,7 +174,14 @@ class Omega():
                         self._logger.info(self.filamentLength)
                         self.updateUI()
                     elif "U25" in line:
+                        if "U25 D0" in line:
+                            self._logger.info("P2PP: Injecting M220 Speed 50% splice start")
+                            self._printer.commands("M220 S50 B")
+                            self.updateUI()
                         if "D1" in line:
+                            self._logger.info("P2PP: Injecting M220 Speed 100% for splice end")
+                            self._printer.commands("M220 R")
+                            self.updateUI()
                             self.currentSplice = int(line[12:], 16)
                             self._logger.info(self.currentSplice)
                             self.updateUI()
