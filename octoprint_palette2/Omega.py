@@ -158,6 +158,8 @@ class Omega():
                 self.printHeartbeatCheck = "P2Responded"
                 while not self.gcodeReady:
                     pass
+                self.gcodeReady = False
+                self._logger.info("Gcode is ready to be written")
                 return True
                 break
             else:
@@ -333,7 +335,7 @@ class Omega():
 
     def omegaWriteThread(self, serialConnection):
         self._logger.info("Omega Write Thread: Starting Thread")
-        while self.writeThreadStop is False and self.gcodeQueue.empty():
+        while self.writeThreadStop is False:
             try:
                 line = self.writeQueue.get(True, 0.5)
                 self.lastCommandSent = line
