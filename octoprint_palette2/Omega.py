@@ -28,6 +28,7 @@ class Omega():
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
 
+
     def connectOmega(self, port=300):
         self._logger.info("Trying to connect to Omega")
         if self.connected is False:
@@ -143,7 +144,7 @@ class Omega():
         speedReduced = False
 
     def omegaReadThread(self, serialConnection):
-        global speedReduced
+
         self._logger.info("Omega Read Thread: Starting thread")
         try:
             while self.readThreadStop is False:
@@ -152,13 +153,15 @@ class Omega():
                 if line:
                     self._logger.info("Omega: read in line: %s" % line)
                 if 'O34 D1' in line:
-                    # filter out ping offset information
-                    idx = line.find("O34")
-                    parms = line[idx+7:].split(" ")
                     try:
-                       self._printer.commands("M117 Ping {}: {}%".format(parms[1][1:], parms[0][1:]))
+                        # filter out ping offset information
+                        idx = line.find("O34")
+                        if (not idx == -1):
+                            idx += len("O34 D1")+1
+                            params = line[idx:].split(" ")
+                            self._printer.commands("M117 Ping {}: {}%".format(params[1][1:], params[0][1:]))
                     except:
-                        self._printer.commands("M117 {}".format(line[idx+7:]))
+                        self._logger.info("Failed info to send line to printer: %s")
 
                 if 'O20' in line:
                     # send next line of data
@@ -188,17 +191,17 @@ class Omega():
                         self.updateUI()
                     elif "U25" in line:
                         if "U25 D0" in line:
-                            if not speedReduced:
+                            if not self.speedReduced:
                                 self._logger.info("P2PP: Injecting M220 Speed 50% splice start")
                                 self._printer.commands("M220 S50 B")
-                                speedReduced = True
+                                self.speedReduced = True
                             self.updateUI()
                         if "D1" in line:
 
-                            if speedReduced:
+                            if self.speedReduced:
                                 self._logger.info("P2PP: Injecting M220 Speed 100% for splice end")
                                 self._printer.commands("M220 R")
-                                speedReduced = False
+                                self.speedReduced = False
                             self.updateUI()
                             self.currentSplice = int(line[12:], 16)
                             self._logger.info(self.currentSplice)
@@ -416,6 +419,8 @@ class Omega():
         self.connectionStop = False
         self.heartbeat = False
 
+        self.speedReduced = False
+
     def resetPrintValues(self):
         self.actualPrintStarted = False
         self.firstTime = False
@@ -429,6 +434,7 @@ class Omega():
         self.spliceCounter = 0
         self.lastCommandSent = ""
         self.currentPingCmd = ""
+        self.speedReduced = False
 
     def resetOmega(self):
         self.resetConnection()
