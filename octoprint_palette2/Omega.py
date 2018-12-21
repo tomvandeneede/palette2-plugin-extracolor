@@ -173,7 +173,26 @@ class Omega():
                         self.filamentLength = int(line[9:], 16)
                         self._logger.info(self.filamentLength)
                         self.updateUI()
-
+                    elif "U25" in line:
+                        if "U25 D0" in line:
+                            if self._settings.get(["feedrate_slowdown"]):
+                                self._logger.info("P2PP: Speed already 50% for splice start")
+                            else:
+                                self._logger.info("P2PP: Setting M220 feedrate to 50% for splice start")
+                                self._settings.set(["feedrate_slowdown"], True)
+                                self._printer.commands("M220 S50 B")
+                            self.updateUI()
+                        if "D1" in line:
+                            if self._settings.get(["feedrate_slowdown"]):
+                                self._logger.info("P2PP: Restoring M220 feedrate for splice end")
+                                self._settings.set(["feedrate_slowdown"], False)
+                            else:
+                                self._settings.set(["feedrate_slowdown"], False)
+                                self._logger.info("P2PP: M220 should already be restored, Setting to 100% for splice end")
+                                self._printer.commands("M220 S100")
+                            self.currentSplice = int(line[12:], 16)
+                            self._logger.info(self.currentSplice)
+                            self.updateUI()
                     elif "U39" in line:
                         if "D-" in line:
                             self.amountLeftToExtrude = int(line[10:])
