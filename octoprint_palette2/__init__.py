@@ -166,6 +166,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.handlePing(cmd.strip())
             return "G4 P10",
         elif 'O' in cmd[0]:
+            if "O1 " in cmd:
+                self.palette.gcodeReady = True
+                self._logger.info("Gcode is ready to be written")
             self.palette.gcodeQueue.put(cmd)
             return None,
         elif 'M0' in cmd[0]:

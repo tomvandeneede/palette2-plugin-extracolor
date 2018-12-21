@@ -156,6 +156,8 @@ class Omega():
             if self.heartbeat:
                 self._logger.info("Palette responded to O99")
                 self.printHeartbeatCheck = "P2Responded"
+                while not self.gcodeReady:
+                    pass
                 return True
                 break
             else:
@@ -495,6 +497,7 @@ class Omega():
         self.pings = []
         self.pongs = []
         self.printHeartbeatCheck = ""
+        self.gcodeReady = False
 
         self.filename = ""
 
@@ -521,6 +524,7 @@ class Omega():
         self.totalPings = 0
         self.pings = []
         self.pongs = []
+        self.gcodeReady = False
 
     def resetOmega(self):
         self.resetConnection()
