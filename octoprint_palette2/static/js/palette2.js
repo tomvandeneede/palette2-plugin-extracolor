@@ -709,9 +709,7 @@ function OmegaViewModel(parameters) {
   self.onEventPrintStarted = payload => {
     if (payload.name.includes(".mcf.gcode")) {
       if (self.connected()) {
-        if (self.displayAlerts) {
-          omegaApp.loadingOverlay(true, "heartbeat");
-        }
+        omegaApp.loadingOverlay(true, "heartbeat");
       }
     }
   };
