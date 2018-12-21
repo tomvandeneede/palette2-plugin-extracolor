@@ -182,6 +182,10 @@ function OmegaViewModel(parameters) {
   self.autoconnect = false;
   self.filaLength = "";
 
+  self.feedrateControl = false;
+  self.feedrateNormalPct = 100;
+  self.feedrateSlowPct = 50;
+
   self.files = ko.observableArray([]);
 
   self.selectedDemoFile = ko.observable();
@@ -289,6 +293,49 @@ function OmegaViewModel(parameters) {
       contentType: "application/json; charset=UTF-8"
     });
   };
+  
+  
+  self.changeFeedrateControlSettings = condition => {
+    self.displayAlerts = !condition;
+    $(".feedratecontrol-input").prop("checked", self.feedrateControl);
+    var payload = { command: "changeFeedrateControlSettings", condition: self.feedrateControl };
+
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+
+  self.changeFeedrateNormalPctSettings = value => {
+    var payload = { command: "changeFeedrateNormalPctSettings", value: self.feedrateNormalPct };
+    self.feedrateNormalPct = value;
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+
+
+  self.changeFeedrateSlowPctSettings = value => {
+    self.feedrateSlowPct = value;
+    var payload = { command: "changeFeedrateSlowPctSettings", value: self.feedrateSlowPct };
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+
+
+
 
   self.sendOmegaCmd = (command, payload) => {
     var payload = {

@@ -422,12 +422,12 @@ class Omega():
         self.actualPrintStarted = False
 
         self.displayAlerts = self._settings.get(["palette2Alerts"])
-
+        
         self.filename = ""
 
-        self.feedratecontrol = False
-        self.feedratenormalpct = 100
-        self.feedrateslowpct = 50
+        self.feedratecontrol = self._settings.get(["feedratecontrol"])        
+        self.feedratenormalpct = self._settings.get(["feedratenormalpct"])      # 100
+        self.feedrateslowpct = self._settings.get(["feedrateslowpct"])          # 50
         self.feedrateslowed = False
 
         self.connected = False
@@ -541,6 +541,18 @@ class Omega():
 
     def changeAlertSettings(self, condition):
         self._settings.set(["palette2Alerts"], condition)
+        self._settings.save()
+        
+    def changeFeedrateControlSettings(self, condition):
+        self._settings.set(["feedratecontrol"], condition)
+        self._settings.save()
+
+    def changeFeedrateSlowPctSettings(self, condition):
+        self._settings.set(["feedrateslowpct"], condition)
+        self._settings.save()
+        
+    def changeFeedrateNormalPctSettings(self, condition):
+        self._settings.set(["feedratenormalpct"], condition)
         self._settings.save()
 
     def sendAllMCFFilenamesToOmega(self):
