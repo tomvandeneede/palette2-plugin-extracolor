@@ -498,8 +498,8 @@ class Omega():
         self.lastCommandSent = ""
         self.currentPingCmd = ""
         self.totalPings = 0
-        self.pings = []
-        self.pongs = []
+        self.pings[:] = []
+        self.pongs[:] = []
 
     def resetOmega(self):
         self.resetConnection()
