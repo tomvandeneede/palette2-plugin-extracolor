@@ -151,7 +151,7 @@ class Omega():
                     try:
                         # filter out ping offset information
                         idx = line.find("O34")
-                        if not idx == -1:
+                        if (not idx == -1):
                             idx += len("O34 D1")+1
                             params = line[idx:].split(" ")
                             self._printer.commands("M117 Ping {}: {}%".format(params[1][1:], params[0][1:]))
