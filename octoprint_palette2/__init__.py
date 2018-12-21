@@ -88,9 +88,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "changeFeedrateControlSettings":
             self.palette.changeFeedrateControlSettings(data["condition"])
         elif command == "changeFeedrateNormalPctSettings":
-            self.palette.changeFeedrateControlSettings(data["number"])
+            self.palette.changeFeedrateNormalSettings(data["number"])
         elif command == "changeFeedrateSlowPctSettings":
-            self.palette.changeFeedrateControlSettings(data["number"])
+            self.palette.changeFeedrateSlowSettings(data["number"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
