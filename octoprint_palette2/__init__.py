@@ -102,6 +102,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             if ".mcf.gcode" in payload["name"]:
                 self._logger.info("PRINT STARTED P2")
                 self.palette.gcodeReady = False
+                while not self.writeQueue.empty():
+                    self.writeQueue.get()
+                while not self.gcodeQueue.empty():
+                    self.gcodeQueue.get()
                 if self.palette.tryHeartbeatBeforePrint():
                     self.palette.resetPrintValues()
                     self._logger.info("Filename: %s" %
