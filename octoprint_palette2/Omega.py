@@ -189,11 +189,13 @@ class Omega():
                         if "D0" in line:
                             if self.feedratecontrol:
                                 self._logger.info("P2PP: Feed-rate control on plugin: Active")
+                                self._logger.info("Feed Rate Normal:" + self.feedratenormalpct)
+                                self._logger.info("Feed Rate Slow:" + self.feedrateslowpct)
                                 if self.feedrateslowed:
-                                    self._logger.info("P2PP: Feed-rate should already be at" + self.feedrateslowpct + "%")
+                                    self._logger.info("P2PP: Feed-rate should already be at" + self.feedrateslowpct + "pct")
                                     self._printer.commands("M220 S" + self.feedrateslowpct)
                                 else:
-                                    self._logger.info("P2PP: Setting Feed-rate to " + slow_speed + "% for splice start")
+                                    self._logger.info("P2PP: Setting Feed-rate to " + slow_speed + "pct for splice start")
                                     self._printer.commands("M220 S" + self.feedrateslowpct + " B")
                                 self.feedrateslowed = True
                             else:
@@ -206,7 +208,7 @@ class Omega():
                                     self._logger.info("P2PP: Restoring Feed-rate for splice end")
                                     self._printer.commands("M220 R")
                                 else:
-                                    self._logger.info("P2PP: M220 should already be restored, Setting to 100% for splice end")
+                                    self._logger.info("P2PP: M220 should already be restored, Setting to " + self.feedratenormalpct + " for splice end")
                                     self._printer.commands("M220 S" + self.feedratenormalpct)
                                 self.feedrateslowed = False
                             else:

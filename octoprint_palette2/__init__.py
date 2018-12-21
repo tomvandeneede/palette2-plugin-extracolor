@@ -93,9 +93,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "changeFeedrateControlSettings":
             self.palette.changeFeedrateControlSettings(data["condition"])
         elif command == "changeFeedrateNormalPct":
-            self.palette.changeFeedrateNormalSettings(data["number"])
+            self.palette.changeFeedrateNormalSettings(data["value"])
         elif command == "changeFeedrateSlowPct":
-            self.palette.changeFeedrateSlowSettings(data["number"])
+            self.palette.changeFeedrateSlowSettings(data["value"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -150,15 +150,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self._plugin_manager.send_plugin_message(
                 self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
-            self.palette.displayAlerts = self._settings.get(
-                ["palette2Alerts"])
-
-            self.palette.feedratecontrol = self._settings.get(
-                ["feedratecontrol"])
-            self.palette.feedratenormalpct = self._settings.get(
-                ["feedratenormalpct"])
-            self.palette.feedrateslowpct = self._settings.get(
-                ["feedrateslowpct"])
+            self.palette.displayAlerts = self._settings.get(["palette2Alerts"])
+            self.palette.feedratecontrol = self._settings.get(["feedratecontrol"])
+            self.palette.feedratenormalpct = self._settings.get(["feedratenormalpct"])
+            self.palette.feedrateslowpct = self._settings.get(["feedrateslowpct"])
 
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
