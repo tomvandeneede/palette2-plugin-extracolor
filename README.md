@@ -14,12 +14,21 @@ This has been only tested on a Original Prusa i3 Mk3.
 
 This is not warranted nor covered by any warranties by Mosaic Manufacturing and I have no Affiliation with them but for the fact I own and love their Palette2.
 
+In order for this to work, your printer must support the following GCODE(s)
+M220 S50 B  ; 50% Speed, Backup Previous Value
+M220 R ; Restore previously backed up value
+
+
 ## Installing
 
-On your OctoPrint server, manually install this plugin via the Plugin Manager using the following URL:
-
+On your OctoPrint server,
+1) Uninstall the original "Palette2 Plugin"
+2) Reboot Octoprint
+3) Manually install this plugin via the Plugin Manager using the following URL:
 `https://github.com/skellatore/palette2-plugin/archive/master.zip`
+4) Ensure version reads "1.1.0-p2pp-beta"
 
+Test it out :)
 
 ## Authors
 
