@@ -15,9 +15,7 @@ This has been only tested on a Original Prusa i3 Mk3.
 This is not warranted nor covered by any warranties by Mosaic Manufacturing and I have no Affiliation with them but for the fact I own and love their Palette2.
 
 In order for this to work, your printer must support the following GCODE(s)
-M220 S50 B  ; 50% Speed, Backup Previous Value
-M220 R ; Restore previously backed up value
-
+M220 Sxxx   ;XXX Speed in PCT.
 
 ## Installing
 
