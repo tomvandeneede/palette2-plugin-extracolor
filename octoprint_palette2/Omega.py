@@ -239,23 +239,19 @@ class Omega():
                         self.feedrateslowed = False
                     else:
                         self._logger.info('P2PP: Feed-rate Control: INACTIVE :: ' + self.feedrateslowpct + '/' + self.feedratenormalpct)
-                # /SKELLATORE
-                # tomvandeneede
+
                 if "O34" in line:
                     self._logger.info("P2PP: " + self.showpingpongonprinter)
                     if self.showpingpongonprinter:
                         self._logger.info("P2PP: Show Ping Pong on Printer: ACTIVE")
                         if 'O34 D1' in line:
-                            try:
-                                # filter out ping offset information
-                                idx = line.find("O34")
-                                if not idx == -1:
-                                    idx += len("O34 D1") + 1
-                                    params = line[idx:].split(" ")
-                                    self._printer.commands("M117 Ping {}: {}%".format(params[1][1:], params[0][1:]))
-                            except:
-                                self._logger.info("Failed info to send line to printer: %s")
-                # /tomvandeneede
+                             # filter out ping offset information
+                             idx = line.find("O34")
+                             if not idx == -1:
+                                 idx += len("O34 D1") + 1
+                                 params = line[idx:].split(" ")
+                                 self._printer.commands("M117 Ping {}: {}%".format(params[1][1:], params[0][1:]))
+                # /SKELLATORE
 
                 if 'O20' in line:
                     # send next line of data
