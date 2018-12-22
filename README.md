@@ -24,7 +24,8 @@ On your OctoPrint server,
 2) Reboot Octoprint
 3) Manually install this plugin via the Plugin Manager using the following URL:
 `https://github.com/skellatore/palette2-plugin/archive/master.zip`
-4) Ensure version reads "1.1.0-p2pp-beta"
+4) Ensure version contains "1.2.0-p2pp-beta"
+
 
 Test it out :)
 
