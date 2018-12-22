@@ -214,6 +214,14 @@ function OmegaViewModel(parameters) {
   self.autoconnect = false;
   self.filaLength = "";
 
+  // SKELLATORE
+  self.showpingpongonprinter = true;
+  self.feedratecontrol = true;
+  self.feedratenormalpct = 100;
+  self.feedrateslowpct = 50;
+  self.feedrateslowed = false;
+  // /SKELLATORE
+
   self.files = ko.observableArray([]);
 
   self.selectedDemoFile = ko.observable();
@@ -360,6 +368,64 @@ function OmegaViewModel(parameters) {
       contentType: "application/json; charset=UTF-8"
     });
   };
+
+  // SKELLATORE
+  self.changeShowPingPongOnPrinter = condition => {
+    self.showpingpongonprinter = !condition;
+    $(".showpingpong-input").prop("checked", self.showpingpongonprinter);
+    var payload = { command: "changeShowPingPongOnPrinter", condition: self.showpingpongonprinter };
+
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+
+  self.changeFeedrateControl = condition => {
+    self.feedratecontrol = !condition;
+    $(".feedratecontrol-input").prop("checked", self.feedratecontrol);
+    var payload = { command: "changeFeedrateControl", condition: self.feedratecontrol };
+
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+
+  self.changeFeedrateNormalPct = text => {
+    self.feedratenormalpct = text;
+    $(".feedratenormal-input").prop("text",self.feedratenormalpct);
+    var payload = { command: "changeFeedrateNormalPct", value: self.feedratenormalpct };
+
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+
+  self.changeFeedrateSlowPct = text => {
+    self.feedrateslowpct = text;
+    $(".feedrateslow-input").prop("text", self.feedratecontrol);
+    var payload = { command: "changeFeedrateSlowPct", value: self.feedrateslowpct };
+
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+  // /SKELLATORE
 
   self.sendOmegaCmd = (command, payload) => {
     var payload = {
@@ -574,6 +640,12 @@ function OmegaViewModel(parameters) {
 
   self.updateCurrentStatus = () => {
     $(".current-status").text(self.currentStatus);
+    // SKELLATORE
+    $(".feedratecontrol-status").text(self.feedratecontrol);
+    $(".feedrateslowed-status").text(self.feedrateslowed);
+    $(".feedratenormalpct-status").text(self.feedratenormalpct);
+    $(".feedrateslowpct-status").text(self.feedrateslowpct);
+    // /SKELLATORE
     if (self.currentStatus === "Palette work completed: all splices prepared") {
       $(".current-status").text(self.currentStatus);
     } else if (self.currentStatus === "Loading filament through outgoing tube") {

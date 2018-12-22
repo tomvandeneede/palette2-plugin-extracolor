@@ -214,6 +214,49 @@ class Omega():
                 line = line.strip()
                 if line:
                     self._logger.info("Omega: read in line: %s" % line)
+                # SKELLATORE
+                if 'O97 U25 D0' in line:
+                    self._logger.info('P2PP: SPLICE START')
+                    self._logger.info('P2PP: ' + str(self.feedratecontrol) + '/' + str(self.feedrateslowed) + '/' + str(self.feedratenormalpct) + '/' + str(self.feedrateslowpct) + '/')
+                    if self.feedratecontrol:
+                        self._logger.info('P2PP: Feed-rate Control: ACTIVE')
+                        # Splice Start
+                        if self.feedrateslowed:
+                            # Feedrate already slowed, set it again to be safe.
+                            self._logger.info('P2PP: Feed-rate SLOW - ACTIVE* (' + self.feedrateslowpct + ')')
+                            self._printer.commands('M220 S' + self.feedrateslowpct)
+                        else:
+                            self._logger.info('P2PP: Feed-rate SLOW - ACTIVE (' + self.feedrateslowpct + ')')
+                            self._printer.commands('M220 S' + self.feedrateslowpct + ' B')
+                        self.feedrateslowed = True
+                    else:
+                        self._logger.info('P2PP: Feed-rate Control: INACTIVE :: ' + self.feedrateslowpct + '/' + self.feedratenormalpct)
+                if 'O97 U25 D1' in line:
+                    self._logger.info('P2PP: SPLICE END')
+                    if self.feedratecontrol:
+                        self._logger.info('P2PP: Feed-rate NORMAL - ACTIVE (' + self.feedratenormalpct + ')')
+                        self._printer.commands('M220 S' + self.feedratenormalpct)
+                        self.feedrateslowed = False
+                    else:
+                        self._logger.info('P2PP: Feed-rate Control: INACTIVE :: ' + self.feedrateslowpct + '/' + self.feedratenormalpct)
+                # /SKELLATORE
+                # tomvandeneede
+                if "O34" in line:
+                    self._logger.info("P2PP: " + self.showpingpongonprinter)
+                    if self.showpingpongonprinter:
+                        self._logger.info("P2PP: Show Ping Pong on Printer: ACTIVE")
+                        if 'O34 D1' in line:
+                            try:
+                                # filter out ping offset information
+                                idx = line.find("O34")
+                                if not idx == -1:
+                                    idx += len("O34 D1") + 1
+                                    params = line[idx:].split(" ")
+                                    self._printer.commands("M117 Ping {}: {}%".format(params[1][1:], params[0][1:]))
+                            except:
+                                self._logger.info("Failed info to send line to printer: %s")
+                # /tomvandeneede
+
                 if 'O20' in line:
                     # send next line of data
                     self.sendNextData(int(line[5]))
@@ -475,6 +518,14 @@ class Omega():
         self.pongs = []
         self.printHeartbeatCheck = ""
 
+        # SKELLATORE
+        self.feedrateslowed = False
+        self.feedratecontrol = bool(self._settings.get(["feedratecontrol"]))
+        self.feedratenormalpct = str(self._settings.get(["feedratenormalpct"]))
+        self.feedrateslowpct = str(self._settings.get(["feedrateslowpct"]))
+        self.showpingpongonprinter = bool(self._settings.get(["showpingpongonprinter"]))
+        # /SKELLATORE
+
         self.filename = ""
 
         self.connected = False
@@ -501,6 +552,13 @@ class Omega():
         self.pings[:] = []
         self.pongs[:] = []
 
+        # SKELLATORE
+        self.feedrateslowed = False
+        self.feedratecontrol = self._settings.get(["feedratecontrol"])
+        self.feedratenormalpct = self._settings.get(["feedratenormalpct"])
+        self.feedrateslowpct = self._settings.get(["feedrateslowpct"])
+        self.showpingpongonprinter = self._settings.get(["showpingpongonprinter"])
+        # /SKELLATORE
     def resetOmega(self):
         self.resetConnection()
         self.resetVariables()
@@ -611,6 +669,24 @@ class Omega():
     def changeAlertSettings(self, condition):
         self._settings.set(["palette2Alerts"], condition)
         self._settings.save()
+
+    # SKELLATORE
+    def changeShowPingPongOnPrinter(self, condition):
+        self._settings.set(["showpingpongonprinter"], condition)
+        self._settings.save()
+    def changeFeedrateControl(self, condition):
+        self._settings.set(["feedratecontrol"], condition)
+        self._settings.save()
+    def changeFeedrateSlowed(self, condition):
+        self._settings.set(["feedrateslowed"], condition)
+        self._settings.save()
+    def changeFeedrateNormalPct(self, value):
+        self._settings.set(["feedratenormalpct"], value)
+        self._settings.save()
+    def changeFeedrateSlowPct(self, value):
+        self._settings.set(["feedrateslowpct"], value)
+        self._settings.save()
+    # /SKELLATORE
 
     def sendAllMCFFilenamesToOmega(self):
         self.getAllMCFFilenames()

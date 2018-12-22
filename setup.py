@@ -14,7 +14,7 @@ plugin_package = "octoprint_%s" % plugin_identifier
 plugin_name = "Palette 2"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "1.2.0"
+plugin_version = "1.2.0-P2PP-BETA-1"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
@@ -27,7 +27,7 @@ plugin_author = "Mosaic Manufacturing Ltd."
 plugin_author_email = "info@mosaicmfg.com"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
-plugin_url = "https://gitlab.com/mosaic-mfg/palette-2-plugin"
+plugin_url = "https://github.com/skellatore/palette2-plugin"
 
 # The plugin's license. Can be overwritten within OctoPrint's internal data via __plugin_license__ in the plugin module
 plugin_license = "AGPLv3"
