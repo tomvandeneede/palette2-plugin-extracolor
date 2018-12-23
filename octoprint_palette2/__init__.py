@@ -31,13 +31,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def get_settings_defaults(self):
         return dict(autoconnect=0,
                     palette2Alerts=True,
-                    # SKELLATORE
+                    # P2PP
                     showpingpongonprinter=True,
                     feedratecontrol=True,
                     feedrateslowed=False,
                     # feedrateslowpct=50,
                     # feedratenormalpct=100
-                    # /SKELLATORE
+                    # /P2PP
                     )
 
     def get_template_configs(self):
@@ -65,13 +65,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             uiUpdate=[],
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
-            # SKELLATORE
+            # P2PP
             changeShowPingPongOnPrinter=["condition"],
             changeFeedrateControl=["condition"],
             changeFeedrateSlowed=["condition"],
             changeFeedrateNormalPct=["value"],
             changeFeedrateSlowPct=["value"],
-            # /SKELLATORE
+            # /P2PP
             displayPorts=[]
         )
 
@@ -101,7 +101,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.changeAlertSettings(data["condition"])
         elif command == "displayPorts":
             self.palette.displayPorts()
-        # SKELLATORE
+        # P2PP
         elif command == "changeShowPingPongOnPrinter":
             self.palette.changeShowPingPongOnPrinter(data["condition"])
         elif command == "changeFeedrateControl":
@@ -110,7 +110,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.changeFeedrateNormalPct(data["value"])
         elif command == "changeFeedrateSlowPct":
             self.palette.changeFeedrateSlowPct(data["value"])
-        # /SKELLATORE
+        # /P2PP
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -124,6 +124,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 0]
             self.palette.updateUI()
             self.palette.printerConnection = ""
+            # P2PP
+            self.palette.showpingpongonprinter = self._settings.get(["showpingpongonprinter"])
+            self.palette.feedratecontrol = self._settings.get(["feedratecontrol"])
+            self.palette.feedrateslowed = self._settings.get(["feedrateslowed"])
+            self.palette.feedratenormalpct = self._settings.get(["feedratenormalpct"])
+            self.palette.feedrateslowpct = self._settings.get(["feedrateslowpct"])
+            # /P2PP
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
                 self._logger.info("PRINT STARTED P2")
@@ -168,13 +175,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "SettingsUpdated" in event:
             self.palette.displayAlerts = self._settings.get(
                 ["palette2Alerts"])
-            # SKELLATORE
-            self.palette.pingpongonprinter = self._settings.get(["pingpongonprinter"])
+            # P2PP
+            self.palette.showpingpongonprinter = self._settings.get(["showpingpongonprinter"])
             self.palette.feedratecontrol = self._settings.get(["feedratecontrol"])
             self.palette.feedrateslowed = self._settings.get(["feedrateslowed"])
             self.palette.feedratenormalpct = self._settings.get(["feedratenormalpct"])
             self.palette.feedrateslowpct = self._settings.get(["feedrateslowpct"])
-            # /SKELLATORE
+            # /P2PP
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
@@ -239,7 +246,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
                 # update method: pip
                 #pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/master/palette-2-plugin-master.zip"
+                # P2PP
                 pip="https://github.com/skellatore/palette-2-plugin/archive/master.zip"
+                # /P2PP
+
             )
         )
 

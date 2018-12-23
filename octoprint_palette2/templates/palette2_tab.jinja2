@@ -75,6 +75,7 @@
 				</ul>
 			</div>
 			<hr>
+<!-- P2PP -->
     			<div class="row" style="margin-bottom: 20px">
     				<h4 class="P2PP-Controls">P2PP</h4>
                         <p class="showpingpongonprinter">Show PingPong Status on Printer: <span class="showpingpongonprinter-status" data-bind="text: showpingpongonprinter"></span></p>
@@ -82,8 +83,10 @@
                         <p class="feedrateslowed">Feedrate Currently Slowed: <span class="feedrateslowed-status" data-bind="text: feedrateslowed"></span></p>
                         <p class="feedratenormalpct">Feedrate Normal Speed: <span class="feedratenormalpct-status" data-bind="text: feedratenormalpct"></span>%</p>
                         <p class="feedrateslowpct">Feedrate Slow Speed: <span class="feedrateslowpct-status" data-bind="text: feedrateslowpct"></span>%</p>
+                        <p class="p2ppstatus" data-bind="text: p2ppstatus"></p>
     			</div>
 			<hr>
+<!-- /P2PP -->
 			<div class="row" style="margin-bottom: 20px">
 				<h4 class="manual-controls">Manual Controls</h4>
 				<button type="button" class="btn btn-primary" data-bind="click: sendCutCmd, enable: connected">Cut</button>
