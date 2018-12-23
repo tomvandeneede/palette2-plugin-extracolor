@@ -2,12 +2,15 @@
 
 This OctoPrint plugin enables connection and communication between OctoPrint and your [Palette 2](https://www.mosaicmfg.com/products/palette-2).
 
-This is version has a very small change to slow the printer down at the start of a splice to 50% and to speed it back up as soon as the splice has finished, using the previous value.
+This fork has a few little feature enhancements;
+* Display Last Ping statistic on Printer Status Line via M117
+    * Enable/Disable via Palette2 Settings panel
+* Ability to control feed rates via M220 during Splices
+    * Enable/Disable via Palette2 Settings panel
+    * Set NORMAL/SLOW feed rate percentage via Palette2 Settings panel
+* Display when splice occurring as a status line in Palette2 information tab.
 
-To do this, we are injecting a simple "M220 S50 B"  when we detect a "O97 U25 D0" command.
-Then when we detect a O97 U25 D1 (Splice Finished) - We inject a "M220 R" to restore to the previously saved speed.
-
-Details on the M220 command can be found here;
+Details on the M220 and M117 commands can be found here;
 https://github.com/prusa3d/Prusa-Firmware/wiki/Supported-G-codes
 
 This has been only tested on a Original Prusa i3 Mk3.
@@ -15,25 +18,26 @@ This has been only tested on a Original Prusa i3 Mk3.
 This is not warranted nor covered by any warranties by Mosaic Manufacturing and I have no Affiliation with them but for the fact I own and love their Palette2.
 
 In order for this to work, your printer must support the following GCODE(s)
-M220 Sxxx   ;XXX Speed in PCT.
+M220 and M117
 
-## Installing
-
+# Installing
 On your OctoPrint server,
 1) Uninstall the original "Palette2 Plugin"
 2) Reboot Octoprint
 3) Manually install this plugin via the Plugin Manager using the following URL:
 `https://github.com/skellatore/palette2-plugin/archive/master.zip`
-4) Ensure version contains "1.2.0-p2pp-beta"
-
+4) Ensure version contains "1.2.0-P2PP-RC1"
 
 Test it out :)
+
+# Known issues
+On Load before a print is starting the status display and variable values are a bit busted.
 
 ## Authors
 
 [Mosaic Manufacturing Ltd.](https://www.mosaicmfg.com/)
 
-Minor Modifications: Tim Brookman
+Tim Brookman - Minor Modifications
 
 ## License
 
