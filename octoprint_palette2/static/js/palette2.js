@@ -654,6 +654,7 @@ function OmegaViewModel(parameters) {
     $(".feedratenormalpct-status").text(self.feedratenormalpct);
     $(".feedrateslowpct-status").text(self.feedrateslowpct);
     $(".feedrateslowed-status").text(self.feedrateslowed);
+    $(".showpingpongonprinter-status").text(self.showpingpongonprinter );
     $(".p2ppstatus").text(self.p2ppstatus);
     // /P2PP
     $(".current-status").text(self.currentStatus);
@@ -1014,7 +1015,7 @@ function OmegaViewModel(parameters) {
           }
           self.updateCurrentStatus();
       } else if (message.includes("P2PP:SHOWPINGPONGONPRINTER=")) {
-          self.showpingpongonprinter = message.substring(26);
+          self.showpingpongonprinter = message.substring(27);
           if (self.showpingpongonprinter === "True") {
             self.showpingpongonprinter = true;
           } else {
