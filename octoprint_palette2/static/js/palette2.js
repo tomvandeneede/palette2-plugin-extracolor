@@ -215,12 +215,12 @@ function OmegaViewModel(parameters) {
   self.filaLength = "";
 
   // P2PP
-  self.showpingpongonprinter = ko.observable(false);
-  self.feedratecontrol = ko.observable(false);
-  self.feedratenormalpct = ko.observable(100);
-  self.feedrateslowpct = ko.observable(50);
-  self.feedrateslowed = ko.observable(false);
-  self.p2ppstatus = ko.observable('');
+  self.showpingpongonprinter = "";
+  self.feedratecontrol = "";
+  self.feedratenormalpct = "";
+  self.feedrateslowpct = "";
+  self.feedrateslowed = "";
+  self.p2ppstatus = "";
   // /P2PP
 
   self.files = ko.observableArray([]);
@@ -935,7 +935,7 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:currentStatus")) {
         if (message.substring(17) !== self.currentStatus) {
           self.currentStatus = message.substring(17);
-          self.updateCurrentStatus();
+          self.currentStatus();
         }
       } else if (message.includes("UI:AmountLeftToExtrude")) {
         self.amountLeftToExtrude = message.substring(23);
@@ -1004,6 +1004,7 @@ function OmegaViewModel(parameters) {
           } else {
             self.feedratecontrol = false;
           }
+          self.updateCurrentStatus();
       } else if (message.includes("P2PP:FEEDRATESLOWED=")) {
           self.feedrateslowed = message.substring(20);
           if (self.feedrateslowed === "True") {
@@ -1011,6 +1012,7 @@ function OmegaViewModel(parameters) {
           } else {
             self.feedrateslowed = false;
           }
+          self.updateCurrentStatus();
       } else if (message.includes("P2PP:SHOWPINGPONGONPRINTER=")) {
           self.showpingpongonprinter = message.substring(26);
           if (self.showpingpongonprinter === "True") {
@@ -1018,12 +1020,16 @@ function OmegaViewModel(parameters) {
           } else {
             self.showpingpongonprinter = false;
           }
+          self.updateCurrentStatus();
       } else if (message.includes("P2PP:FEEDRATENORMALPCT=")) {
           self.feedratenormalpct = message.substring(23);
+          self.updateCurrentStatus();
       } else if (message.includes("P2PP:FEEDRATESLOWPCT=")) {
         self.feedrateslowpct = message.substring(21);
+        self.updateCurrentStatus();
       } else if (message.includes("P2PP:UIMESSAGE=")) {
         self.p2ppstatus = message.substring(15);
+        self.updateCurrentStatus();
       }
       // P2PP
     }

@@ -122,8 +122,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         if "ClientOpened" in event:
             self.palette.printerConnection = self._printer.get_current_connection()[
                 0]
-            self.palette.updateUI()
-            self.palette.printerConnection = ""
             # P2PP
             self.palette.showpingpongonprinter = self._settings.get(["showpingpongonprinter"])
             self.palette.feedratecontrol = self._settings.get(["feedratecontrol"])
@@ -131,6 +129,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.feedratenormalpct = self._settings.get(["feedratenormalpct"])
             self.palette.feedrateslowpct = self._settings.get(["feedrateslowpct"])
             # /P2PP
+            self.palette.updateUI()
+            self.palette.printerConnection = ""
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
                 self._logger.info("PRINT STARTED P2")
