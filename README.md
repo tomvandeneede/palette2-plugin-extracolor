@@ -7,8 +7,9 @@ This fork has a few little feature enhancements;
     * Enable/Disable via Palette2 Settings panel
 * Ability to control feed rates via M220 during Splices
     * Enable/Disable via Palette2 Settings panel
-    * Set NORMAL/SLOW feed rate percentage via Palette2 Settings panel
+    * Set NORMAL/SLOW feed rate percentage via Palette2 Tab.
 * Display when splice occurring as a status line in Palette2 information tab.
+* Adjust settings on the Palette2 Tab without interrupting current job!
 
 Details on the M220 and M117 commands can be found here;
 https://github.com/prusa3d/Prusa-Firmware/wiki/Supported-G-codes
@@ -22,13 +23,13 @@ M220 and M117
 
 # Installing
 On your OctoPrint server,
-1) Uninstall the original "Palette2 Plugin"
-2) Reboot Octoprint
-3) Manually install this plugin via the Plugin Manager using the following URL:
+1) Manually install this plugin via the Plugin Manager using the following URL:
 `https://github.com/skellatore/palette2-plugin/archive/master.zip`
-4) Ensure version contains "1.2.0-P2PP-RC1"
-
-Test it out :)
+    * This will upgrade your current Palette2 Plugin.
+    * At any time you can revert to the original Palette2 Plugin, however it will require you to restart octoprint.
+4) Ensure version contains "1.2.0-P2PP-RC2"
+5) Navigate to the Palette2 Plugin Tab.
+6) Adjust settings to suit your needs. These can be adjusted mid print without interrupting the print. Feedrate settings will be in effect for the next splice after the setting was modified.
 
 # Known issues
 On Load before a print is starting the status display and variable values are a bit busted.

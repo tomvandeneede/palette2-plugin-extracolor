@@ -78,12 +78,33 @@
 <!-- P2PP -->
     			<div class="row" style="margin-bottom: 20px">
     				<h4 class="P2PP-Controls">P2PP</h4>
-                        <p class="showpingpongonprinter">Show PingPong Status on Printer: <span class="showpingpongonprinter-status" data-bind="text: showpingpongonprinter"></span></p>
-                        <p class="feedratecontrol">Feedrate Control Status: <span class="feedratecontrol-status" data-bind="text: feedratecontrol"></span></p>
-                        <p class="feedrateslowed">Feedrate Currently Slowed: <span class="feedrateslowed-status" data-bind="text: feedrateslowed"></span></p>
-                        <p class="feedratenormalpct">Feedrate Normal Speed: <span class="feedratenormalpct-status" data-bind="text: feedratenormalpct"></span>%</p>
-                        <p class="feedrateslowpct">Feedrate Slow Speed: <span class="feedrateslowpct-status" data-bind="text: feedrateslowpct"></span>%</p>
-                        <p class="p2ppstatus" data-bind="text: p2ppstatus"></p>
+                        <label>
+                          <span>Enable Ping/Pong display on Printer:</span>
+                          <input class="showpingpongonprinter-input" type="checkbox" data-bind="checked: ShowPingPongOnPrinter">
+                        </label>
+                        <label>
+                          <span>Enable Feed-rate control during Splice:</span>
+                          <input class="feedratecontrol-input" type="checkbox" data-bind="checked: FeedrateControl">
+                        </label>
+                        <label class="form-inline">
+                          <span>Normal Feed-rate speed:</span>
+                          <div class="input-append">
+                            <input class="feedratenormalpct-input input-mini" type="number" min="1" max="999" data-bind="value: FeedrateNormalPct">
+                            <span class="add-on">%</span>
+                          </div>
+                        </label>
+                        <label class="form-inline">
+                            <span>Splicing Feed-rate speed:</span>
+                            <div class="input-append">
+                               <input class="feedrateslowpct-input input-mini" type="number" min="1" max="999" data-bind="value: FeedrateSlowPct">
+                               <span class="add-on">%</span>
+                            </div>
+                        </label>
+                        <label>
+                            <span>P2PP Status:</span>
+                            <p class="p2ppstatus" data-bind="text: P2PPStatus"></p>
+                        </label>
+
     			</div>
 			<hr>
 <!-- /P2PP -->

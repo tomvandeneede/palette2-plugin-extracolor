@@ -317,22 +317,22 @@ class Omega():
         p2pp_message = ''
         if 'O97 U25 D0' in line:
             self._logger.info('P2PP: SPLICE START')
-            if self.feedratecontrol:
+            if self.FeedrateControl:
                 self._logger.info('P2PP: Feed-rate Control: ACTIVATED')
-                p2pp_message = 'Slice Starting: Speed -> SLOW(%s)' % self.feedrateslowpct
+                p2pp_message = 'Slice Starting: Speed -> SLOW(%s)' % self.FeedrateSlowPct
                 # Splice Start
-                if self.feedrateslowed:
+                if self.FeedrateSlowed:
                     # Feedrate already slowed, set it again to be safe.
                     try:
-                        self._logger.info("P2PP: Feed-rate SLOW - ACTIVE* (%s)" % self.feedrateslowpct)
-                        self._printer.commands('M220 S%s' % self.feedrateslowpct)
+                        self._logger.info("P2PP: Feed-rate SLOW - ACTIVE* (%s)" % self.FeedrateSlowPct)
+                        self._printer.commands('M220 S%s' % self.FeedrateSlowPct)
                     except ValueError:
                         self._logger.info('P2PP: Unable to Update FEED-RATE -> SLOW :: ' + str(ValueError))
                 else:
-                    self._logger.info('P2PP: Feed-rate SLOW - ACTIVE (%s)' % self.feedrateslowpct)
+                    self._logger.info('P2PP: Feed-rate SLOW - ACTIVE (%s)' % self.FeedrateSlowPct)
                     try:
-                        self._printer.commands('M220 S%s B' % self.feedrateslowpct)
-                        self.feedrateslowed = True
+                        self._printer.commands('M220 S%s B' % self.FeedrateSlowPct)
+                        self.FeedrateSlowed = True
                     except ValueError:
                         self._logger.info('P2PP: Unable to Update FEED-RATE -> SLOW :: ' + str(ValueError))
                 self.updateUI()
@@ -341,12 +341,12 @@ class Omega():
                 self.updateUI()
         if 'O97 U25 D1' in line:
             self._logger.info('P2PP: SPLICE END')
-            if self.feedratecontrol:
-                self._logger.info('P2PP: Feed-rate NORMAL - ACTIVE (%s)' % self.feedratenormalpct)
-                p2pp_message = 'Slice Finished: Speed -> NORMAL(%s) ' % self.feedratenormalpct
+            if self.FeedrateControl:
+                self._logger.info('P2PP: Feed-rate NORMAL - ACTIVE (%s)' % self.FeedrateNormalPct)
+                p2pp_message = 'Slice Finished: Speed -> NORMAL(%s) ' % self.FeedrateNormalPct
                 try:
-                    self._printer.commands('M220 S%s' % self.feedratenormalpct)
-                    self.feedrateslowed = False
+                    self._printer.commands('M220 S%s' % self.FeedrateNormalPct)
+                    self.FeedrateSlowed = False
                 except ValueError:
                     self._logger.info('P2PP: Unable to Update FEED-RATE -> NORMAL :: ' + str(ValueError))
                 self.updateUI()
@@ -355,9 +355,9 @@ class Omega():
                 self.updateUI()
         if 'O34 D1' in line:
             self._logger.info("P2PP: Ping! Pong!")
-            self._logger.info("P2PP: Show on Printer: %s" % self.showpingpongonprinter)
+            self._logger.info("P2PP: Show on Printer: %s" % self.ShowPingPongOnPrinter)
             # filter out ping offset information
-            if self.showpingpongonprinter:
+            if self.ShowPingPongOnPrinter:
                 idx = line.find("O34")
                 parms = line[idx+7:].split(" ")
                 try:
@@ -453,17 +453,17 @@ class Omega():
                 self._identifier, "UI:Finished Pong")
         # P2PP
         self._plugin_manager.send_plugin_message(self._identifier,
-                                                 "P2PP:SHOWPINGPONGONPRINTER=%s" % self._settings.get(["showpingpongonprinter"])
+                                                 "P2PP:SHOWPINGPONGONPRINTER=%s" % self._settings.get(["ShowPingPongOnPrinter"])
                                                  )
         self._plugin_manager.send_plugin_message(self._identifier,
-                                                 "P2PP:FEEDRATECONTROL=%s" % self._settings.get(["feedratecontrol"]))
+                                                 "P2PP:FEEDRATECONTROL=%s" % self._settings.get(["FeedrateControl"]))
         self._plugin_manager.send_plugin_message(self._identifier,
-                                                 "P2PP:FEEDRATESLOWED=%s" % self._settings.get(["feedrateslowed"]))
+                                                 "P2PP:FEEDRATESLOWED=%s" % self._settings.get(["FeedrateSlowed"]))
         self._plugin_manager.send_plugin_message(self._identifier,
-                                                 "P2PP:FEEDRATENORMALPCT=%s" % self._settings.get(["feedratenormalpct"])
+                                                 "P2PP:FEEDRATENORMALPCT=%s" % self._settings.get(["FeedrateNormalPct"])
                                                  )
         self._plugin_manager.send_plugin_message(self._identifier,
-                                                 "P2PP:FEEDRATESLOWPCT=%s" % self._settings.get(["feedrateslowpct"]))
+                                                 "P2PP:FEEDRATESLOWPCT=%s" % self._settings.get(["FeedrateSlowPct"]))
         # /P2PP
 
     def sendNextData(self, dataNum):
@@ -550,11 +550,11 @@ class Omega():
         self.printHeartbeatCheck = ""
 
         # P2PP
-        self.feedrateslowed = False
-        self.feedratecontrol = self._settings.get(["feedratecontrol"])
-        self.feedratenormalpct = self._settings.get(["feedratenormalpct"])
-        self.feedrateslowpct = self._settings.get(["feedrateslowpct"])
-        self.showpingpongonprinter = self._settings.get(["showpingpongonprinter"])
+        self.FeedrateSlowed = False
+        self.FeedrateControl = self._settings.get(["FeedrateControl"])
+        self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
+        self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
+        self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
         # /P2PP
 
         self.filename = ""
@@ -584,11 +584,11 @@ class Omega():
         self.pongs[:] = []
 
         # P2PP
-        self.feedrateslowed = False
-        self.feedratecontrol = self._settings.get(["feedratecontrol"]) | True
-        self.feedratenormalpct = self._settings.get(["feedratenormalpct"]) | 100
-        self.feedrateslowpct = self._settings.get(["feedrateslowpct"]) | 50
-        self.showpingpongonprinter = self._settings.get(["showpingpongonprinter"]) | True
+        self.FeedrateSlowed = False
+        self.FeedrateControl = self._settings.get(["FeedrateControl"]) | True
+        self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"]) | 100
+        self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"]) | 50
+        self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"]) | True
         # /P2PP
     def resetOmega(self):
         self.resetConnection()
@@ -703,19 +703,19 @@ class Omega():
 
     # P2PP
     def changeShowPingPongOnPrinter(self, condition):
-        self._settings.set(["showpingpongonprinter"], condition)
+        self._settings.set(["ShowPingPongOnPrinter"], condition)
         self._settings.save()
     def changeFeedrateControl(self, condition):
-        self._settings.set(["feedratecontrol"], condition)
+        self._settings.set(["FeedrateControl"], condition)
         self._settings.save()
     def changeFeedrateSlowed(self, condition):
-        self._settings.set(["feedrateslowed"], condition)
+        self._settings.set(["FeedrateSlowed"], condition)
         self._settings.save()
     def changeFeedrateNormalPct(self, value):
-        self._settings.set(["feedratenormalpct"], value)
+        self._settings.set(["FeedrateNormalPct"], value)
         self._settings.save()
     def changeFeedrateSlowPct(self, value):
-        self._settings.set(["feedrateslowpct"], value)
+        self._settings.set(["FeedrateSlowPct"], value)
         self._settings.save()
     # /P2PP
 

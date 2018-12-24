@@ -32,11 +32,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         return dict(autoconnect=0,
                     palette2Alerts=True,
                     # P2PP
-                    showpingpongonprinter=True,
-                    feedratecontrol=True,
-                    feedrateslowed=False,
-                    # feedrateslowpct=50,
-                    # feedratenormalpct=100
+                    ShowPingPongOnPrinter=True,
+                    FeedrateControl=True,
+                    FeedrateSlowed=False,
+                    FeedrateSlowPct=50,
+                    FeedrateNormalPct=100
                     # /P2PP
                     )
 
@@ -120,14 +120,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_event(self, event, payload):
         if "ClientOpened" in event:
-            self.palette.printerConnection = self._printer.get_current_connection()[
-                0]
+            self.palette.printerConnection = self._printer.get_current_connection()[0]
             # P2PP
-            self.palette.showpingpongonprinter = self._settings.get(["showpingpongonprinter"])
-            self.palette.feedratecontrol = self._settings.get(["feedratecontrol"])
-            self.palette.feedrateslowed = self._settings.get(["feedrateslowed"])
-            self.palette.feedratenormalpct = self._settings.get(["feedratenormalpct"])
-            self.palette.feedrateslowpct = self._settings.get(["feedrateslowpct"])
+            self.palette.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
+            self.palette.FeedrateControl = self._settings.get(["FeedrateControl"])
+            self.palette.FeedrateSlowed = self._settings.get(["FeedrateSlowed"])
+            self.palette.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
+            self.palette.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
             # /P2PP
             self.palette.updateUI()
             self.palette.printerConnection = ""
@@ -176,11 +175,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.displayAlerts = self._settings.get(
                 ["palette2Alerts"])
             # P2PP
-            self.palette.showpingpongonprinter = self._settings.get(["showpingpongonprinter"])
-            self.palette.feedratecontrol = self._settings.get(["feedratecontrol"])
-            self.palette.feedrateslowed = self._settings.get(["feedrateslowed"])
-            self.palette.feedratenormalpct = self._settings.get(["feedratenormalpct"])
-            self.palette.feedrateslowpct = self._settings.get(["feedrateslowpct"])
+            self.palette.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
+            self.palette.FeedrateControl = self._settings.get(["FeedrateControl"])
+            self.palette.FeedrateSlowed = self._settings.get(["FeedrateSlowed"])
+            self.palette.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
+            self.palette.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
             # /P2PP
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):

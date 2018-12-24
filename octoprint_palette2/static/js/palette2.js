@@ -215,12 +215,12 @@ function OmegaViewModel(parameters) {
   self.filaLength = "";
 
   // P2PP
-  self.showpingpongonprinter = "";
-  self.feedratecontrol = "";
-  self.feedratenormalpct = "";
-  self.feedrateslowpct = "";
-  self.feedrateslowed = "";
-  self.p2ppstatus = "";
+  self.ShowPingPongOnPrinter = ko.observable();
+  self.FeedrateControl = ko.observable();
+  self.FeedrateNormalPct = ko.observable();
+  self.FeedrateSlowPct = ko.observable();
+  self.FeedrateSlowed = ko.observable();
+  self.P2PPStatus = ko.observable();
   // /P2PP
 
   self.files = ko.observableArray([]);
@@ -369,73 +369,31 @@ function OmegaViewModel(parameters) {
       contentType: "application/json; charset=UTF-8"
     });
   };
+
   // P2PP
-  self.changeFeedrateControlSettings = condition => {
-    self.feedratecontrol = !condition;
-    $(".feedratecontrol-input").prop("checked", self.feedratecontrol);
-    var payload = { command: "changeFeedrateControlSettings", condition: self.feedratecontrol };
-
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
-  };
-  self.changeShowPingOnPrinterSettings = condition => {
-    self.showpingpongonprinter = !condition;
-    $(".showpingpong-input").prop("checked", self.showpingpongonprinter);
-    var payload = { command: "changeShowPingOnPrinterSettings", condition: self.showpingpongonprinter };
-
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
-  };
-  self.changeFeedrateNormalPctSettings = text => {
-    self.feedratenormalpct = text;
-    $(".feedratenormalpct-input").prop("text", self.feedratenormalpct);
-    var payload = { command: "changeFeedrateNormalPctSettings", condition: self.feedratenormalpct };
-
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
-  };
-  self.changeFeedrateSlowPctSettings = text => {
-    self.feedrateslowpct = text;
-    $(".feedratenormalpct-input").prop("text", self.feedrateslowpct);
-    var payload = { command: "changeFeedrateSlowPctSettings", condition: self.feedrateslowpct };
-
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
-  };
-  self.changeP2ppStatus = text => {
-    self.feedrateslowpct = text;
-    $(".p2ppstatus").prop("text", self.p2ppstatus);
-    var payload = { command: "changeP2ppStatus", condition: self.p2ppstatus };
-
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
-  };
+  self.FeedrateControl.subscribe( function() {
+    self.ajax_payload({command: "changeFeedrateControl", condition: self.FeedrateControl()})
+  });
+  self.ShowPingPongOnPrinter.subscribe( function() {
+    self.ajax_payload({command: "changeShowPingPongOnPrinter", condition: self.ShowPingPongOnPrinter()})
+  });
+  self.FeedrateNormalPct.subscribe( function() {
+    self.ajax_payload({command: "changeFeedrateNormalPct", value: self.FeedrateNormalPct()})
+  });
+  self.FeedrateSlowPct.subscribe(function() {
+    self.ajax_payload({command: "changeFeedrateSlowPct", value: self.FeedrateSlowPct()})
+  });
   // /P2PP
+
+  self.ajax_payload = (payload) => {
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
 
   self.sendOmegaCmd = (command, payload) => {
     var payload = {
@@ -648,15 +606,8 @@ function OmegaViewModel(parameters) {
     }
   };
 
+
   self.updateCurrentStatus = () => {
-    // P2PP
-    $(".feedratecontrol-status").text(self.feedratecontrol);
-    $(".feedratenormalpct-status").text(self.feedratenormalpct);
-    $(".feedrateslowpct-status").text(self.feedrateslowpct);
-    $(".feedrateslowed-status").text(self.feedrateslowed);
-    $(".showpingpongonprinter-status").text(self.showpingpongonprinter );
-    $(".p2ppstatus").text(self.p2ppstatus);
-    // /P2PP
     $(".current-status").text(self.currentStatus);
     if (self.currentStatus === "Palette work completed: all splices prepared") {
       $(".current-status").text(self.currentStatus);
@@ -843,6 +794,7 @@ function OmegaViewModel(parameters) {
       self.currentStatus = "Print cancelled";
       self.findCurrentFilename();
       self.updateCurrentStatus();
+      //self.updateP2PPStatus();
       self.sendCancelCmd();
     }
   };
@@ -997,40 +949,20 @@ function OmegaViewModel(parameters) {
         } else {
           self.actualPrintStarted = false;
         }
+
       // P2PP
       } else if (message.includes("P2PP:FEEDRATECONTROL=")) {
-          self.feedratecontrol = message.substring(21);
-          if (self.feedratecontrol === "True") {
-            self.feedratecontrol = true;
-          } else {
-            self.feedratecontrol = false;
-          }
-          self.updateCurrentStatus();
+          self.FeedrateControl(message.substring(21));
       } else if (message.includes("P2PP:FEEDRATESLOWED=")) {
-          self.feedrateslowed = message.substring(20);
-          if (self.feedrateslowed === "True") {
-            self.feedrateslowed = true;
-          } else {
-            self.feedrateslowed = false;
-          }
-          self.updateCurrentStatus();
+          self.FeedrateSlowed(message.substring(20));
       } else if (message.includes("P2PP:SHOWPINGPONGONPRINTER=")) {
-          self.showpingpongonprinter = message.substring(27);
-          if (self.showpingpongonprinter === "True") {
-            self.showpingpongonprinter = true;
-          } else {
-            self.showpingpongonprinter = false;
-          }
-          self.updateCurrentStatus();
+          self.ShowPingPongOnPrinter(message.substring(27));
       } else if (message.includes("P2PP:FEEDRATENORMALPCT=")) {
-          self.feedratenormalpct = message.substring(23);
-          self.updateCurrentStatus();
+          self.FeedrateNormalPct(message.substring(23));
       } else if (message.includes("P2PP:FEEDRATESLOWPCT=")) {
-        self.feedrateslowpct = message.substring(21);
-        self.updateCurrentStatus();
+          self.FeedrateSlowPct(message.substring(21));
       } else if (message.includes("P2PP:UIMESSAGE=")) {
-        self.p2ppstatus = message.substring(15);
-        self.updateCurrentStatus();
+          self.P2PPStatus(message.substring(15));
       }
       // P2PP
     }
