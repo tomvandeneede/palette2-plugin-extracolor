@@ -606,7 +606,6 @@ function OmegaViewModel(parameters) {
     }
   };
 
-
   self.updateCurrentStatus = () => {
     $(".current-status").text(self.currentStatus);
     if (self.currentStatus === "Palette work completed: all splices prepared") {
@@ -888,7 +887,7 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:currentStatus")) {
         if (message.substring(17) !== self.currentStatus) {
           self.currentStatus = message.substring(17);
-          self.currentStatus();
+          self.updateCurrentStatus();
         }
       } else if (message.includes("UI:AmountLeftToExtrude")) {
         self.amountLeftToExtrude = message.substring(23);
