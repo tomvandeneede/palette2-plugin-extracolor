@@ -198,11 +198,20 @@ function OmegaViewModel(parameters) {
   self.omegaPort = ko.observable();
   self.currentSplice = ko.observable();
   self.nSplices = ko.observable();
+  self.totalSplicesDisplay = ko.computed(function() {
+    return " / " + self.nSplices() + " Splices";
+  });
   self.connectionStateMsg = ko.observable();
   self.connected = ko.observable(false);
+  self.connectPaletteText = ko.computed(function() {
+    return self.connected() ? "Connected" : "Connect to Palette 2";
+  });
+  self.disconnectPaletteText = ko.computed(function() {
+    return self.connected() ? "Disconnect" : "Disconnected";
+  });
   self.demoWithPrinter = ko.observable(false);
 
-  self.currentStatus = "";
+  self.currentStatus = ko.observable();
   self.amountLeftToExtrude = "";
   self.jogId = "";
   self.displayAlerts = true;
@@ -212,7 +221,10 @@ function OmegaViewModel(parameters) {
   self.firstTime = false;
   self.actualPrintStarted = false;
   self.autoconnect = false;
-  self.filaLength = "";
+  self.filaLength = ko.observable();
+  self.filaLengthDisplay = ko.computed(function() {
+    return (Number(self.filaLength()) / 1000.0).toFixed(2) + "m";
+  });
 
   self.files = ko.observableArray([]);
 
@@ -517,32 +529,12 @@ function OmegaViewModel(parameters) {
       });
   };
 
-  self.updateFilamentUsed = () => {
-    let filament = (Number(self.filaLength) / 1000.0).toFixed(2) + "m";
-    $(".filament-used span")
-      .html("")
-      .text(filament);
-  };
-
-  self.updateCurrentSplice = () => {
-    $(".current-splice").text(self.currentSplice());
-  };
-
-  self.updateTotalSplices = () => {
-    let totalSplices = " / " + self.nSplices() + " Splices";
-    $(".total-splices").text(totalSplices);
-  };
-
   self.updateConnection = () => {
     if (self.connected()) {
       $("#connection-state-msg")
         .removeClass("text-muted")
         .addClass("text-success")
         .css("color", "green");
-      $(".connect-palette-button")
-        .text("Connected")
-        .addClass("disabled")
-        .attr("disabled", true);
       self.connectionStateMsg("Connected");
       self.applyPaletteDisabling();
     } else {
@@ -551,10 +543,6 @@ function OmegaViewModel(parameters) {
           .removeClass("text-success")
           .addClass("text-muted")
           .css("color", "red");
-        $(".connect-palette-button")
-          .text("Connected")
-          .addClass("disabled")
-          .attr("disabled", true);
         self.connectionStateMsg("Not Connected - Trying To Connect...");
         self.applyPaletteDisabling();
       } else {
@@ -562,10 +550,6 @@ function OmegaViewModel(parameters) {
           .removeClass("text-success")
           .addClass("text-muted")
           .css("color", "red");
-        $(".connect-palette-button")
-          .text("Connect to Palette 2")
-          .removeClass("disabled")
-          .attr("disabled", false);
         self.connectionStateMsg("Not Connected");
         self.applyPaletteDisabling();
       }
@@ -573,10 +557,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.updateCurrentStatus = () => {
-    $(".current-status").text(self.currentStatus);
-    if (self.currentStatus === "Palette work completed: all splices prepared") {
-      $(".current-status").text(self.currentStatus);
-    } else if (self.currentStatus === "Loading filament through outgoing tube") {
+    if (self.currentStatus() === "Loading filament through outgoing tube") {
       if (self.displayAlerts) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#temp`;
@@ -584,7 +565,8 @@ function OmegaViewModel(parameters) {
           omegaApp.temperatureHighlight();
         });
       }
-    } else if (self.currentStatus === "Loading filament into extruder") {
+    } else if (self.currentStatus() === "Loading filament into extruder") {
+      self.displayFilamentCountdown();
       if (self.displayAlerts) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#control`;
@@ -597,9 +579,8 @@ function OmegaViewModel(parameters) {
             omegaApp.extrusionHighlight();
           });
         }
-        self.displayFilamentCountdown();
       }
-    } else if (self.currentStatus === "Cancelling print") {
+    } else if (self.currentStatus() === "Cancelling print") {
       omegaApp.printCancelAlert();
       self.removeNotification();
     }
@@ -637,9 +618,11 @@ function OmegaViewModel(parameters) {
   /* OCTOPRINT-SPECIFIC EVENT HANDLERS */
 
   self.onBeforeBinding = () => {
-    self.currentSplice("0");
-    self.nSplices("0");
+    self.currentSplice(0);
+    self.nSplices(0);
+    self.filaLength(0);
     self.connectionStateMsg("Not Connected");
+    self.currentStatus("No ongoing Palette 2 print");
     self.connected(false);
   };
 
@@ -756,7 +739,7 @@ function OmegaViewModel(parameters) {
 
   self.onEventPrintCancelled = payload => {
     if (payload.name.includes(".mcf.gcode")) {
-      self.currentStatus = "Print cancelled";
+      self.currentStatus("Print cancelled");
       self.findCurrentFilename();
       self.updateCurrentStatus();
       self.sendCancelCmd();
@@ -810,7 +793,6 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:currentSplice")) {
         var num = message.substring(17);
         self.currentSplice(num);
-        self.updateCurrentSplice();
       } else if (message.includes("UI:DisplayAlerts")) {
         if (message.includes("True")) {
           self.displayAlerts = true;
@@ -822,7 +804,6 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:nSplices")) {
         var ns = message.substring(12);
         self.nSplices(ns);
-        self.updateTotalSplices();
       } else if (message.includes("UI:Ponging")) {
         self.updatePongMsg(true);
       } else if (message.includes("UI:Finished Pong")) {
@@ -847,11 +828,10 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:Refresh Demo List")) {
         self.refreshDemoList();
       } else if (message.includes("UI:FilamentLength")) {
-        self.filaLength = message.substring(18);
-        self.updateFilamentUsed();
+        self.filaLength(message.substring(18));
       } else if (message.includes("UI:currentStatus")) {
-        if (message.substring(17) !== self.currentStatus) {
-          self.currentStatus = message.substring(17);
+        if (message.substring(17) && message.substring(17) !== self.currentStatus()) {
+          self.currentStatus(message.substring(17));
           self.updateCurrentStatus();
         }
       } else if (message.includes("UI:AmountLeftToExtrude")) {

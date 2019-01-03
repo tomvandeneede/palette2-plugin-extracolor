@@ -22,7 +22,6 @@ class Omega():
         self.selectedPort = ""
 
         self.writeQueue = Queue()
-        # self.gcodeQueue = Queue()
 
         self.resetVariables()
         self.resetConnection()
@@ -485,21 +484,37 @@ class Omega():
         self.heartbeat = False
 
     def resetPrintValues(self):
-        self.actualPrintStarted = False
-        self.firstTime = False
-        self.filamentLength = 0
-        self.currentSplice = "0"
-        self.palette2SetupStarted = False
-        self.splices = []
-        self.algorithms = []
         self.sentCounter = 0
         self.algoCounter = 0
         self.spliceCounter = 0
+
+        self.msfCU = ""
+        self.msfNS = "0"
+        self.msfNA = "0"
+        self.nAlgorithms = 0
+        self.currentSplice = "0"
+        self.inPong = False
+        self.header = [None] * 9
+        self.splices = []
+        self.algorithms = []
+        self.filamentLength = 0
+        self.currentStatus = ""
+        self.drivesInUse = []
+        self.amountLeftToExtrude = ""
+        self.printPaused = ""
+        self.printerConnection = ""
+        self.firstTime = False
         self.lastCommandSent = ""
         self.currentPingCmd = ""
+        self.palette2SetupStarted = False
+        self.allMCFFiles = []
+        self.actualPrintStarted = False
         self.totalPings = 0
-        self.pings[:] = []
-        self.pongs[:] = []
+        self.pings = []
+        self.pongs = []
+        self.printHeartbeatCheck = ""
+
+        self.filename = ""
 
     def resetOmega(self):
         self.resetConnection()
