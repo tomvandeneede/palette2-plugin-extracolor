@@ -765,6 +765,7 @@ function OmegaViewModel(parameters) {
           self.latestPing(0);
           self.latestPingPercent("");
           self.pings([]);
+          $(".ping-history").hide();
         }
       } else if (message.command === "pongs") {
         if (message.data.length) {
@@ -775,6 +776,7 @@ function OmegaViewModel(parameters) {
           self.latestPong(0);
           self.latestPongPercent("");
           self.pongs([]);
+          $(".pong-history").hide();
         }
       } else if (message.command === "selectedPort") {
         selectedPort = message.data;
