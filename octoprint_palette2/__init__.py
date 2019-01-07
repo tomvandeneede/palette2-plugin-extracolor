@@ -29,7 +29,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=0, palette2Alerts=True)
+        return dict(autoconnect=False, palette2Alerts=True)
 
     def get_template_configs(self):
         return [
@@ -84,6 +84,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "changeAlertSettings":
             self.palette.changeAlertSettings(data["condition"])
         elif command == "displayPorts":
+            self._logger.info("TURNING OFF AUTOCONNECT")
+            self._settings.set(["autoconnect"], False)
+            self._logger.info(self._settings.get(["autoconnect"]))
+            self.palette.updateUI()
+            if self._settings.get(["autoconnect"]):
+                self.palette.startConnectionThread()
+            else:
+                self.palette.stopConnectionThread()
             self.palette.displayPorts()
         return flask.jsonify(foo="bar")
 
@@ -140,8 +148,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self._plugin_manager.send_plugin_message(
                 self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
-            self.palette.displayAlerts = self._settings.get(
-                ["palette2Alerts"])
+            self._logger.info(self._settings.get(
+                ["autoconnect"]))
+            self._logger.info(self._settings.get(
+                ["palette2Alerts"]))
+            self._logger.info("HELLO")
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()

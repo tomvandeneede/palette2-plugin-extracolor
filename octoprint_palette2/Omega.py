@@ -352,6 +352,8 @@ class Omega():
 
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
+        self._logger.info(self._settings.get(["autoconnect"]))
+        self._logger.info(self._settings.get(["palette2Alerts"]))
         self._plugin_manager.send_plugin_message(
             self._identifier, {"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
         self._plugin_manager.send_plugin_message(

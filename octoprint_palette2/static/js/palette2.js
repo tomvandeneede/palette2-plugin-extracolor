@@ -220,7 +220,7 @@ function OmegaViewModel(parameters) {
   self.printerConnected = false;
   self.firstTime = false;
   self.actualPrintStarted = false;
-  self.autoconnect = false;
+  self.autoconnect = ko.observable();
   self.filaLength = ko.observable();
   self.filaLengthDisplay = ko.computed(function() {
     return (Number(self.filaLength()) / 1000.0).toFixed(2) + "m";
@@ -538,7 +538,7 @@ function OmegaViewModel(parameters) {
       self.connectionStateMsg("Connected");
       self.applyPaletteDisabling();
     } else {
-      if (self.autoconnect) {
+      if (self.autoconnect()) {
         $("#connection-state-msg")
           .removeClass("text-success")
           .addClass("text-muted")
@@ -618,6 +618,7 @@ function OmegaViewModel(parameters) {
   /* OCTOPRINT-SPECIFIC EVENT HANDLERS */
 
   self.onBeforeBinding = () => {
+    self.settings = parameters[0];
     self.currentSplice(0);
     self.nSplices(0);
     self.filaLength(0);
@@ -638,7 +639,7 @@ function OmegaViewModel(parameters) {
         count++;
       }, 100);
     }
-    self.settings = parameters[0];
+    // self.settings = parameters[0];
     var payload = { command: "uiUpdate" };
 
     $.ajax({
@@ -796,6 +797,7 @@ function OmegaViewModel(parameters) {
         var num = message.substring(17);
         self.currentSplice(num);
       } else if (message.includes("UI:DisplayAlerts")) {
+        console.log(message);
         if (message.includes("True")) {
           self.displayAlerts = true;
         } else if (message.includes("False")) {
@@ -875,11 +877,13 @@ function OmegaViewModel(parameters) {
           self.firstTime = false;
         }
       } else if (message.includes("UI:AutoConnect=")) {
-        self.autoconnect = message.substring(15);
-        if (self.autoconnect === "True") {
-          self.autoconnect = true;
+        console.log(message);
+        if (message.substring(15) === "True") {
+          self.autoconnect(true);
+          $(".autoconnect-input").prop("checked", true);
         } else {
-          self.autoconnect = false;
+          self.autoconnect(false);
+          $(".autoconnect-input").prop("checked", false);
         }
       } else if (message.includes("UI:Palette2SetupStarted=")) {
         self.palette2SetupStarted = message.substring(24);
@@ -916,8 +920,8 @@ $(function() {
   OmegaViewModel();
   OCTOPRINT_VIEWMODELS.push({
     // This is the constructor to call for instantiating the plugin
-    construct: OmegaViewModel, // This is a list of dependencies to inject into the plugin. The order will correspond to the "parameters" arguments above
-    dependencies: ["settingsViewModel"], // Finally, this is the list of selectors for all elements we want this view model to be bound to.
+    construct: OmegaViewModel,
+    dependencies: ["settingsViewModel"],
     elements: ["#tab_plugin_palette2"]
-  });
+  }); // This is a list of dependencies to inject into the plugin. The order will correspond to the "parameters" arguments above // Finally, this is the list of selectors for all elements we want this view model to be bound to.
 });
