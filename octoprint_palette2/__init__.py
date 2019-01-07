@@ -162,7 +162,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def on_shutdown(self):
         self.palette.shutdown()
 
-    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode, tags=None):
+    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode=None, tags=None):
         if "O31" in cmd:
             self.palette.handlePing(cmd.strip())
             return "G4 P10",
