@@ -837,6 +837,8 @@ function OmegaViewModel(parameters) {
         if (message.substring(17) && message.substring(17) !== self.currentStatus()) {
           self.currentStatus(message.substring(17));
           self.updateCurrentStatus();
+        } else if (!message.substring(17)) {
+          self.currentStatus("No ongoing Palette 2 print");
         }
       } else if (message.includes("UI:AmountLeftToExtrude")) {
         self.amountLeftToExtrude = message.substring(23);
