@@ -56,7 +56,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             uiUpdate=[],
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
-            displayPorts=[]
+            displayPorts=["condition"]
         )
 
     def on_api_command(self, command, data):
@@ -84,16 +84,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "changeAlertSettings":
             self.palette.changeAlertSettings(data["condition"])
         elif command == "displayPorts":
-            self._logger.info("TURNING OFF AUTOCONNECT")
-            self._settings.set(["autoconnect"], False)
-            self._settings.save()
-            self._logger.info(self._settings.get(["autoconnect"]))
-            self.palette.updateUI()
-            if self._settings.get(["autoconnect"]):
-                self.palette.startConnectionThread()
-            else:
-                self.palette.stopConnectionThread()
-            self.palette.displayPorts()
+            self.palette.displayPorts(data["condition"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -149,11 +140,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self._plugin_manager.send_plugin_message(
                 self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
-            self._logger.info(self._settings.get(
-                ["autoconnect"]))
-            self._logger.info(self._settings.get(
-                ["palette2Alerts"]))
-            self._logger.info("HELLO")
+            self._logger.info("Auto-reconnect: %s" %
+                              str(self._settings.get(["autoconnect"])))
+            self._logger.info("Display alerts: %s" % str(
+                self._settings.get(["palette2Alerts"])))
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()

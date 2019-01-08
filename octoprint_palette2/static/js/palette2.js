@@ -220,7 +220,7 @@ function OmegaViewModel(parameters) {
   self.printerConnected = false;
   self.firstTime = false;
   self.actualPrintStarted = false;
-  self.autoconnect = ko.observable();
+  self.autoconnect = false;
   self.filaLength = ko.observable();
   self.filaLengthDisplay = ko.computed(function() {
     return (Number(self.filaLength()) / 1000.0).toFixed(2) + "m";
@@ -266,8 +266,17 @@ function OmegaViewModel(parameters) {
   });
 
   self.displayPorts = () => {
+    let condition = "";
+    // determine if user is opening or closing list of ports
+    if ($(".serial-ports-list").is(":visible")) {
+      condition = "closing";
+    } else {
+      condition = "opening";
+    }
+
     var payload = {
-      command: "displayPorts"
+      command: "displayPorts",
+      condition: condition
     };
     $.ajax({
       url: API_BASEURL + "plugin/palette2",
@@ -275,6 +284,8 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
+    }).then(() => {
+      self.settings.saveData();
     });
   };
 
@@ -361,7 +372,6 @@ function OmegaViewModel(parameters) {
 
   self.changeAlertSettings = condition => {
     self.displayAlerts = !condition;
-    $(".alert-input").prop("checked", self.displayAlerts);
     var payload = { command: "changeAlertSettings", condition: self.displayAlerts };
 
     $.ajax({
@@ -370,6 +380,8 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
+    }).then(() => {
+      self.settings.saveData();
     });
   };
 
@@ -538,7 +550,7 @@ function OmegaViewModel(parameters) {
       self.connectionStateMsg("Connected");
       self.applyPaletteDisabling();
     } else {
-      if (self.autoconnect()) {
+      if (self.autoconnect) {
         $("#connection-state-msg")
           .removeClass("text-success")
           .addClass("text-muted")
@@ -625,6 +637,8 @@ function OmegaViewModel(parameters) {
     self.connectionStateMsg("Not Connected");
     self.currentStatus("No ongoing Palette 2 print");
     self.connected(false);
+
+    self.uiUpdate();
   };
 
   self.onAfterBinding = () => {
@@ -640,6 +654,11 @@ function OmegaViewModel(parameters) {
       }, 100);
     }
     // self.settings = parameters[0];
+    self.uiUpdate();
+  };
+
+  self.uiUpdate = () => {
+    console.log("Requesting BE to update UI");
     var payload = { command: "uiUpdate" };
 
     $.ajax({
@@ -797,7 +816,6 @@ function OmegaViewModel(parameters) {
         var num = message.substring(17);
         self.currentSplice(num);
       } else if (message.includes("UI:DisplayAlerts")) {
-        console.log(message);
         if (message.includes("True")) {
           self.displayAlerts = true;
         } else if (message.includes("False")) {
@@ -879,13 +897,10 @@ function OmegaViewModel(parameters) {
           self.firstTime = false;
         }
       } else if (message.includes("UI:AutoConnect=")) {
-        console.log(message);
         if (message.substring(15) === "True") {
-          self.autoconnect(true);
-          $(".autoconnect-input").prop("checked", true);
+          self.autoconnect = true;
         } else {
-          self.autoconnect(false);
-          $(".autoconnect-input").prop("checked", false);
+          self.autoconnect = false;
         }
       } else if (message.includes("UI:Palette2SetupStarted=")) {
         self.palette2SetupStarted = message.substring(24);

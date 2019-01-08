@@ -49,7 +49,10 @@ class Omega():
         baselist = list(set(baselist))
         return baselist
 
-    def displayPorts(self):
+    def displayPorts(self, condition):
+        # only change settings if user is opening the list of ports
+        if "opening" in condition:
+            self._settings.set(["autoconnect"], False, force=True)
         self.ports = self.getAllPorts()
         self._logger.info(self.ports)
         if self.ports and not self.selectedPort:
@@ -352,8 +355,6 @@ class Omega():
 
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
-        self._logger.info(self._settings.get(["autoconnect"]))
-        self._logger.info(self._settings.get(["palette2Alerts"]))
         self._plugin_manager.send_plugin_message(
             self._identifier, {"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
         self._plugin_manager.send_plugin_message(
@@ -626,8 +627,7 @@ class Omega():
             self.enqueueCmd(cmd)
 
     def changeAlertSettings(self, condition):
-        self._settings.set(["palette2Alerts"], condition)
-        self._settings.save()
+        self._settings.set(["palette2Alerts"], condition, force=True)
 
     def sendAllMCFFilenamesToOmega(self):
         self.getAllMCFFilenames()
