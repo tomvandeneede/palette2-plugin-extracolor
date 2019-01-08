@@ -86,6 +86,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "displayPorts":
             self._logger.info("TURNING OFF AUTOCONNECT")
             self._settings.set(["autoconnect"], False)
+            self._settings.save()
             self._logger.info(self._settings.get(["autoconnect"]))
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
