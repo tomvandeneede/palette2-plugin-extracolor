@@ -680,3 +680,8 @@ class Omega():
             call(["tail -n 200 ~/.octoprint/logs/octoprint.log > ~/.mosaicdata/error_report.log"], shell=True)
         else:
             self._logger.info("NOT SENDING ERROR REPORT TO MOSAIC")
+
+    def startPrintFromHub(self):
+        self._logger.info("START PRINT FROM HERE")
+        # self.enqueueCmd("O39")
+        # self.enqueueCmd("O40")

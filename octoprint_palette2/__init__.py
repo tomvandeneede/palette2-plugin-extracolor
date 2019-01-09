@@ -57,7 +57,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
             displayPorts=["condition"],
-            sendErrorReport=["send"]
+            sendErrorReport=["send"],
+            startPrint=[]
         )
 
     def on_api_command(self, command, data):
@@ -76,13 +77,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.sendPrintStart()
         elif command == "sendCutCmd":
             self.palette.cut()
-            line = "O88 D000022"
-            if "O88" in line:
-                error = int(line[5:], 16)
-                self._logger.info("ERROR %d DETECTED" % error)
-                self._printer.pause_print()
-                self._plugin_manager.send_plugin_message(
-                    self._identifier, {"command": "error", "data": error})
+            # line = "O88 D000022"
+            # if "O88" in line:
+            #     error = int(line[5:], 16)
+            #     self._logger.info("ERROR %d DETECTED" % error)
+            #     self._printer.pause_print()
+            #     self._plugin_manager.send_plugin_message(
+            #         self._identifier, {"command": "error", "data": error})
         elif command == "sendOmegaCmd":
             self.palette.enqueueCmd(data["cmd"])
         elif command == "connectWifi":
@@ -95,6 +96,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.displayPorts(data["condition"])
         elif command == "sendErrorReport":
             self.palette.sendErrorReport(data["send"])
+        elif command == "startPrint":
+            self.palette.startPrintFromHub()
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
