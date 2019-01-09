@@ -7,6 +7,7 @@ import subprocess
 import os
 import binascii
 import sys
+from subprocess import call
 from Queue import Queue
 
 
@@ -672,3 +673,10 @@ class Omega():
 
     def startPrintFromP2(self, file):
         self._printer.select_file(file, False, printAfterSelect=True)
+
+    def sendErrorReport(self, send):
+        if send:
+            self._logger.info("SENDING ERROR REPORT TO MOSAIC")
+            call(["tail -n 200 ~/.octoprint/logs/octoprint.log > ~/.mosaicdata/error_report.log"], shell=True)
+        else:
+            self._logger.info("NOT SENDING ERROR REPORT TO MOSAIC")

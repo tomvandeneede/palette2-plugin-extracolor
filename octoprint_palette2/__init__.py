@@ -56,7 +56,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             uiUpdate=[],
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
-            displayPorts=["condition"]
+            displayPorts=["condition"],
+            sendErrorReport=["send"]
         )
 
     def on_api_command(self, command, data):
@@ -92,6 +93,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.changeAlertSettings(data["condition"])
         elif command == "displayPorts":
             self.palette.displayPorts(data["condition"])
+        elif command == "sendErrorReport":
+            self.palette.sendErrorReport(data["send"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):

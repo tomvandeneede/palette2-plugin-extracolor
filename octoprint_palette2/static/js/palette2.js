@@ -179,12 +179,6 @@ omegaApp.errorAlert = errorNumber => {
     cancelButtonText: "No",
     reverseButtons: true,
     type: "error"
-  }).then(result => {
-    if (result.value) {
-      console.log("YES");
-    } else if (result.dismiss === Swal.DismissReason.cancel) {
-      console.log("NO");
-    }
   });
 };
 
@@ -784,10 +778,35 @@ function OmegaViewModel(parameters) {
     }
   };
 
+  self.sendErrorReport = send => {
+    var payload = {
+      command: "sendErrorReport",
+      send: send
+    };
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
       if (message.command === "error") {
-        omegaApp.errorAlert(message.data);
+        omegaApp.errorAlert(message.data).then(result => {
+          sendToMosaic = false;
+          // if user clicks yes
+          if (result.value) {
+            sendToMosaic = true;
+          }
+          // if user clicks no
+          else if (result.dismiss === Swal.DismissReason.cancel) {
+            sendToMosaic = false;
+          }
+          self.sendErrorReport(sendToMosaic);
+        });
       } else if (message.command === "printHeartbeatCheck") {
         if (message.data === "P2NotConnected") {
           let base_url = window.location.origin;
