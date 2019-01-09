@@ -226,14 +226,19 @@ class Omega():
                 elif "O34" in line:
                     commands = [command.strip() for command in line.split('D')]
                     nature = commands[1]
-                    percent = commands[2]
-                    number = int(commands[3], 16)
-                    current = {"number": number, "percent": percent}
+                    if nature == "0":
+                        self_logger.info("REJECTING PING")
                     # if ping
-                    if nature == "1":
+                    elif nature == "1":
+                        percent = commands[2]
+                        number = int(commands[3], 16)
+                        current = {"number": number, "percent": percent}
                         self.pings.append(current)
                     # else pong
                     elif nature == "2":
+                        percent = commands[2]
+                        number = int(commands[3], 16)
+                        current = {"number": number, "percent": percent}
                         self.pongs.append(current)
                     self.updateUI()
                 elif "O40" in line:
@@ -250,6 +255,12 @@ class Omega():
                         index_to_print = int(line[8:], 16)
                         file = self.allMCFFiles[index_to_print]
                         self.startPrintFromP2(file)
+                elif "O88" in line:
+                    error = int(line[5:], 16)
+                    self._logger.info("ERROR %d DETECTED" % error)
+                    self._printer.pause_print()
+                    self._plugin_manager.send_plugin_message(
+                        self._identifier, {"command": "error", "data": error})
                 elif "O97" in line:
                     if "U26" in line:
                         self.filamentLength = int(line[9:], 16)

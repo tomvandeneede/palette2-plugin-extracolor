@@ -170,6 +170,24 @@ omegaApp.noSerialPortsAlert = () => {
   });
 };
 
+omegaApp.errorAlert = errorNumber => {
+  return swal({
+    title: `Error ${errorNumber} detected`,
+    text: `An error occured on Palette 2. Your print has been paused. Would you like to send a crash report to Mosaic for investigation?`,
+    confirmButtonText: "Yes",
+    showCancelButton: true,
+    cancelButtonText: "No",
+    reverseButtons: true,
+    type: "error"
+  }).then(result => {
+    if (result.value) {
+      console.log("YES");
+    } else if (result.dismiss === Swal.DismissReason.cancel) {
+      console.log("NO");
+    }
+  });
+};
+
 omegaApp.displayHeartbeatAlert = status => {
   if (status === "P2NotConnected") {
     omegaApp.loadingOverlay(false);
@@ -768,7 +786,9 @@ function OmegaViewModel(parameters) {
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      if (message.command === "printHeartbeatCheck") {
+      if (message.command === "error") {
+        omegaApp.errorAlert(message.data);
+      } else if (message.command === "printHeartbeatCheck") {
         if (message.data === "P2NotConnected") {
           let base_url = window.location.origin;
           window.location.href = `${base_url}/#tab_plugin_palette2`;
