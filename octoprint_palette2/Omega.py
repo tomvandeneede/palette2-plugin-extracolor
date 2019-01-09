@@ -227,7 +227,7 @@ class Omega():
                     commands = [command.strip() for command in line.split('D')]
                     nature = commands[1]
                     if nature == "0":
-                        self_logger.info("REJECTING PING")
+                        self._logger.info("REJECTING PING")
                     # if ping
                     elif nature == "1":
                         percent = commands[2]
