@@ -35,7 +35,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                     ShowPingPongOnPrinter=True,
                     FeedrateControl=True,
                     FeedrateSlowed=False,
-                    FeedrateSlowPct=50,
+                    FeedrateSlowPct=80,
                     FeedrateNormalPct=100
                     # /P2PP
                     )

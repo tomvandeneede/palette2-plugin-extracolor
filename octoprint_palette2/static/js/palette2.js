@@ -192,13 +192,13 @@ function OmegaViewModel(parameters) {
   var self = this;
 
   /* GLOBAL VARIABLES */
-  self.omegaCommand = ko.observable();
-  self.wifiSSID = ko.observable();
-  self.wifiPASS = ko.observable();
-  self.omegaPort = ko.observable();
-  self.currentSplice = ko.observable();
-  self.nSplices = ko.observable();
-  self.connectionStateMsg = ko.observable();
+  self.omegaCommand = ko.observable('');
+  self.wifiSSID = ko.observable('');
+  self.wifiPASS = ko.observable('');
+  self.omegaPort = ko.observable('');
+  self.currentSplice = ko.observable('');
+  self.nSplices = ko.observable('');
+  self.connectionStateMsg = ko.observable('');
   self.connected = ko.observable(false);
   self.demoWithPrinter = ko.observable(false);
 
@@ -215,25 +215,25 @@ function OmegaViewModel(parameters) {
   self.filaLength = "";
 
   // P2PP
-  self.ShowPingPongOnPrinter = ko.observable();
-  self.FeedrateControl = ko.observable();
-  self.FeedrateNormalPct = ko.observable();
-  self.FeedrateSlowPct = ko.observable();
-  self.FeedrateSlowed = ko.observable();
-  self.P2PPStatus = ko.observable();
+  self.ShowPingPongOnPrinter = ko.observable(100);
+  self.FeedrateControl = ko.observable(true);
+  self.FeedrateNormalPct = ko.observable(100);
+  self.FeedrateSlowPct = ko.observable(80);
+  self.FeedrateSlowed = ko.observable(false);
+  self.P2PPStatus = ko.observable('Idle....');
   // /P2PP
 
   self.files = ko.observableArray([]);
 
-  self.selectedDemoFile = ko.observable();
+  self.selectedDemoFile = ko.observable('');
 
   self.ports = ko.observableArray([]);
-  self.selectedPort = ko.observable();
+  self.selectedPort = ko.observable('');
 
   self.latestPing = ko.observable(0);
-  self.latestPingPercent = ko.observable();
+  self.latestPingPercent = ko.observable('');
   self.latestPong = ko.observable(0);
-  self.latestPongPercent = ko.observable();
+  self.latestPongPercent = ko.observable('');
   self.pings = ko.observableArray([]);
   self.pongs = ko.observableArray([]);
 
