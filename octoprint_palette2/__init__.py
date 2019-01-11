@@ -77,13 +77,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.sendPrintStart()
         elif command == "sendCutCmd":
             self.palette.cut()
-            # line = "O88 D000022"
-            # if "O88" in line:
-            #     error = int(line[5:], 16)
-            #     self._logger.info("ERROR %d DETECTED" % error)
-            #     self._printer.pause_print()
-            #     self._plugin_manager.send_plugin_message(
-            #         self._identifier, {"command": "error", "data": error})
         elif command == "sendOmegaCmd":
             self.palette.enqueueCmd(data["cmd"])
         elif command == "connectWifi":
