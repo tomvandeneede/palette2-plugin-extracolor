@@ -29,7 +29,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=0, palette2Alerts=True)
+        return dict(autoconnect=False, palette2Alerts=True)
 
     def get_template_configs(self):
         return [
@@ -56,7 +56,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             uiUpdate=[],
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
-            displayPorts=[]
+            displayPorts=["condition"],
+            sendErrorReport=["send"],
+            startPrint=[]
         )
 
     def on_api_command(self, command, data):
@@ -84,7 +86,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "changeAlertSettings":
             self.palette.changeAlertSettings(data["condition"])
         elif command == "displayPorts":
-            self.palette.displayPorts()
+            self.palette.displayPorts(data["condition"])
+        elif command == "sendErrorReport":
+            self.palette.sendErrorReport(data["send"])
+        elif command == "startPrint":
+            self.palette.startPrintFromHub()
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -140,8 +146,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self._plugin_manager.send_plugin_message(
                 self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
-            self.palette.displayAlerts = self._settings.get(
-                ["palette2Alerts"])
+            self._logger.info("Auto-reconnect: %s" %
+                              str(self._settings.get(["autoconnect"])))
+            self._logger.info("Display alerts: %s" % str(
+                self._settings.get(["palette2Alerts"])))
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
@@ -151,7 +159,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def on_shutdown(self):
         self.palette.shutdown()
 
-    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode, tags=None):
+    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode=None, tags=None):
         if "O31" in cmd:
             self.palette.handlePing(cmd.strip())
             return "G4 P10",
