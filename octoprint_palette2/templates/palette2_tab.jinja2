@@ -2,31 +2,31 @@
 	<div class="distance" style="margin-left: 50px">
 			<div class="row">
 				<h4>Palette 2</h4>
-				<p>Connection Status: <span id="connection-state-msg" class="text-muted" data-bind="text: connectionStateMsg">Not Connected</span></p>
+				<p>Connection Status: <span id="connection-state-msg" class="text-muted" data-bind="text: connectionStateMsg"></span></p>
 				<div style="margin-top: 20px">
 					<div class="serial-ports">
 						<h6 data-bind="click: displayPorts">Manually Select Port</h6>
 						<select class="serial-ports-list" data-bind="options: ports, value: selectedPort, disable: connected"></select>
 					</div>
 					<div class="p2-connect-buttons">
-						<button class="btn btn-primary connect-palette-button" data-bind="click: connectOmega">Connect</button>
-						<button type="button" class="btn btn-primary" data-bind="click: disconnectPalette2, enable: connected">Disconnect</button>
+						<button class="btn btn-primary connect-palette-button" data-bind="text: connectPaletteText, click: connectOmega, disable: connected"></button>
+						<button type="button" class="btn btn-primary" data-bind="text: disconnectPaletteText, click: disconnectPalette2, enable: connected"></button>
 					</div>
 				</div>
 			</div>
 			<hr>
 			<div class="row palette-status">
 				<h4 class="palette-status-title">Status</h4>
-				<h5 class="current-status">No ongoing Palette 2 print</h5>
+				<h5 class="current-status" data-bind="text: currentStatus"></h5>
 				<ul class="status-container">
 					<li class="single-status splice-amount">
 						<h5 class="single-status-title">Current Splice: </h5>
-						<span class="single-status-value current-splice"></span>
-						<span class="single-status-value total-splices">-</span>
+						<span class="single-status-value current-splice" data-bind="text: currentSplice"></span>
+						<span class="single-status-value total-splices" data-bind="text: totalSplicesDisplay"></span>
 					</li>
 					<li class="single-status filament-used">
 						<h5 class="single-status-title">Filament Used: </h5>
-						<span class="single-status-value">-</span>
+						<span class="single-status-value" data-bind="text: filaLengthDisplay"></span>
 					</li>
 					<li class="single-status pings-container">
 						<div class="ping-overview" data-bind="click: togglePingHistory">
@@ -112,7 +112,7 @@
     			</div>
 			<hr>
 <!-- /P2PP -->
-			<div class="row" style="margin-bottom: 20px">
+			<div class="row" style="margin-bottom: 10px">
 				<h4 class="manual-controls">Manual Controls</h4>
 				<button type="button" class="btn btn-primary" data-bind="click: sendCutCmd, enable: connected">Cut</button>
 				<button type="button" class="btn btn-primary" data-bind="click: sendClearOutCmd, enable: connected">Clear Palette</button>

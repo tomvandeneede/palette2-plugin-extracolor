@@ -143,6 +143,7 @@ omegaApp.readyToStartAlert = () => {
     type: "info",
     input: "checkbox",
     inputPlaceholder: "Don't show me these setup alerts anymore"
+    // confirmButtonText: "START PRINT"
   });
 };
 
@@ -170,6 +171,18 @@ omegaApp.noSerialPortsAlert = () => {
   });
 };
 
+omegaApp.errorAlert = errorNumber => {
+  return swal({
+    title: `Error ${errorNumber} detected`,
+    text: `An error occured on Palette 2. Your print has been paused. Would you like to send a crash report to Mosaic for investigation?`,
+    confirmButtonText: "Yes",
+    showCancelButton: true,
+    cancelButtonText: "No",
+    reverseButtons: true,
+    type: "error"
+  });
+};
+
 omegaApp.displayHeartbeatAlert = status => {
   if (status === "P2NotConnected") {
     omegaApp.loadingOverlay(false);
@@ -192,17 +205,26 @@ function OmegaViewModel(parameters) {
   var self = this;
 
   /* GLOBAL VARIABLES */
-  self.omegaCommand = ko.observable('');
-  self.wifiSSID = ko.observable('');
-  self.wifiPASS = ko.observable('');
-  self.omegaPort = ko.observable('');
-  self.currentSplice = ko.observable('');
-  self.nSplices = ko.observable('');
-  self.connectionStateMsg = ko.observable('');
+  self.omegaCommand = ko.observable();
+  self.wifiSSID = ko.observable();
+  self.wifiPASS = ko.observable();
+  self.omegaPort = ko.observable();
+  self.currentSplice = ko.observable();
+  self.nSplices = ko.observable();
+  self.totalSplicesDisplay = ko.computed(function() {
+    return " / " + self.nSplices() + " Splices";
+  });
+  self.connectionStateMsg = ko.observable();
   self.connected = ko.observable(false);
+  self.connectPaletteText = ko.computed(function() {
+    return self.connected() ? "Connected" : "Connect to Palette 2";
+  });
+  self.disconnectPaletteText = ko.computed(function() {
+    return self.connected() ? "Disconnect" : "Disconnected";
+  });
   self.demoWithPrinter = ko.observable(false);
 
-  self.currentStatus = "";
+  self.currentStatus = ko.observable();
   self.amountLeftToExtrude = "";
   self.jogId = "";
   self.displayAlerts = true;
@@ -212,28 +234,22 @@ function OmegaViewModel(parameters) {
   self.firstTime = false;
   self.actualPrintStarted = false;
   self.autoconnect = false;
-  self.filaLength = "";
-
-  // P2PP
-  self.ShowPingPongOnPrinter = ko.observable(100);
-  self.FeedrateControl = ko.observable(true);
-  self.FeedrateNormalPct = ko.observable(100);
-  self.FeedrateSlowPct = ko.observable(80);
-  self.FeedrateSlowed = ko.observable(false);
-  self.P2PPStatus = ko.observable('Idle....');
-  // /P2PP
+  self.filaLength = ko.observable();
+  self.filaLengthDisplay = ko.computed(function() {
+    return (Number(self.filaLength()) / 1000.0).toFixed(2) + "m";
+  });
 
   self.files = ko.observableArray([]);
 
-  self.selectedDemoFile = ko.observable('');
+  self.selectedDemoFile = ko.observable();
 
   self.ports = ko.observableArray([]);
-  self.selectedPort = ko.observable('');
+  self.selectedPort = ko.observable();
 
   self.latestPing = ko.observable(0);
-  self.latestPingPercent = ko.observable('');
+  self.latestPingPercent = ko.observable();
   self.latestPong = ko.observable(0);
-  self.latestPongPercent = ko.observable('');
+  self.latestPongPercent = ko.observable();
   self.pings = ko.observableArray([]);
   self.pongs = ko.observableArray([]);
 
@@ -263,8 +279,17 @@ function OmegaViewModel(parameters) {
   });
 
   self.displayPorts = () => {
+    let condition = "";
+    // determine if user is opening or closing list of ports
+    if ($(".serial-ports-list").is(":visible")) {
+      condition = "closing";
+    } else {
+      condition = "opening";
+    }
+
     var payload = {
-      command: "displayPorts"
+      command: "displayPorts",
+      condition: condition
     };
     $.ajax({
       url: API_BASEURL + "plugin/palette2",
@@ -272,6 +297,8 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
+    }).then(() => {
+      self.settings.saveData();
     });
   };
 
@@ -358,7 +385,6 @@ function OmegaViewModel(parameters) {
 
   self.changeAlertSettings = condition => {
     self.displayAlerts = !condition;
-    $(".alert-input").prop("checked", self.displayAlerts);
     var payload = { command: "changeAlertSettings", condition: self.displayAlerts };
 
     $.ajax({
@@ -367,31 +393,8 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
-    });
-  };
-
-  // P2PP
-  self.FeedrateControl.subscribe( function() {
-    self.ajax_payload({command: "changeFeedrateControl", condition: self.FeedrateControl()})
-  });
-  self.ShowPingPongOnPrinter.subscribe( function() {
-    self.ajax_payload({command: "changeShowPingPongOnPrinter", condition: self.ShowPingPongOnPrinter()})
-  });
-  self.FeedrateNormalPct.subscribe( function() {
-    self.ajax_payload({command: "changeFeedrateNormalPct", value: self.FeedrateNormalPct()})
-  });
-  self.FeedrateSlowPct.subscribe(function() {
-    self.ajax_payload({command: "changeFeedrateSlowPct", value: self.FeedrateSlowPct()})
-  });
-  // /P2PP
-
-  self.ajax_payload = (payload) => {
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
+    }).then(() => {
+      self.settings.saveData();
     });
   };
 
@@ -475,6 +478,62 @@ function OmegaViewModel(parameters) {
     });
   };
 
+  // P2PP
+  self.ShowPingPongOnPrinter = ko.observable(100);
+  self.FeedrateControl = ko.observable(true);
+  self.FeedrateNormalPct = ko.observable(100);
+  self.FeedrateSlowPct = ko.observable(80);
+  self.FeedrateSlowed = ko.observable(false);
+  self.P2PPStatus = ko.observable('Idle....');
+
+  self.FeedrateControl.subscribe( function() {
+    self.ajax_payload({command: "changeFeedrateControl", condition: self.FeedrateControl()})
+  });
+  self.ShowPingPongOnPrinter.subscribe( function() {
+    self.ajax_payload({command: "changeShowPingPongOnPrinter", condition: self.ShowPingPongOnPrinter()})
+  });
+  self.FeedrateNormalPct.subscribe( function() {
+    self.ajax_payload({command: "changeFeedrateNormalPct", value: self.FeedrateNormalPct()})
+  });
+  self.FeedrateSlowPct.subscribe(function() {
+    self.ajax_payload({command: "changeFeedrateSlowPct", value: self.FeedrateSlowPct()})
+  });
+
+  self.ajax_payload = (payload) => {
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+
+  self.p2pp_updaterpluginmessage = (message) => {
+    if (!message.command) {
+      if (message.includes("P2PP:FEEDRATECONTROL=")) {
+        self.FeedrateControl(message.substring(21));
+      }
+      if (message.includes("P2PP:FEEDRATESLOWED=")) {
+        self.FeedrateSlowed(message.substring(20));
+      }
+      if (message.includes("P2PP:SHOWPINGPONGONPRINTER=")) {
+        self.ShowPingPongOnPrinter(message.substring(27));
+      }
+      if (message.includes("P2PP:FEEDRATENORMALPCT=")) {
+        self.FeedrateNormalPct(message.substring(23));
+      }
+      if (message.includes("P2PP:FEEDRATESLOWPCT=")) {
+        self.FeedrateSlowPct(message.substring(21));
+      }
+      if (message.includes("P2PP:UIMESSAGE=")) {
+        self.P2PPStatus(message.substring(15));
+      }
+    }
+  };
+  // /P2PP
+
+
   self.fromResponse = () => {};
 
   /* UI FUNCTIONS */
@@ -551,32 +610,12 @@ function OmegaViewModel(parameters) {
       });
   };
 
-  self.updateFilamentUsed = () => {
-    let filament = (Number(self.filaLength) / 1000.0).toFixed(2) + "m";
-    $(".filament-used span")
-      .html("")
-      .text(filament);
-  };
-
-  self.updateCurrentSplice = () => {
-    $(".current-splice").text(self.currentSplice());
-  };
-
-  self.updateTotalSplices = () => {
-    let totalSplices = " / " + self.nSplices() + " Splices";
-    $(".total-splices").text(totalSplices);
-  };
-
   self.updateConnection = () => {
     if (self.connected()) {
       $("#connection-state-msg")
         .removeClass("text-muted")
         .addClass("text-success")
         .css("color", "green");
-      $(".connect-palette-button")
-        .text("Connected")
-        .addClass("disabled")
-        .attr("disabled", true);
       self.connectionStateMsg("Connected");
       self.applyPaletteDisabling();
     } else {
@@ -585,10 +624,6 @@ function OmegaViewModel(parameters) {
           .removeClass("text-success")
           .addClass("text-muted")
           .css("color", "red");
-        $(".connect-palette-button")
-          .text("Connected")
-          .addClass("disabled")
-          .attr("disabled", true);
         self.connectionStateMsg("Not Connected - Trying To Connect...");
         self.applyPaletteDisabling();
       } else {
@@ -596,10 +631,6 @@ function OmegaViewModel(parameters) {
           .removeClass("text-success")
           .addClass("text-muted")
           .css("color", "red");
-        $(".connect-palette-button")
-          .text("Connect to Palette 2")
-          .removeClass("disabled")
-          .attr("disabled", false);
         self.connectionStateMsg("Not Connected");
         self.applyPaletteDisabling();
       }
@@ -607,10 +638,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.updateCurrentStatus = () => {
-    $(".current-status").text(self.currentStatus);
-    if (self.currentStatus === "Palette work completed: all splices prepared") {
-      $(".current-status").text(self.currentStatus);
-    } else if (self.currentStatus === "Loading filament through outgoing tube") {
+    if (self.currentStatus() === "Loading filament through outgoing tube") {
       if (self.displayAlerts) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#temp`;
@@ -618,7 +646,8 @@ function OmegaViewModel(parameters) {
           omegaApp.temperatureHighlight();
         });
       }
-    } else if (self.currentStatus === "Loading filament into extruder") {
+    } else if (self.currentStatus() === "Loading filament into extruder") {
+      self.displayFilamentCountdown();
       if (self.displayAlerts) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#control`;
@@ -631,9 +660,8 @@ function OmegaViewModel(parameters) {
             omegaApp.extrusionHighlight();
           });
         }
-        self.displayFilamentCountdown();
       }
-    } else if (self.currentStatus === "Cancelling print") {
+    } else if (self.currentStatus() === "Cancelling print") {
       omegaApp.printCancelAlert();
       self.removeNotification();
     }
@@ -671,10 +699,15 @@ function OmegaViewModel(parameters) {
   /* OCTOPRINT-SPECIFIC EVENT HANDLERS */
 
   self.onBeforeBinding = () => {
-    self.currentSplice("0");
-    self.nSplices("0");
+    self.settings = parameters[0];
+    self.currentSplice(0);
+    self.nSplices(0);
+    self.filaLength(0);
     self.connectionStateMsg("Not Connected");
+    self.currentStatus("No ongoing Palette 2 print");
     self.connected(false);
+
+    self.uiUpdate();
   };
 
   self.onAfterBinding = () => {
@@ -689,7 +722,12 @@ function OmegaViewModel(parameters) {
         count++;
       }, 100);
     }
-    self.settings = parameters[0];
+    // self.settings = parameters[0];
+    self.uiUpdate();
+  };
+
+  self.uiUpdate = () => {
+    console.log("Requesting BE to update UI");
     var payload = { command: "uiUpdate" };
 
     $.ajax({
@@ -790,17 +828,55 @@ function OmegaViewModel(parameters) {
 
   self.onEventPrintCancelled = payload => {
     if (payload.name.includes(".mcf.gcode")) {
-      self.currentStatus = "Print cancelled";
+      self.currentStatus("Print cancelled");
       self.findCurrentFilename();
       self.updateCurrentStatus();
-      //self.updateP2PPStatus();
       self.sendCancelCmd();
     }
   };
 
+  self.sendErrorReport = send => {
+    var payload = {
+      command: "sendErrorReport",
+      send: send
+    };
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+
+  self.readyToStartAlert = () => {
+    return swal({
+      title: "Filament in place and ready to go",
+      text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
+      type: "info",
+      input: "checkbox",
+      inputPlaceholder: "Don't show me these setup alerts anymore",
+      confirmButtonText: "START PRINT"
+    });
+  };
+
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      if (message.command === "printHeartbeatCheck") {
+      self.p2pp_updaterpluginmessage(message);
+      if (message.command === "error") {
+        omegaApp.errorAlert(message.data).then(result => {
+          sendToMosaic = false;
+          // if user clicks yes
+          if (result.value) {
+            sendToMosaic = true;
+          }
+          // if user clicks no
+          else if (result.dismiss === Swal.DismissReason.cancel) {
+            sendToMosaic = false;
+          }
+          self.sendErrorReport(sendToMosaic);
+        });
+      } else if (message.command === "printHeartbeatCheck") {
         if (message.data === "P2NotConnected") {
           let base_url = window.location.origin;
           window.location.href = `${base_url}/#tab_plugin_palette2`;
@@ -817,6 +893,7 @@ function OmegaViewModel(parameters) {
           self.latestPing(0);
           self.latestPingPercent("");
           self.pings([]);
+          $(".ping-history").hide();
         }
       } else if (message.command === "pongs") {
         if (message.data.length) {
@@ -827,6 +904,7 @@ function OmegaViewModel(parameters) {
           self.latestPong(0);
           self.latestPongPercent("");
           self.pongs([]);
+          $(".pong-history").hide();
         }
       } else if (message.command === "selectedPort") {
         selectedPort = message.data;
@@ -845,7 +923,6 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:currentSplice")) {
         var num = message.substring(17);
         self.currentSplice(num);
-        self.updateCurrentSplice();
       } else if (message.includes("UI:DisplayAlerts")) {
         if (message.includes("True")) {
           self.displayAlerts = true;
@@ -857,7 +934,6 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:nSplices")) {
         var ns = message.substring(12);
         self.nSplices(ns);
-        self.updateTotalSplices();
       } else if (message.includes("UI:Ponging")) {
         self.updatePongMsg(true);
       } else if (message.includes("UI:Finished Pong")) {
@@ -882,12 +958,13 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:Refresh Demo List")) {
         self.refreshDemoList();
       } else if (message.includes("UI:FilamentLength")) {
-        self.filaLength = message.substring(18);
-        self.updateFilamentUsed();
+        self.filaLength(message.substring(18));
       } else if (message.includes("UI:currentStatus")) {
-        if (message.substring(17) !== self.currentStatus) {
-          self.currentStatus = message.substring(17);
+        if (message.substring(17) && message.substring(17) !== self.currentStatus()) {
+          self.currentStatus(message.substring(17));
           self.updateCurrentStatus();
+        } else if (!message.substring(17)) {
+          self.currentStatus("No ongoing Palette 2 print");
         }
       } else if (message.includes("UI:AmountLeftToExtrude")) {
         self.amountLeftToExtrude = message.substring(23);
@@ -898,6 +975,20 @@ function OmegaViewModel(parameters) {
               self.changeAlertSettings(event.target.checked);
             });
             omegaApp.readyToStartAlert();
+            // .then(result => {
+            //   if (result.hasOwnProperty("value")) {
+            //     var payload = {
+            //       command: "startPrint"
+            //     };
+            //     $.ajax({
+            //       url: API_BASEURL + "plugin/palette2",
+            //       type: "POST",
+            //       dataType: "json",
+            //       data: JSON.stringify(payload),
+            //       contentType: "application/json; charset=UTF-8"
+            //     });
+            //   }
+            // });
           }
         } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
           self.updateFilamentCountdown(true);
@@ -928,8 +1019,7 @@ function OmegaViewModel(parameters) {
           self.firstTime = false;
         }
       } else if (message.includes("UI:AutoConnect=")) {
-        self.autoconnect = message.substring(15);
-        if (self.autoconnect === "True") {
+        if (message.substring(15) === "True") {
           self.autoconnect = true;
         } else {
           self.autoconnect = false;
@@ -948,22 +1038,7 @@ function OmegaViewModel(parameters) {
         } else {
           self.actualPrintStarted = false;
         }
-
-      // P2PP
-      } else if (message.includes("P2PP:FEEDRATECONTROL=")) {
-          self.FeedrateControl(message.substring(21));
-      } else if (message.includes("P2PP:FEEDRATESLOWED=")) {
-          self.FeedrateSlowed(message.substring(20));
-      } else if (message.includes("P2PP:SHOWPINGPONGONPRINTER=")) {
-          self.ShowPingPongOnPrinter(message.substring(27));
-      } else if (message.includes("P2PP:FEEDRATENORMALPCT=")) {
-          self.FeedrateNormalPct(message.substring(23));
-      } else if (message.includes("P2PP:FEEDRATESLOWPCT=")) {
-          self.FeedrateSlowPct(message.substring(21));
-      } else if (message.includes("P2PP:UIMESSAGE=")) {
-          self.P2PPStatus(message.substring(15));
       }
-      // P2PP
     }
 
     self.updatePongMsg = function(isPonging) {
@@ -984,8 +1059,8 @@ $(function() {
   OmegaViewModel();
   OCTOPRINT_VIEWMODELS.push({
     // This is the constructor to call for instantiating the plugin
-    construct: OmegaViewModel, // This is a list of dependencies to inject into the plugin. The order will correspond to the "parameters" arguments above
-    dependencies: ["settingsViewModel"], // Finally, this is the list of selectors for all elements we want this view model to be bound to.
+    construct: OmegaViewModel,
+    dependencies: ["settingsViewModel"],
     elements: ["#tab_plugin_palette2"]
-  });
+  }); // This is a list of dependencies to inject into the plugin. The order will correspond to the "parameters" arguments above // Finally, this is the list of selectors for all elements we want this view model to be bound to.
 });

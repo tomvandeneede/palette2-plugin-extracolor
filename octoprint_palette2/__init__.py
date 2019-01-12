@@ -29,16 +29,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=0,
-                    palette2Alerts=True,
-                    # P2PP
-                    ShowPingPongOnPrinter=True,
-                    FeedrateControl=True,
-                    FeedrateSlowed=False,
-                    FeedrateSlowPct=80,
-                    FeedrateNormalPct=100
-                    # /P2PP
-                    )
+        return dict(autoconnect=False, palette2Alerts=True)
 
     def get_template_configs(self):
         return [
@@ -65,14 +56,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             uiUpdate=[],
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
-            # P2PP
+            displayPorts=["condition"],
+            sendErrorReport=["send"],
+            startPrint=[],
             changeShowPingPongOnPrinter=["condition"],
             changeFeedrateControl=["condition"],
             changeFeedrateSlowed=["condition"],
             changeFeedrateNormalPct=["value"],
-            changeFeedrateSlowPct=["value"],
-            # /P2PP
-            displayPorts=[]
+            changeFeedrateSlowPct=["value"]
         )
 
     def on_api_command(self, command, data):
@@ -100,16 +91,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "changeAlertSettings":
             self.palette.changeAlertSettings(data["condition"])
         elif command == "displayPorts":
-            self.palette.displayPorts()
+            self.palette.displayPorts(data["condition"])
+        elif command == "sendErrorReport":
+            self.palette.sendErrorReport(data["send"])
+        elif command == "startPrint":
+            self.palette.startPrintFromHub()
         # P2PP
-        elif command == "changeShowPingPongOnPrinter":
-            self.palette.changeShowPingPongOnPrinter(data["condition"])
-        elif command == "changeFeedrateControl":
-            self.palette.changeFeedrateControl(data["condition"])
-        elif command == "changeFeedrateNormalPct":
-            self.palette.changeFeedrateNormalPct(data["value"])
-        elif command == "changeFeedrateSlowPct":
-            self.palette.changeFeedrateSlowPct(data["value"])
+        self.palette.p2pp_api_command(command, data)
         # /P2PP
         return flask.jsonify(foo="bar")
 
@@ -119,15 +107,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         return flask.jsonify(foo="bar")
 
     def on_event(self, event, payload):
+        # P2PP
+        try:
+            self.palette.p2pp_on_event(event, payload)
+        except Exception as e:
+            print(e)
+        # /P2PP
         if "ClientOpened" in event:
             self.palette.printerConnection = self._printer.get_current_connection()[0]
-            # P2PP
-            self.palette.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
-            self.palette.FeedrateControl = self._settings.get(["FeedrateControl"])
-            self.palette.FeedrateSlowed = self._settings.get(["FeedrateSlowed"])
-            self.palette.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
-            self.palette.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
-            # /P2PP
             self.palette.updateUI()
             self.palette.printerConnection = ""
         elif "PrintStarted" in event:
@@ -172,15 +159,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self._plugin_manager.send_plugin_message(
                 self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
-            self.palette.displayAlerts = self._settings.get(
-                ["palette2Alerts"])
-            # P2PP
-            self.palette.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
-            self.palette.FeedrateControl = self._settings.get(["FeedrateControl"])
-            self.palette.FeedrateSlowed = self._settings.get(["FeedrateSlowed"])
-            self.palette.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
-            self.palette.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
-            # /P2PP
+            self._logger.info("Auto-reconnect: %s" %
+                              str(self._settings.get(["autoconnect"])))
+            self._logger.info("Display alerts: %s" % str(
+                self._settings.get(["palette2Alerts"])))
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
@@ -190,7 +172,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def on_shutdown(self):
         self.palette.shutdown()
 
-    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode, tags=None):
+    def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode=None, tags=None):
         if "O31" in cmd:
             self.palette.handlePing(cmd.strip())
             return "G4 P10",
@@ -244,11 +226,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 command="/home/pi/test-version.sh",
 
                 # update method: pip
-                #pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/master/palette-2-plugin-master.zip"
-                # P2PP
-                pip="https://github.com/skellatore/palette-2-plugin/archive/master.zip"
-                # /P2PP
-
+                pip="https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/master/palette-2-plugin-master.zip"
             )
         )
 
