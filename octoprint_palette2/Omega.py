@@ -140,7 +140,7 @@ class Omega():
                     self.updateUI()
                     break
                 else:
-                    pass
+                    time.sleep(0.01)
             if not self.heartbeat:
                 self._logger.info(
                     "Palette is not turned on OR this is not the serial port for Palette.")
@@ -616,7 +616,7 @@ class Omega():
             self.updateUI()
         elif "O28" in cmd:
             self.msfNA = cmd[5:]
-            self.nAlgorithms = int(self.msfNA)
+            self.nAlgorithms = int(self.msfNA, 16)
             self.header[7] = cmd
             self._logger.info("Omega: Got NA: %s" % self.header[7])
         elif "O29" in cmd:
