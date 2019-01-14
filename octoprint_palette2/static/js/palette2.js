@@ -142,6 +142,7 @@ omegaApp.readyToStartAlert = () => {
     text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
     type: "info",
     input: "checkbox",
+    inputClass: "setup-checkbox",
     inputPlaceholder: "Don't show me these setup alerts anymore"
     // confirmButtonText: "START PRINT"
   });
@@ -901,7 +902,7 @@ function OmegaViewModel(parameters) {
         if (self.amountLeftToExtrude === "0") {
           self.removeNotification();
           if (self.displayAlerts) {
-            $("body").on("click", "#swal2-checkbox", event => {
+            $("body").on("click", ".setup-checkbox input", event => {
               self.changeAlertSettings(event.target.checked);
             });
             omegaApp.readyToStartAlert();
