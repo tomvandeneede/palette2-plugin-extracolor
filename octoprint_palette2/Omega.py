@@ -7,6 +7,7 @@ import subprocess
 import os
 import binascii
 import sys
+from subprocess import call
 from Queue import Queue
 
 
@@ -22,7 +23,6 @@ class Omega():
         self.selectedPort = ""
 
         self.writeQueue = Queue()
-        # self.gcodeQueue = Queue()
 
         self.resetVariables()
         self.resetConnection()
@@ -50,7 +50,10 @@ class Omega():
         baselist = list(set(baselist))
         return baselist
 
-    def displayPorts(self):
+    def displayPorts(self, condition):
+        # only change settings if user is opening the list of ports
+        if "opening" in condition:
+            self._settings.set(["autoconnect"], False, force=True)
         self.ports = self.getAllPorts()
         self._logger.info(self.ports)
         if self.ports and not self.selectedPort:
@@ -137,7 +140,7 @@ class Omega():
                     self.updateUI()
                     break
                 else:
-                    pass
+                    time.sleep(0.01)
             if not self.heartbeat:
                 self._logger.info(
                     "Palette is not turned on OR this is not the serial port for Palette.")
@@ -224,14 +227,19 @@ class Omega():
                 elif "O34" in line:
                     commands = [command.strip() for command in line.split('D')]
                     nature = commands[1]
-                    percent = commands[2]
-                    number = int(commands[3], 16)
-                    current = {"number": number, "percent": percent}
+                    if nature == "0":
+                        self._logger.info("REJECTING PING")
                     # if ping
-                    if nature == "1":
+                    elif nature == "1":
+                        percent = commands[2]
+                        number = int(commands[3], 16)
+                        current = {"number": number, "percent": percent}
                         self.pings.append(current)
                     # else pong
                     elif nature == "2":
+                        percent = commands[2]
+                        number = int(commands[3], 16)
+                        current = {"number": number, "percent": percent}
                         self.pongs.append(current)
                     self.updateUI()
                 elif "O40" in line:
@@ -248,6 +256,12 @@ class Omega():
                         index_to_print = int(line[8:], 16)
                         file = self.allMCFFiles[index_to_print]
                         self.startPrintFromP2(file)
+                elif "O88" in line:
+                    error = int(line[5:], 16)
+                    self._logger.info("ERROR %d DETECTED" % error)
+                    self._printer.pause_print()
+                    self._plugin_manager.send_plugin_message(
+                        self._identifier, {"command": "error", "data": error})
                 elif "O97" in line:
                     if "U26" in line:
                         self.filamentLength = int(line[9:], 16)
@@ -485,21 +499,37 @@ class Omega():
         self.heartbeat = False
 
     def resetPrintValues(self):
-        self.actualPrintStarted = False
-        self.firstTime = False
-        self.filamentLength = 0
-        self.currentSplice = "0"
-        self.palette2SetupStarted = False
-        self.splices = []
-        self.algorithms = []
         self.sentCounter = 0
         self.algoCounter = 0
         self.spliceCounter = 0
+
+        self.msfCU = ""
+        self.msfNS = "0"
+        self.msfNA = "0"
+        self.nAlgorithms = 0
+        self.currentSplice = "0"
+        self.inPong = False
+        self.header = [None] * 9
+        self.splices = []
+        self.algorithms = []
+        self.filamentLength = 0
+        self.currentStatus = ""
+        self.drivesInUse = []
+        self.amountLeftToExtrude = ""
+        self.printPaused = ""
+        self.printerConnection = ""
+        self.firstTime = False
         self.lastCommandSent = ""
         self.currentPingCmd = ""
+        self.palette2SetupStarted = False
+        self.allMCFFiles = []
+        self.actualPrintStarted = False
         self.totalPings = 0
-        self.pings[:] = []
-        self.pongs[:] = []
+        self.pings = []
+        self.pongs = []
+        self.printHeartbeatCheck = ""
+
+        self.filename = ""
 
     def resetOmega(self):
         self.resetConnection()
@@ -586,7 +616,7 @@ class Omega():
             self.updateUI()
         elif "O28" in cmd:
             self.msfNA = cmd[5:]
-            self.nAlgorithms = int(self.msfNA)
+            self.nAlgorithms = int(self.msfNA, 16)
             self.header[7] = cmd
             self._logger.info("Omega: Got NA: %s" % self.header[7])
         elif "O29" in cmd:
@@ -609,8 +639,7 @@ class Omega():
             self.enqueueCmd(cmd)
 
     def changeAlertSettings(self, condition):
-        self._settings.set(["palette2Alerts"], condition)
-        self._settings.save()
+        self._settings.set(["palette2Alerts"], condition, force=True)
 
     def sendAllMCFFilenamesToOmega(self):
         self.getAllMCFFilenames()
@@ -644,3 +673,14 @@ class Omega():
 
     def startPrintFromP2(self, file):
         self._printer.select_file(file, False, printAfterSelect=True)
+
+    def sendErrorReport(self, send):
+        if send:
+            self._logger.info("SENDING ERROR REPORT TO MOSAIC")
+            call(["tail -n 200 ~/.octoprint/logs/octoprint.log > ~/.mosaicdata/error_report.log"], shell=True)
+        else:
+            self._logger.info("NOT SENDING ERROR REPORT TO MOSAIC")
+
+    def startPrintFromHub(self):
+        self._logger.info("START PRINT FROM HERE")
+        self.enqueueCmd("O39")
