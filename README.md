@@ -27,7 +27,7 @@ On your OctoPrint server,
 `https://github.com/skellatore/palette2-plugin/archive/master.zip`
     * This will upgrade your current Palette2 Plugin.
     * At any time you can revert to the original Palette2 Plugin, however it will require you to restart octoprint.
-4) Ensure version contains "1.2.0-P2PP-RC2a"
+4) Ensure version contains "1.3.0-P2PP-RC1"
 5) Navigate to the Palette2 Plugin Tab.
 6) Adjust settings to suit your needs. These can be adjusted mid print without interrupting the print. Feedrate settings will be in effect for the next splice after the setting was modified.
 

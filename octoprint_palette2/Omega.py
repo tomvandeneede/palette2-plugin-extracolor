@@ -11,7 +11,7 @@ from subprocess import call
 from Queue import Queue
 
 
-class Omega:
+class Omega():
     def __init__(self, plugin):
         self._logger = plugin._logger
         self._printer = plugin._printer
@@ -148,7 +148,7 @@ class Omega:
                     self.updateUI()
                     break
                 else:
-                    pass
+                    time.sleep(0.01)
             if not self.heartbeat:
                 self._logger.info(
                     "Palette is not turned on OR this is not the serial port for Palette.")
@@ -362,11 +362,7 @@ class Omega:
             time.sleep(1)
 
     def enqueueCmd(self, line):
-        try:
-            self.writeQueue.put(line)
-            self._logger.info(line)
-        except Exception as e:
-            print(e)
+        self.writeQueue.put(line)
 
     def cut(self):
         self._logger.info("Omega: Sending Cut command")
@@ -426,32 +422,29 @@ class Omega:
 
 
     def sendNextData(self, dataNum):
-        try:
-            if dataNum == 0:
-                self.enqueueCmd(self.header[self.sentCounter])
-                self._logger.info("Omega: Sent '%s'" % self.sentCounter)
-                self.sentCounter = self.sentCounter + 1
-            elif dataNum == 2:
-                self._logger.info(
-                    "Sending ping: %s to Palette on request" % self.currentPingCmd)
-                self.enqueueCmd(self.currentPingCmd)
-            elif dataNum == 4:
-                self._logger.info("Omega: send algo")
-                self.enqueueCmd(self.algorithms[self.algoCounter])
-                self._logger.info("Omega: Sent '%s'" %
-                                  self.algorithms[self.algoCounter])
-                self.algoCounter = self.algoCounter + 1
-            elif dataNum == 1:
-                self._logger.info("Omega: send splice")
-                splice = self.splices[self.spliceCounter]
-                cmdStr = "O30 D%d D%s\n" % (int(splice[0]), splice[1])
-                self.enqueueCmd(cmdStr)
-                self.spliceCounter = self.spliceCounter + 1
-            elif dataNum == 8:
-                self._logger.info("Need to resend last line")
-                self.enqueueCmd(self.lastCommandSent)
-        except Exception as e:
-            print(e)
+        if dataNum == 0:
+            self.enqueueCmd(self.header[self.sentCounter])
+            self._logger.info("Omega: Sent '%s'" % self.sentCounter)
+            self.sentCounter = self.sentCounter + 1
+        elif dataNum == 2:
+            self._logger.info(
+                "Sending ping: %s to Palette on request" % self.currentPingCmd)
+            self.enqueueCmd(self.currentPingCmd)
+        elif dataNum == 4:
+            self._logger.info("Omega: send algo")
+            self.enqueueCmd(self.algorithms[self.algoCounter])
+            self._logger.info("Omega: Sent '%s'" %
+                              self.algorithms[self.algoCounter])
+            self.algoCounter = self.algoCounter + 1
+        elif dataNum == 1:
+            self._logger.info("Omega: send splice")
+            splice = self.splices[self.spliceCounter]
+            cmdStr = "O30 D%d D%s\n" % (int(splice[0]), splice[1])
+            self.enqueueCmd(cmdStr)
+            self.spliceCounter = self.spliceCounter + 1
+        elif dataNum == 8:
+            self._logger.info("Need to resend last line")
+            self.enqueueCmd(self.lastCommandSent)
 
     def handlePing(self, pingCmd):
         self.currentPingCmd = pingCmd

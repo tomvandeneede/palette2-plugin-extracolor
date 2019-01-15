@@ -108,10 +108,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_event(self, event, payload):
         # P2PP
-        try:
-            self.palette.p2pp_on_event(event, payload)
-        except Exception as e:
-            print(e)
+        self.palette.p2pp_on_event(event, payload)
         # /P2PP
         if "ClientOpened" in event:
             self.palette.printerConnection = self._printer.get_current_connection()[0]
