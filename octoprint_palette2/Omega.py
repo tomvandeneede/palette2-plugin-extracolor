@@ -702,6 +702,17 @@ class Omega():
         self._logger.info("START PRINT FROM HERE")
         self.enqueueCmd("O39")
 
+    def sendErrorReport(self, send):
+        if send:
+            self._logger.info("SENDING ERROR REPORT TO MOSAIC")
+            call(["tail -n 200 ~/.octoprint/logs/octoprint.log > ~/.mosaicdata/error_report.log"], shell=True)
+        else:
+            self._logger.info("NOT SENDING ERROR REPORT TO MOSAIC")
+
+    def startPrintFromHub(self):
+        self._logger.info("START PRINT FROM HERE")
+        self.enqueueCmd("O39")
+
     # P2PP
     def p2pp_resetvalues(self):
         self.FeedrateSlowed = False

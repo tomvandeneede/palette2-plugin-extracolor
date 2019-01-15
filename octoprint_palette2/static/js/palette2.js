@@ -864,7 +864,20 @@ function OmegaViewModel(parameters) {
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
       self.p2pp_updaterpluginmessage(message);
-      if (message.command === "printHeartbeatCheck") {
+      if (message.command === "error") {
+        omegaApp.errorAlert(message.data).then(result => {
+          sendToMosaic = false;
+          // if user clicks yes
+          if (result.value) {
+            sendToMosaic = true;
+          }
+          // if user clicks no
+          else if (result.dismiss === Swal.DismissReason.cancel) {
+            sendToMosaic = false;
+          }
+          self.sendErrorReport(sendToMosaic);
+        });
+      } else if (message.command === "printHeartbeatCheck") {
         if (message.data === "P2NotConnected") {
           let base_url = window.location.origin;
           window.location.href = `${base_url}/#tab_plugin_palette2`;
@@ -963,6 +976,20 @@ function OmegaViewModel(parameters) {
               self.changeAlertSettings(event.target.checked);
             });
             omegaApp.readyToStartAlert();
+            // .then(result => {
+            // if (result.hasOwnProperty("value")) {
+            // var payload = {
+            // command: "startPrint"
+            // };
+            // $.ajax({
+            // url: API_BASEURL + "plugin/palette2",
+            // type: "POST",
+            // dataType: "json",
+            // data: JSON.stringify(payload),
+            // contentType: "application/json; charset=UTF-8"
+            // });
+            // }
+            // });
           }
         } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
           self.updateFilamentCountdown(true);
