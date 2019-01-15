@@ -591,7 +591,7 @@ class Omega():
             self._logger.info("Omega: Got MU: %s" % self.header[4])
             drives = self.header[4][4:].split(" ")
             for index, drive in enumerate(drives):
-                if "D1" in drive:
+                if not "D0" in drive:
                     if index == 0:
                         drives[index] = "U60"
                     elif index == 1:
