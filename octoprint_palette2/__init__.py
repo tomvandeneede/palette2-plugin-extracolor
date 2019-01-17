@@ -19,6 +19,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                octoprint.plugin.EventHandlerPlugin,
                octoprint.plugin.ShutdownPlugin):
 
+    def get_sorting_key(self, context):
+        if context == "StartupPlugin.on_after_startup":
+            return 1
+        return None
+
     def on_after_startup(self):
         self._logger.info("Palette 2 Plugin STARTED")
 
