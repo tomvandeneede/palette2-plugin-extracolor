@@ -805,6 +805,7 @@ class Omega():
     def changeShowPingPongOnPrinter(self, condition):
         try:
             self._settings.set(["ShowPingPongOnPrinter"], condition, force=True)
+            self._settings.save(force=True)
             self._logger.info("P2PP: ShowPingPongOnPrinter -> '%s' '%s'" % (condition, self._settings.get(["ShowPingPongOnPrinter"])))
         except Exception as e:
             print(e)
@@ -812,6 +813,7 @@ class Omega():
     def changeFeedrateControl(self, condition):
         try:
             self._settings.set(["FeedrateControl"], condition, force=True)
+            self._settings.save(force=True)
             self._logger.info("P2PP: FeedrateControl -> '%s' '%s'" % (condition, self._settings.get(["FeedrateControl"])))
         except Exception as e:
             print(e)
@@ -819,6 +821,7 @@ class Omega():
     def changeFeedrateSlowed(self, condition):
         try:
             self._settings.set(["FeedrateSlowed"], condition, force=True)
+            self._settings.save(force=True)
             self._logger.info("P2PP: FeedrateSlowed -> '%s' '%s'" % (condition, self._settings.get(["FeedrateSlowed"])))
         except Exception as e:
             print(e)
@@ -826,6 +829,7 @@ class Omega():
     def changeFeedrateNormalPct(self, value):
         try:
             self._settings.set(["FeedrateNormalPct"], value)
+            self._settings.save(force=True)
             self._logger.info("P2PP: FeedrateNormalPct -> '%s' '%s'" % (value, self._settings.get(["FeedrateNormalPct"])))
             if not self._settings.get(["FeedrateSlowed"]):
                 self._printer.commands('M220 S%s' % value)
@@ -835,6 +839,7 @@ class Omega():
     def changeFeedrateSlowPct(self, value):
         try:
             self._settings.set(["FeedrateSlowPct"], value)
+            self._settings.save(force=True)
             self._logger.info("P2PP: FeedrateSlowPct -> '%s' '%s'" % (value, self._settings.get(["FeedrateSlowPct"])))
             if self._settings.get(["FeedrateSlowed"]):
                 self._printer.commands('M220 S%s' % value)
