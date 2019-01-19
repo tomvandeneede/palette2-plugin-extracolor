@@ -29,7 +29,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=False, palette2Alerts=True)
+        return dict(autoconnect=False,
+                    palette2Alerts=True,
+                    FeedrateControl=True,
+                    FeedrateNormalPct=100,
+                    FeedrateSlowPct=50,
+                    ShowPingPongOnPrinter=True
+                    )
 
     def get_template_configs(self):
         return [

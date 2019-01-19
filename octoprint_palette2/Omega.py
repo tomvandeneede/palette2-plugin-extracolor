@@ -32,11 +32,11 @@ class Omega():
             self.startConnectionThread()
 
         # P2PP
-        self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"]) if not None else True
-        self.FeedrateControl = self._settings.get(["FeedrateControl"]) if not None else True
-        self.FeedrateSlowed = self._settings.get(["FeedrateSlowed"]) if not None else False
-        self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"]) if not None else 100
-        self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"]) if not None else 80
+        self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"]) or True
+        self.FeedrateControl = self._settings.get(["FeedrateControl"]) or True
+        self.FeedrateSlowed = self._settings.get(["FeedrateSlowed"]) or False
+        self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"]) or 100
+        self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"]) or 80
         # /P2PP
 
     def getAllPorts(self):
@@ -702,6 +702,17 @@ class Omega():
         self._logger.info("START PRINT FROM HERE")
         self.enqueueCmd("O39")
 
+    def sendErrorReport(self, send):
+        if send:
+            self._logger.info("SENDING ERROR REPORT TO MOSAIC")
+            call(["tail -n 200 ~/.octoprint/logs/octoprint.log > ~/.mosaicdata/error_report.log"], shell=True)
+        else:
+            self._logger.info("NOT SENDING ERROR REPORT TO MOSAIC")
+
+    def startPrintFromHub(self):
+        self._logger.info("START PRINT FROM HERE")
+        self.enqueueCmd("O39")
+
     # P2PP
     def p2pp_resetvalues(self):
         self.FeedrateSlowed = False
@@ -793,24 +804,21 @@ class Omega():
 
     def changeShowPingPongOnPrinter(self, condition):
         try:
-            self._settings.set(["ShowPingPongOnPrinter"], condition)
-            self._settings.save()
+            self._settings.set(["ShowPingPongOnPrinter"], condition, force=True)
             self._logger.info("P2PP: ShowPingPongOnPrinter -> '%s' '%s'" % (condition, self._settings.get(["ShowPingPongOnPrinter"])))
         except Exception as e:
             print(e)
 
     def changeFeedrateControl(self, condition):
         try:
-            self._settings.set(["FeedrateControl"], condition)
-            self._settings.save()
+            self._settings.set(["FeedrateControl"], condition, force=True)
             self._logger.info("P2PP: FeedrateControl -> '%s' '%s'" % (condition, self._settings.get(["FeedrateControl"])))
         except Exception as e:
             print(e)
 
     def changeFeedrateSlowed(self, condition):
         try:
-            self._settings.set(["FeedrateSlowed"], condition)
-            self._settings.save()
+            self._settings.set(["FeedrateSlowed"], condition, force=True)
             self._logger.info("P2PP: FeedrateSlowed -> '%s' '%s'" % (condition, self._settings.get(["FeedrateSlowed"])))
         except Exception as e:
             print(e)
@@ -818,7 +826,6 @@ class Omega():
     def changeFeedrateNormalPct(self, value):
         try:
             self._settings.set(["FeedrateNormalPct"], value)
-            self._settings.save()
             self._logger.info("P2PP: FeedrateNormalPct -> '%s' '%s'" % (value, self._settings.get(["FeedrateNormalPct"])))
             if not self._settings.get(["FeedrateSlowed"]):
                 self._printer.commands('M220 S%s' % value)
@@ -828,7 +835,6 @@ class Omega():
     def changeFeedrateSlowPct(self, value):
         try:
             self._settings.set(["FeedrateSlowPct"], value)
-            self._settings.save()
             self._logger.info("P2PP: FeedrateSlowPct -> '%s' '%s'" % (value, self._settings.get(["FeedrateSlowPct"])))
             if self._settings.get(["FeedrateSlowed"]):
                 self._printer.commands('M220 S%s' % value)
