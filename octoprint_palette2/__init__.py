@@ -25,8 +25,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         return None
 
     def on_after_startup(self):
-        self._logger.info("Palette 2 Plugin STARTED")
-
+        self._logger.info("%s Plugin STARTED" % self._plugin_info)
         if os.path.isdir("/home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/") and os.path.isdir("/home/pi/.mosaicdata/turquoise/"):
             call(["sudo rm -rf /home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"], shell=True)
             call(
