@@ -780,10 +780,11 @@ function OmegaViewModel(parameters) {
     }
   };
 
-  self.sendErrorReport = send => {
+  self.sendErrorReport = (send, errorNumber) => {
     var payload = {
       command: "sendErrorReport",
-      send: send
+      send: send,
+      errorNumber: errorNumber
     };
     $.ajax({
       url: API_BASEURL + "plugin/palette2",
@@ -818,7 +819,7 @@ function OmegaViewModel(parameters) {
           else if (result.dismiss === Swal.DismissReason.cancel) {
             sendToMosaic = false;
           }
-          self.sendErrorReport(sendToMosaic);
+          self.sendErrorReport(sendToMosaic, message.data);
         });
       } else if (message.command === "printHeartbeatCheck") {
         if (message.data === "P2NotConnected") {

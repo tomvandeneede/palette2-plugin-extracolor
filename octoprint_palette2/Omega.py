@@ -674,10 +674,41 @@ class Omega():
     def startPrintFromP2(self, file):
         self._printer.select_file(file, False, printAfterSelect=True)
 
-    def sendErrorReport(self, send):
+    def sendErrorReport(self, send, error_number):
         if send:
             self._logger.info("SENDING ERROR REPORT TO MOSAIC")
-            call(["tail -n 200 ~/.octoprint/logs/octoprint.log > ~/.mosaicdata/error_report.log"], shell=True)
+            error_report_path = os.path.expanduser(
+                '~') + "/.mosaicdata/error_report.log"
+
+            # error number
+            error_report_log = open(error_report_path, "w")
+            error_report_log.write("===== ERROR %s =====\n\n" % error_number)
+
+            # plugins + versions
+            error_report_log.write("=== PLUGINS ===\n")
+            plugins = self._plugin_manager.plugins.keys()
+            for plugin in plugins:
+                error_report_log.write("%s: %s\n" % (
+                    plugin, self._plugin_manager.get_plugin_info(plugin).version))
+
+            # Hub or DIY
+            error_report_log.write("\n=== TYPE ===\n")
+            if os.path.isdir("/home/pi/.mosaicdata/turquoise/"):
+                error_report_log.write("CANVAS HUB\n")
+            else:
+                error_report_log.write("DIY HUB\n")
+
+            error_report_log.write("\n=== OCTOPRINT LOG ===\n")
+            error_report_log.close()
+
+            # OctoPrint log
+            octoprint_log_path = os.path.expanduser(
+                '~') + "/.octoprint/logs/octoprint.log"
+            linux_command = "tail -n 200 %s >> %s" % (
+                octoprint_log_path, error_report_path)
+            call([linux_command], shell=True)
+
+            # TODO: make API call to canvas-api
         else:
             self._logger.info("NOT SENDING ERROR REPORT TO MOSAIC")
 
