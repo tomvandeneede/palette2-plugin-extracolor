@@ -322,7 +322,7 @@ class Omega():
             serialConnection.close()
         except Exception as e:
             # Something went wrong with the connection to Palette2
-            print e
+            self._logger.info(e)
 
     def omegaWriteThread(self, serialConnection):
         self._logger.info("Omega Write Thread: Starting Thread")
