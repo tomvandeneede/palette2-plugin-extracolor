@@ -7,6 +7,16 @@ import subprocess
 import os
 import binascii
 import sys
+import json
+import requests
+from ruamel.yaml import YAML
+yaml = YAML(typ="safe")
+from dotenv import load_dotenv
+env_path = os.path.abspath(".") + "/.env"
+if os.path.abspath(".") is "/":
+    env_path = "/home/pi/.env"
+load_dotenv(env_path)
+BASE_URL_API = os.getenv("DEV_BASE_URL_API", "api.canvas3d.io/")
 from subprocess import call
 from Queue import Queue
 
@@ -259,9 +269,11 @@ class Omega():
                 elif "O88" in line:
                     error = int(line[5:], 16)
                     self._logger.info("ERROR %d DETECTED" % error)
-                    self._printer.pause_print()
-                    self._plugin_manager.send_plugin_message(
-                        self._identifier, {"command": "error", "data": error})
+                    if os.path.isdir(os.path.expanduser(
+                            '~') + "/.mosaicdata/"):
+                        self._printer.pause_print()
+                        self._plugin_manager.send_plugin_message(
+                            self._identifier, {"command": "error", "data": error})
                 elif "O97" in line:
                     if "U26" in line:
                         self.filamentLength = int(line[9:], 16)
@@ -674,44 +686,82 @@ class Omega():
     def startPrintFromP2(self, file):
         self._printer.select_file(file, False, printAfterSelect=True)
 
-    def sendErrorReport(self, send, error_number):
-        if send:
-            self._logger.info("SENDING ERROR REPORT TO MOSAIC")
-            error_report_path = os.path.expanduser(
-                '~') + "/.mosaicdata/error_report.log"
+    def sendErrorReport(self, error_number, description):
+        self._logger.info("SENDING ERROR REPORT TO MOSAIC")
+        log_content = self.prepareErroReport(error_number, description)
 
-            # error number
-            error_report_log = open(error_report_path, "w")
-            error_report_log.write("===== ERROR %s =====\n\n" % error_number)
-
-            # plugins + versions
-            error_report_log.write("=== PLUGINS ===\n")
-            plugins = self._plugin_manager.plugins.keys()
-            for plugin in plugins:
-                error_report_log.write("%s: %s\n" % (
-                    plugin, self._plugin_manager.get_plugin_info(plugin).version))
-
-            # Hub or DIY
-            error_report_log.write("\n=== TYPE ===\n")
-            if os.path.isdir("/home/pi/.mosaicdata/turquoise/"):
-                error_report_log.write("CANVAS HUB\n")
+        hub_id, hub_token = self.getHubData()
+        url = "https://" + BASE_URL_API + "hubs/" + hub_id + "/log"
+        payload = {
+            "log": log_content
+        }
+        authorization = "Bearer " + hub_token
+        headers = {"Authorization": authorization}
+        try:
+            response = requests.post(url, json=payload, headers=headers).json()
+            if response.get("status") >= 300:
+                self._logger.info(response)
             else:
-                error_report_log.write("DIY HUB\n")
+                self._logger.info("Email sent successfully")
+        except requests.exceptions.RequestException as e:
+            self._logger.info(e)
 
-            error_report_log.write("\n=== OCTOPRINT LOG ===\n")
-            error_report_log.close()
+    def prepareErroReport(self, error_number, description):
+        error_report_path = os.path.expanduser(
+            '~') + "/.mosaicdata/error_report.log"
 
-            # OctoPrint log
-            octoprint_log_path = os.path.expanduser(
-                '~') + "/.octoprint/logs/octoprint.log"
-            linux_command = "tail -n 200 %s >> %s" % (
-                octoprint_log_path, error_report_path)
-            call([linux_command], shell=True)
+        # error number
+        error_report_log = open(error_report_path, "w")
+        error_report_log.write("===== ERROR %s =====\n\n" % error_number)
 
-            # TODO: make API call to canvas-api
+        # plugins + versions
+        error_report_log.write("=== PLUGINS ===\n")
+        plugins = self._plugin_manager.plugins.keys()
+        for plugin in plugins:
+            error_report_log.write("%s: %s\n" % (
+                plugin, self._plugin_manager.get_plugin_info(plugin).version))
+
+        # Hub or DIY
+        error_report_log.write("\n=== TYPE ===\n")
+        if os.path.isdir("/home/pi/.mosaicdata/turquoise/"):
+            error_report_log.write("CANVAS HUB\n")
         else:
-            self._logger.info("NOT SENDING ERROR REPORT TO MOSAIC")
+            error_report_log.write("DIY HUB\n")
+
+        # description
+        if description:
+            error_report_log.write("\n=== USER ADDITIONAL DESCRIPTION ===\n")
+            error_report_log.write(description + "\n")
+
+        error_report_log.write("\n=== OCTOPRINT LOG ===\n")
+        error_report_log.close()
+
+        # OctoPrint log
+        octoprint_log_path = os.path.expanduser(
+            '~') + "/.octoprint/logs/octoprint.log"
+        linux_command = "tail -n 10000 %s >> %s" % (
+            octoprint_log_path, error_report_path)
+        call([linux_command], shell=True)
+
+        data = ""
+        with open(error_report_path, 'r') as myfile:
+            data = myfile.read()
+
+        return data
 
     def startPrintFromHub(self):
         self._logger.info("START PRINT FROM HERE")
         self.enqueueCmd("O39")
+
+    def getHubData(self):
+        hub_file_path = os.path.expanduser(
+            '~') + "/.mosaicdata/canvas-hub-data.yml"
+
+        hub_data = open(hub_file_path, "r")
+        hub_yaml = yaml.load(hub_data)
+        hub_data.close()
+
+        hub_id = hub_yaml["canvas-hub"]["id"]
+        hub_token = hub_yaml["canvas-hub"]["token"]
+
+        return hub_id, hub_token
