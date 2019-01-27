@@ -31,10 +31,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def get_settings_defaults(self):
         return dict(autoconnect=False,
                     palette2Alerts=True,
-                    FeedrateControl=True,
+                    FeedrateControl=False,
                     FeedrateNormalPct=100,
                     FeedrateSlowPct=50,
-                    ShowPingPongOnPrinter=True
+                    ShowPingPongOnPrinter=False
                     )
 
     def get_template_configs(self):
@@ -65,11 +65,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             displayPorts=["condition"],
             sendErrorReport=["send"],
             startPrint=[],
+            # SKELLATORE
             changeShowPingPongOnPrinter=["condition"],
             changeFeedrateControl=["condition"],
             changeFeedrateSlowed=["condition"],
             changeFeedrateNormalPct=["value"],
             changeFeedrateSlowPct=["value"]
+            # /SKELLATORE
         )
 
     def on_api_command(self, command, data):
@@ -102,9 +104,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.sendErrorReport(data["send"])
         elif command == "startPrint":
             self.palette.startPrintFromHub()
-        # P2PP
-        self.palette.p2pp_api_command(command, data)
-        # /P2PP
+        # SKELLATORE
+        self.palette.advanced_api_command(command, data)
+        # /SKELLATORE
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -113,9 +115,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         return flask.jsonify(foo="bar")
 
     def on_event(self, event, payload):
-        # P2PP
-        self.palette.p2pp_on_event(event, payload)
-        # /P2PP
+        # SKELLATORE
+        self.palette.advanced_on_event(event, payload)
+        # /SKELLATORE
         if "ClientOpened" in event:
             self.palette.printerConnection = self._printer.get_current_connection()[0]
             self.palette.updateUI()

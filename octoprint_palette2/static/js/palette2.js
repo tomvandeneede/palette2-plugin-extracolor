@@ -254,6 +254,18 @@ function OmegaViewModel(parameters) {
   self.pings = ko.observableArray([]);
   self.pongs = ko.observableArray([]);
 
+
+  // SKELLATORE
+  self.ShowPingPongOnPrinter = ko.observable(true);
+  self.FeedrateControl = ko.observable(true);
+  self.FeedrateSlowed = ko.observable(false);
+  self.FeedrateNormalPct = ko.observable(100);
+  self.FeedrateSlowPct = ko.observable(80);
+  self.Advanced_Status = ko.observable('Idle....');
+  self.Advanced_Switches = '';
+  // /SKELLATORE
+
+
   /* COMMUNICATION TO BACK-END FUNCTIONS */
 
   self.togglePingHistory = () => {
@@ -479,13 +491,6 @@ function OmegaViewModel(parameters) {
     });
   };
 
-  // P2PP
-  self.ShowPingPongOnPrinter = ko.observable(100);
-  self.FeedrateControl = ko.observable(true);
-  self.FeedrateNormalPct = ko.observable(100);
-  self.FeedrateSlowPct = ko.observable(80);
-  self.FeedrateSlowed = ko.observable(false);
-  self.P2PPStatus = ko.observable('Idle....');
 
   self.FeedrateControl.subscribe( function() {
     self.ajax_payload({command: "changeFeedrateControl", condition: self.FeedrateControl()})
@@ -510,29 +515,51 @@ function OmegaViewModel(parameters) {
     });
   };
 
-  self.p2pp_updaterpluginmessage = (message) => {
-    if (!message.command) {
-      if (message.includes("P2PP:FEEDRATECONTROL=")) {
-        self.FeedrateControl(message.substring(21));
-      }
-      if (message.includes("P2PP:FEEDRATESLOWED=")) {
-        self.FeedrateSlowed(message.substring(20));
-      }
-      if (message.includes("P2PP:SHOWPINGPONGONPRINTER=")) {
-        self.ShowPingPongOnPrinter(message.substring(27));
-      }
-      if (message.includes("P2PP:FEEDRATENORMALPCT=")) {
-        self.FeedrateNormalPct(message.substring(23));
-      }
-      if (message.includes("P2PP:FEEDRATESLOWPCT=")) {
-        self.FeedrateSlowPct(message.substring(21));
-      }
-      if (message.includes("P2PP:UIMESSAGE=")) {
-        self.P2PPStatus(message.substring(15));
+  self.update_from_plugin_message = (message) => {
+    if (!message.command){
+      if (message.includes('ADVANCED:')){
+        value_ary = message.split('=');
+        switch (value_ary[0]) {
+          case 'ADVANCED:FEEDRATECONTROL':
+            if (value_ary[1].includes('True')) {
+              self.FeedrateControl(true);
+            } else {
+              self.FeedrateControl(false);
+            }
+            break;
+          case 'ADVANCED:FEEDRATESLOWED=':
+            if (value_ary[1].includes('True')) {
+              self.FeedrateSlowed(true);
+            } else {
+              self.FeedrateSlowed(false);
+            }
+            break;
+          case 'ADVANCED:SHOWPINGPONGONPRINTER':
+            if (value_ary[1].includes('True')) {
+              self.ShowPingPongOnPrinter(true);
+            } else {
+              self.ShowPingPongOnPrinter(false);
+            }
+            break;
+          case 'ADVANCED:FEEDRATENORMALPCT':
+            self.FeedrateNormalPct(value_ary[1]);
+            break;
+          case 'ADVANCED:FEEDRATESLOWPCT':
+            self.FeedrateSlowPct(value_ary[1]);
+            break;
+          case 'ADVANCED:UIMESSAGE':
+            self.Advanced_Status(value_ary[1]);
+            break;
+          case 'ADVANCED:UISWITCHES':
+            self.Advanced_Switches(value_ary[1]);
+            break;
+          default:
+            //Do Nothing
+        }
       }
     }
   };
-  // /P2PP
+  // /SKELLATORE
 
 
   self.fromResponse = () => {};
@@ -863,7 +890,9 @@ function OmegaViewModel(parameters) {
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      self.p2pp_updaterpluginmessage(message);
+      // SKELLATORE
+      self.update_from_plugin_message(message);
+      // /SKELLATORE
       if (message.command === "error") {
         omegaApp.errorAlert(message.data).then(result => {
           sendToMosaic = false;
