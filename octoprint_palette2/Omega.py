@@ -37,6 +37,15 @@ class Omega():
         self.FeedrateSlowed = self._settings.get(["FeedrateSlowed"]) or False
         self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"]) or 100
         self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"]) or 80
+
+        self.splicecore_switch = False
+        self.buffer_switch = False
+        self.filament_input_1_switch = False
+        self.filament_input_2_switch = False
+        self.filament_input_3_switch = False
+        self.filament_input_4_switch = False
+        self.cutter_switch = False
+
         # /SKELLATORE
 
     def getAllPorts(self):
@@ -732,6 +741,7 @@ class Omega():
 
     def advanced_parse_line(self, line):
         # self._logger.info('ADVANCED:' + line)
+        last_status_received = False
         try:
             advanced_status = ''
             if 'O97 U25 D0' in line:
@@ -782,13 +792,59 @@ class Omega():
                     idx = line.find("O34")
                     parms = line[idx+7:].split(" ")
                     try:
-                        self._printer.commands("M117 Ping {}: {}pct".format(str(int(parms[1][1:],16)), parms[0][1:]))
+                        self._printer.commands("M117 Ping {} {}pct".format(str(int(parms[1][1:],16)), parms[0][1:]))
                         self.updateUI()
                     except ValueError:
                         self._printer.commands("M117 {}".format(line[idx+7:]))
                         self.updateUI()
+            if 'O68 D2' in line:
+                # Switch Status
+                if 'O68 D2 D0' in line:
+                    if 'D2 D0 D1' in line:
+                        self.splicecore_switch = True
+                    else:
+                        self.splicecore_switch = False
+                if 'O68 D2 D1' in line:
+                    if 'D2 D1 D1' in line:
+                        self.buffer_switch = True
+                    else:
+                        self.buffer_switch = False
+                if 'O68 D2 D2' in line:
+                    if 'D2 D2 D1' in line:
+                        self.filament_input_1_switch = True
+                    else:
+                        self.filament_input_1_switch = False
+                if 'O68 D2 D3' in line:
+                    if 'D2 D3 D1' in line:
+                        self.filament_input_2_switch = True
+                    else:
+                        self.filament_input_2_switch = False
+                if 'O68 D2 D4' in line:
+                    if 'D2 D4 D1' in line:
+                        self.filament_input_3_switch = True
+                    else:
+                        self.filament_input_3_switch = False
+                if 'O68 D2 D5' in line:
+                    if 'D2 D5 D1' in line:
+                        self.filament_input_4_switch = True
+                    else:
+                        self.filament_input_4_switch = False
+                if 'O68 D2 D6' in line:
+                    if 'D2 D6 D1' in line:
+                        self.cutter_switch = True
+                    else:
+                        self.cutter_switch = False
+                    last_status_received = True
+                switch_status = (str(self.splicecore_switch) + ',' + str(self.buffer_switch) + ','
+                                 + str(self.filament_input_1_switch) + ',' + str(self.filament_input_2_switch) + ','
+                                 + str(self.filament_input_3_switch) + ',' + str(self.filament_input_4_switch) + ','
+                                 + str(self.cutter_switch))
+                if last_status_received:
+                    self._logger.info("ADVANCED: SWITCHES: %s" % switch_status)
+                    self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:UISWITCHES=%s" % switch_status)
             if advanced_status != '':
                 self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:UIMESSAGE=%s" % advanced_status)
+                self.enqueueCmd("O68 D2")  # Queue Switch Status
 
         except Exception as e:
             # Something went wrong with the connection to Palette2
@@ -796,18 +852,16 @@ class Omega():
 
     def advanced_updateUI(self):
         try:
-            self._plugin_manager.send_plugin_message(self._identifier,
-                                                     "ADVANCED:SHOWPINGPONGONPRINTER=%s" % self._settings.get(["ShowPingPongOnPrinter"])
-                                                     )
-            self._plugin_manager.send_plugin_message(self._identifier,
-                                                     "ADVANCED:FEEDRATECONTROL=%s" % self._settings.get(["FeedrateControl"]))
-            self._plugin_manager.send_plugin_message(self._identifier,
-                                                     "ADVANCED:FEEDRATESLOWED=%s" % self._settings.get(["FeedrateSlowed"]))
-            self._plugin_manager.send_plugin_message(self._identifier,
-                                                     "ADVANCED:FEEDRATENORMALPCT=%s" % self._settings.get(["FeedrateNormalPct"])
-                                                     )
-            self._plugin_manager.send_plugin_message(self._identifier,
-                                                     "ADVANCED:FEEDRATESLOWPCT=%s" % self._settings.get(["FeedrateSlowPct"]))
+            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:SHOWPINGPONGONPRINTER=%s" %
+                                                     self._settings.get(["ShowPingPongOnPrinter"]))
+            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATECONTROL=%s" %
+                                                     self._settings.get(["FeedrateControl"]))
+            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATESLOWED=%s" %
+                                                     self._settings.get(["FeedrateSlowed"]))
+            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATENORMALPCT=%s" %
+                                                     self._settings.get(["FeedrateNormalPct"]))
+            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATESLOWPCT=%s" %
+                                                     self._settings.get(["FeedrateSlowPct"]))
         except Exception as e:
             print(e)
 
@@ -863,6 +917,7 @@ class Omega():
                 self.FeedrateSlowed = self._settings.get(["FeedrateSlowed"])
                 self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
                 self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
+                self.enqueueCmd("O68 D2")  # Queue Switch Status
         except Exception as e:
             print(e)
 

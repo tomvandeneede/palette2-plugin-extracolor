@@ -261,8 +261,8 @@ function OmegaViewModel(parameters) {
   self.FeedrateSlowed = ko.observable(false);
   self.FeedrateNormalPct = ko.observable(100);
   self.FeedrateSlowPct = ko.observable(80);
-  self.Advanced_Status = ko.observable('Idle....');
-  self.Advanced_Switches = '';
+  self.Advanced_Status = ko.observable('Awaiting Update...');
+  self.Advanced_Switches = ko.observable('Awaiting Update...');
   // /SKELLATORE
 
 
@@ -551,13 +551,26 @@ function OmegaViewModel(parameters) {
             self.Advanced_Status(value_ary[1]);
             break;
           case 'ADVANCED:UISWITCHES':
-            self.Advanced_Switches(value_ary[1]);
+              self.update_switches(value_ary[1]);
             break;
           default:
             //Do Nothing
         }
       }
     }
+  };
+
+  self.update_switches = (values) => {
+    switch_values = values.split(',');
+    switch_string = "<b>Switch Status:</b><br/><b>Splice Core: </b>" + switch_values[0].toString()
+             + "<br/><b>Buffer: </b>" + switch_values[1]
+             + "<br/><b>Filament 1: </b>" + switch_values[2]
+             + "<br/><b>Filament 2: </b>" + switch_values[3]
+             + "<br/><b>Filament 3: </b>" + switch_values[4]
+             + "<br/><b>Filament 4: </b>" + switch_values[5]
+             + "<br/><b>Cutting Wheel: </b>" + switch_values[6];
+    $(".switch_status").html(switch_string);
+    self.Advanced_Switches = switch_string;
   };
   // /SKELLATORE
 
