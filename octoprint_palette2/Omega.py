@@ -683,4 +683,4 @@ class Omega():
 
     def startPrintFromHub(self):
         self._logger.info("START PRINT FROM HERE")
-        self.enqueueCmd("O39")
+        self.enqueueCmd("O39 D1")
