@@ -286,9 +286,10 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
-    }).then(() => {
-      self.settings.saveData();
     });
+    // .then(() => {
+    //   self.settings.saveData();
+    // });
   };
 
   self.refreshDemoList = () => {
@@ -382,9 +383,10 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
-    }).then(() => {
-      self.settings.saveData();
     });
+    // .then(() => {
+    //   self.settings.saveData();
+    // });
   };
 
   self.sendOmegaCmd = (command, payload) => {
