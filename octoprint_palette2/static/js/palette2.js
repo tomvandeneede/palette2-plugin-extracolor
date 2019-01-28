@@ -780,10 +780,11 @@ function OmegaViewModel(parameters) {
     }
   };
 
-  self.sendErrorReport = send => {
+  self.sendErrorReport = (errorNumber, description) => {
     var payload = {
       command: "sendErrorReport",
-      send: send
+      errorNumber: errorNumber,
+      description: description
     };
     $.ajax({
       url: API_BASEURL + "plugin/palette2",
@@ -809,16 +810,47 @@ function OmegaViewModel(parameters) {
     if (pluginIdent === "palette2") {
       if (message.command === "error") {
         omegaApp.errorAlert(message.data).then(result => {
-          sendToMosaic = false;
           // if user clicks yes
           if (result.value) {
-            sendToMosaic = true;
+            swal({
+              title: "Please provide additional details (OPTIONAL)",
+              text:
+                "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occured, etc)",
+              customClass: "error-container",
+              input: "textarea",
+              inputClass: "error-textarea",
+              width: "40rem",
+              confirmButtonText: "Send"
+            }).then(result => {
+              if (result.dismiss === Swal.DismissReason.cancel) {
+              } else {
+                description = "";
+                if (result.value) {
+                  description = result.value;
+                }
+
+                self.sendErrorReport(message.data, description);
+              }
+            });
+            // (async function getDescription() {
+            // const { value: description } = await Swal.fire({
+            //   title: "Please provide additional details (OPTIONAL)",
+            //   text:
+            //     "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occured, etc)",
+            //   customClass: "error-container",
+            //   input: "textarea",
+            //   inputClass: "error-textarea",
+            //   width: "40rem",
+            //   confirmButtonText: "Send"
+            // });
+            // if (description) {
+            //   console.log(description);
+            // }
+            // })();
           }
           // if user clicks no
           else if (result.dismiss === Swal.DismissReason.cancel) {
-            sendToMosaic = false;
           }
-          self.sendErrorReport(sendToMosaic);
         });
       } else if (message.command === "printHeartbeatCheck") {
         if (message.data === "P2NotConnected") {

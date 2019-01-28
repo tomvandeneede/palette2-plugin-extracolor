@@ -61,7 +61,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
             displayPorts=["condition"],
-            sendErrorReport=["send"],
+            sendErrorReport=["errorNumber", "description"],
             startPrint=[]
         )
 
@@ -92,7 +92,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "displayPorts":
             self.palette.displayPorts(data["condition"])
         elif command == "sendErrorReport":
-            self.palette.sendErrorReport(data["send"])
+            self.palette.sendErrorReport(
+                data["errorNumber"], data["description"])
         elif command == "startPrint":
             self.palette.startPrintFromHub()
         return flask.jsonify(foo="bar")
