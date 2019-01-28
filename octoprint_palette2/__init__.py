@@ -89,8 +89,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.updateUI()
         elif command == "changeAlertSettings":
             self.palette.changeAlertSettings(data["condition"])
+            self.palette.updateUI()
         elif command == "displayPorts":
             self.palette.displayPorts(data["condition"])
+            self.palette.updateUI()
         elif command == "sendErrorReport":
             self.palette.sendErrorReport(
                 data["errorNumber"], data["description"])
