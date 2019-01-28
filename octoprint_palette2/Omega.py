@@ -568,7 +568,7 @@ class Omega():
             timeout_start = time.time()
             # Wait for Palette to respond with a handshake within 5 seconds
             while not self.heartbeat and time.time() < timeout_start + timeout:
-                pass
+                time.sleep(0.01)
             if self.heartbeat:
                 self._logger.info("Palette did respond to O99")
                 self.enqueueCmd(cmd)
