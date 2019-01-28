@@ -739,12 +739,12 @@ class Omega():
         # OctoPrint log
         octoprint_log_path = os.path.expanduser(
             '~') + "/.octoprint/logs/octoprint.log"
-        linux_command = "tail -n 10000 %s >> %s" % (
+        linux_command = "tail -n 1000 %s >> %s" % (
             octoprint_log_path, error_report_path)
         call([linux_command], shell=True)
 
         data = ""
-        with open(error_report_path, 'r') as myfile:
+        with open(error_report_path, "r") as myfile:
             data = myfile.read()
 
         return data
