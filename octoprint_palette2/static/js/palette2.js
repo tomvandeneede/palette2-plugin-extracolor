@@ -918,21 +918,20 @@ function OmegaViewModel(parameters) {
             $("body").on("click", ".setup-checkbox input", event => {
               self.changeAlertSettings(event.target.checked);
             });
-            omegaApp.readyToStartAlert();
-            // .then(result => {
-            // if (result.hasOwnProperty("value")) {
-            // var payload = {
-            // command: "startPrint"
-            // };
-            // $.ajax({
-            // url: API_BASEURL + "plugin/palette2",
-            // type: "POST",
-            // dataType: "json",
-            // data: JSON.stringify(payload),
-            // contentType: "application/json; charset=UTF-8"
-            // });
-            // }
-            // });
+            self.readyToStartAlert().then(result => {
+              if (result.hasOwnProperty("value")) {
+                var payload = {
+                  command: "startPrint"
+                };
+                $.ajax({
+                  url: API_BASEURL + "plugin/palette2",
+                  type: "POST",
+                  dataType: "json",
+                  data: JSON.stringify(payload),
+                  contentType: "application/json; charset=UTF-8"
+                });
+              }
+            });
           }
         } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
           self.updateFilamentCountdown(true);
