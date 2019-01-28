@@ -136,18 +136,6 @@ omegaApp.extrusionAlert = firstTime => {
   }
 };
 
-omegaApp.readyToStartAlert = () => {
-  return swal({
-    title: "Filament in place and ready to go",
-    text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
-    type: "info",
-    input: "checkbox",
-    inputClass: "setup-checkbox",
-    inputPlaceholder: "Don't show me these setup alerts anymore"
-    // confirmButtonText: "START PRINT"
-  });
-};
-
 omegaApp.printCancelAlert = () => {
   return swal({
     title: "Print cancelling ",
@@ -797,11 +785,11 @@ function OmegaViewModel(parameters) {
   self.readyToStartAlert = () => {
     return swal({
       title: "Filament in place and ready to go",
-      text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
+      text: `Please press "Start Print" below or directly on your Palette 2 screen to begin your print.`,
       type: "info",
       input: "checkbox",
       inputPlaceholder: "Don't show me these setup alerts anymore",
-      confirmButtonText: "START PRINT"
+      confirmButtonText: "Start Print"
     });
   };
 
