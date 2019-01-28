@@ -915,7 +915,6 @@ function OmegaViewModel(parameters) {
       } else if (message.includes("UI:Finished Pong")) {
         self.updatePongMsg(false);
       } else if (message.includes("UI:Con=")) {
-        console.log(message);
         if (self.tryingToConnect) {
           omegaApp.loadingOverlay(false);
         }
