@@ -677,12 +677,6 @@ function OmegaViewModel(parameters) {
     self.removeFolderBinding();
     self.handleGCODEFolders();
     self.applyPaletteDisabling();
-    self.readyToStartAlert();
-    if (self.displayAlerts) {
-      $("body").on("click", ".setup-checkbox input", event => {
-        self.changeAlertSettings(event.target.checked);
-      });
-    }
   };
 
   self.onEventConnected = payload => {
@@ -895,13 +889,10 @@ function OmegaViewModel(parameters) {
         var num = message.substring(17);
         self.currentSplice(num);
       } else if (message.includes("UI:DisplayAlerts")) {
-        console.log(message);
         if (message.includes("True")) {
           self.displayAlerts = true;
-          // $(".alert-input").prop("checked", true);
         } else if (message.includes("False")) {
           self.displayAlerts = false;
-          // $(".alert-input").prop("checked", false);
         }
       } else if (message.includes("UI:FINISHED LOADING")) {
         $("#loading-span").addClass("hide");
@@ -992,13 +983,10 @@ function OmegaViewModel(parameters) {
           self.firstTime = false;
         }
       } else if (message.includes("UI:AutoConnect=")) {
-        console.log(message);
         if (message.substring(15) === "True") {
           self.autoconnect = true;
-          // $(".autoconnect-input").prop("checked", true);
         } else {
           self.autoconnect = false;
-          // $(".autoconnect-input").prop("checked", false);
         }
       } else if (message.includes("UI:Palette2SetupStarted=")) {
         self.palette2SetupStarted = message.substring(24);
