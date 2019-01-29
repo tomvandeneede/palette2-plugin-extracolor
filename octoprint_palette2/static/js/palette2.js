@@ -520,41 +520,48 @@ function OmegaViewModel(parameters) {
       if (message.includes('ADVANCED:')){
         value_ary = message.split('=');
         switch (value_ary[0]) {
-          case 'ADVANCED:FEEDRATECONTROL':
-            if (value_ary[1].includes('True')) {
-              self.FeedrateControl(true);
-            } else {
-              self.FeedrateControl(false);
-            }
-            break;
-          case 'ADVANCED:FEEDRATESLOWED=':
-            if (value_ary[1].includes('True')) {
-              self.FeedrateSlowed(true);
-            } else {
-              self.FeedrateSlowed(false);
-            }
-            break;
-          case 'ADVANCED:SHOWPINGPONGONPRINTER':
-            if (value_ary[1].includes('True')) {
-              self.ShowPingPongOnPrinter(true);
-            } else {
-              self.ShowPingPongOnPrinter(false);
-            }
-            break;
-          case 'ADVANCED:FEEDRATENORMALPCT':
-            self.FeedrateNormalPct(value_ary[1]);
-            break;
-          case 'ADVANCED:FEEDRATESLOWPCT':
-            self.FeedrateSlowPct(value_ary[1]);
-            break;
-          case 'ADVANCED:UIMESSAGE':
-            self.Advanced_Status(value_ary[1]);
-            break;
-          case 'ADVANCED:UISWITCHES':
-              self.update_switches(value_ary[1]);
-            break;
-          default:
-            //Do Nothing
+            case 'ADVANCED:DisplayAdvancedOptions':
+                if (value_ary[1].includes("True")) {
+                    $('.advanced_options').show();
+                } else {
+                    $('.advanced_options').hide();
+                }
+                break;
+            case 'ADVANCED:FEEDRATECONTROL':
+                if (value_ary[1].includes('True')) {
+                    self.FeedrateControl(true);
+                } else {
+                    self.FeedrateControl(false);
+                }
+                break;
+            case 'ADVANCED:FEEDRATESLOWED=':
+                if (value_ary[1].includes('True')) {
+                    self.FeedrateSlowed(true);
+                } else {
+                    self.FeedrateSlowed(false);
+                }
+                break;
+            case 'ADVANCED:SHOWPINGPONGONPRINTER':
+                if (value_ary[1].includes('True')) {
+                    self.ShowPingPongOnPrinter(true);
+                } else {
+                    self.ShowPingPongOnPrinter(false);
+                }
+                break;
+            case 'ADVANCED:FEEDRATENORMALPCT':
+                self.FeedrateNormalPct(value_ary[1]);
+                break;
+            case 'ADVANCED:FEEDRATESLOWPCT':
+                self.FeedrateSlowPct(value_ary[1]);
+                break;
+            case 'ADVANCED:UIMESSAGE':
+                self.Advanced_Status(value_ary[1]);
+                break;
+            case 'ADVANCED:UISWITCHES':
+                self.update_switches(value_ary[1]);
+                break;
+            default:
+                //Do Nothing
         }
       }
     }

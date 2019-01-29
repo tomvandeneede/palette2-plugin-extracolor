@@ -405,6 +405,10 @@ class Omega():
             self._identifier, "UI:PrinterCon=%s" % self.printerConnection)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:DisplayAlerts=%s" % self._settings.get(["palette2Alerts"]))
+        # SKELLATORE
+        self._plugin_manager.send_plugin_message(
+            self._identifier, "ADVANCED:DisplayAdvancedOptions=%s" % self._settings.get(["AdvancedOptions"]))
+        # /SKELLATORE
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:currentStatus=%s" % self.currentStatus)
         self._plugin_manager.send_plugin_message(
@@ -737,7 +741,7 @@ class Omega():
         self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
 
     def advanced_reset_print_values(self):
-        pass
+        return
 
     def advanced_parse_line(self, line):
         # self._logger.info('ADVANCED:' + line)

@@ -14,7 +14,9 @@ This fork has a few little feature enhancements;
 Details on the M220 and M117 commands can be found here;
 https://github.com/prusa3d/Prusa-Firmware/wiki/Supported-G-codes
 
-This has been only tested on a Original Prusa i3 Mk3.
+This has been only tested on a Original Prusa i3 Mk3, however others in the community have used this plugin successfully.
+
+To be able to see the Advanced features, you must first enable it in the Palette2 Plugin Settings area by clicking the Spanner icon.
 
 This is not warranted nor covered by any warranties by Mosaic Manufacturing and I have no Affiliation with them but for the fact I own and love their Palette2.
 
@@ -27,12 +29,13 @@ On your OctoPrint server,
 `https://github.com/skellatore/palette2-plugin/archive/master.zip`
     * This will upgrade your current Palette2 Plugin.
     * At any time you can revert to the original Palette2 Plugin, however it will require you to restart octoprint.
-4) Ensure version contains "1.3.0-P2PP-RC1"
+4) Ensure version contains "1.3.2-P2PP-RC1"
+5) To be able to see the Advanced features, you must first enable it in the Palette2 Plugin Settings (Spanner -> Palette2 -> Enable Advanced Options -> SAVE)
 5) Navigate to the Palette2 Plugin Tab.
-6) Adjust settings to suit your needs. These can be adjusted mid print without interrupting the print. Feedrate settings will be in effect for the next splice after the setting was modified.
+6) Adjust settings to suit your needs. These can be adjusted mid print without interrupting the print. Feedrate settings for the Splicing Speed will be in effect for the _next_ splice after the setting was modified.
 
 # Known issues
-On Load before a print is starting the status display and variable values are a bit busted.
+ - None Reported
 
 ## Authors
 

@@ -31,6 +31,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def get_settings_defaults(self):
         return dict(autoconnect=False,
                     palette2Alerts=True,
+                    AdvancedOptions=False,
                     FeedrateControl=False,
                     FeedrateNormalPct=100,
                     FeedrateSlowPct=50,
@@ -161,13 +162,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "FileRemoved" in event:
             # User removed a file from Octoprint, we should update the demo list of files
             self.palette.getAllMCFFilenames()
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:Refresh Demo List")
+            self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
-            self._logger.info("Auto-reconnect: %s" %
-                              str(self._settings.get(["autoconnect"])))
-            self._logger.info("Display alerts: %s" % str(
-                self._settings.get(["palette2Alerts"])))
+            self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
+            self._logger.info("Display alerts: %s" % str(self._settings.get(["palette2Alerts"])))
+            self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["AdvancedOptions"])))
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
