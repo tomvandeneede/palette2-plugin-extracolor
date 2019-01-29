@@ -788,6 +788,7 @@ function OmegaViewModel(parameters) {
       title: "Filament in place and ready to go",
       text: `Please press "Start Print" below or directly on your Palette 2 screen to begin your print.`,
       type: "info",
+      inputClass: "setup-checkbox",
       input: "checkbox",
       inputPlaceholder: "Don't show me these setup alerts anymore",
       confirmButtonText: "Start Print"
