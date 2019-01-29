@@ -33,7 +33,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=False, palette2Alerts=True)
+        return dict(autoconnect=False,
+                    palette2Alerts=True,
+                    AdvancedOptions=False,
+                    FeedrateControl=False,
+                    FeedrateNormalPct=100,
+                    FeedrateSlowPct=50,
+                    ShowPingPongOnPrinter=False
+                    )
 
     def get_template_configs(self):
         return [
@@ -62,7 +69,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             changeAlertSettings=["condition"],
             displayPorts=["condition"],
             sendErrorReport=["errorNumber", "description"],
-            startPrint=[]
+            startPrint=[],
+            # SKELLATORE
+            changeShowPingPongOnPrinter=["condition"],
+            changeFeedrateControl=["condition"],
+            changeFeedrateSlowed=["condition"],
+            changeFeedrateNormalPct=["value"],
+            changeFeedrateSlowPct=["value"]
+            # /SKELLATORE
         )
 
     def on_api_command(self, command, data):
@@ -96,6 +110,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 data["errorNumber"], data["description"])
         elif command == "startPrint":
             self.palette.startPrintFromHub()
+        # SKELLATORE
+        self.palette.advanced_api_command(command, data)
+        # /SKELLATORE
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -104,9 +121,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         return flask.jsonify(foo="bar")
 
     def on_event(self, event, payload):
+        # SKELLATORE
+        self.palette.advanced_on_event(event, payload)
+        # /SKELLATORE
         if "ClientOpened" in event:
-            self.palette.printerConnection = self._printer.get_current_connection()[
-                0]
+            self.palette.printerConnection = self._printer.get_current_connection()[0]
             self.palette.updateUI()
             self.palette.printerConnection = ""
         elif "PrintStarted" in event:
@@ -148,13 +167,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "FileRemoved" in event:
             # User removed a file from Octoprint, we should update the demo list of files
             self.palette.getAllMCFFilenames()
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:Refresh Demo List")
+            self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
-            self._logger.info("Auto-reconnect: %s" %
-                              str(self._settings.get(["autoconnect"])))
-            self._logger.info("Display alerts: %s" % str(
-                self._settings.get(["palette2Alerts"])))
+            self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
+            self._logger.info("Display alerts: %s" % str(self._settings.get(["palette2Alerts"])))
+            self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["AdvancedOptions"])))
             self.palette.updateUI()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
