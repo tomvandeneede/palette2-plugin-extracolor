@@ -276,6 +276,9 @@ function OmegaViewModel(parameters) {
       condition = "opening";
     }
 
+    self.displayingPorts = true;
+    console.log(self.displayingPorts);
+
     var payload = {
       command: "displayPorts",
       condition: condition
@@ -286,10 +289,11 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
+    }).then(() => {
+      self.settings.saveData();
+      self.displayingPorts = false;
+      console.log(self.displayingPorts);
     });
-    // .then(() => {
-    //   self.settings.saveData();
-    // });
   };
 
   self.refreshDemoList = () => {
@@ -383,10 +387,9 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
+    }).then(() => {
+      self.settings.saveData();
     });
-    // .then(() => {
-    //   self.settings.saveData();
-    // });
   };
 
   self.sendOmegaCmd = (command, payload) => {
@@ -679,6 +682,10 @@ function OmegaViewModel(parameters) {
     self.removeFolderBinding();
     self.handleGCODEFolders();
     self.applyPaletteDisabling();
+    self.readyToStartAlert();
+    $("body").on("click", ".setup-checkbox input", event => {
+      self.changeAlertSettings(event.target.checked);
+    });
   };
 
   self.onEventConnected = payload => {
@@ -790,6 +797,7 @@ function OmegaViewModel(parameters) {
       title: "Filament in place and ready to go",
       text: `Please press "Start Print" below or directly on your Palette 2 screen to begin your print.`,
       type: "info",
+      inputClass: "setup-checkbox",
       input: "checkbox",
       inputPlaceholder: "Don't show me these setup alerts anymore",
       confirmButtonText: "Start Print"
@@ -890,10 +898,13 @@ function OmegaViewModel(parameters) {
         var num = message.substring(17);
         self.currentSplice(num);
       } else if (message.includes("UI:DisplayAlerts")) {
+        console.log(message);
         if (message.includes("True")) {
           self.displayAlerts = true;
+          // $(".alert-input").prop("checked", true);
         } else if (message.includes("False")) {
           self.displayAlerts = false;
+          // $(".alert-input").prop("checked", false);
         }
       } else if (message.includes("UI:FINISHED LOADING")) {
         $("#loading-span").addClass("hide");
@@ -918,7 +929,9 @@ function OmegaViewModel(parameters) {
           omegaApp.loadingOverlay(false);
           if (self.tryingToConnect) {
             self.tryingToConnect = false;
-            omegaApp.cannotConnectAlert();
+            if (!self.displayingPorts) {
+              omegaApp.cannotConnectAlert();
+            }
           }
         }
       } else if (message.includes("UI:Refresh Demo List")) {
@@ -984,10 +997,13 @@ function OmegaViewModel(parameters) {
           self.firstTime = false;
         }
       } else if (message.includes("UI:AutoConnect=")) {
+        console.log(message);
         if (message.substring(15) === "True") {
           self.autoconnect = true;
+          // $(".autoconnect-input").prop("checked", true);
         } else {
           self.autoconnect = false;
+          // $(".autoconnect-input").prop("checked", false);
         }
       } else if (message.includes("UI:Palette2SetupStarted=")) {
         self.palette2SetupStarted = message.substring(24);
