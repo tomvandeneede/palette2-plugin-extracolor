@@ -276,9 +276,6 @@ function OmegaViewModel(parameters) {
       condition = "opening";
     }
 
-    self.displayingPorts = true;
-    console.log(self.displayingPorts);
-
     var payload = {
       command: "displayPorts",
       condition: condition
@@ -291,8 +288,6 @@ function OmegaViewModel(parameters) {
       contentType: "application/json; charset=UTF-8"
     }).then(() => {
       self.settings.saveData();
-      self.displayingPorts = false;
-      console.log(self.displayingPorts);
     });
   };
 
@@ -683,9 +678,11 @@ function OmegaViewModel(parameters) {
     self.handleGCODEFolders();
     self.applyPaletteDisabling();
     self.readyToStartAlert();
-    $("body").on("click", ".setup-checkbox input", event => {
-      self.changeAlertSettings(event.target.checked);
-    });
+    if (self.displayAlerts) {
+      $("body").on("click", ".setup-checkbox input", event => {
+        self.changeAlertSettings(event.target.checked);
+      });
+    }
   };
 
   self.onEventConnected = payload => {
@@ -929,9 +926,7 @@ function OmegaViewModel(parameters) {
           omegaApp.loadingOverlay(false);
           if (self.tryingToConnect) {
             self.tryingToConnect = false;
-            if (!self.displayingPorts) {
-              omegaApp.cannotConnectAlert();
-            }
+            omegaApp.cannotConnectAlert();
           }
         }
       } else if (message.includes("UI:Refresh Demo List")) {

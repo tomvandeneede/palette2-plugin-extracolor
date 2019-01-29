@@ -155,7 +155,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                               str(self._settings.get(["autoconnect"])))
             self._logger.info("Display alerts: %s" % str(
                 self._settings.get(["palette2Alerts"])))
-            self.palette.updateUI()
+            # self.palette.updateUI()
+            self._plugin_manager.send_plugin_message(
+                self._identifier, "UI:AutoConnect=%s" % self._settings.get(["autoconnect"]))
+            self._plugin_manager.send_plugin_message(
+                self._identifier, "UI:DisplayAlerts=%s" % self._settings.get(["palette2Alerts"]))
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
             else:
