@@ -110,8 +110,7 @@ class Omega():
                 if not port:
                     port = self.ports[0]
                 if self.isPrinterPort(port):
-                    self._logger.info(
-                        "This is the printer port. Will not connect to this.")
+                    self._logger.info("This is the printer port. Will not connect to this.")
                     self.updateUI()
                 else:
                     try:
@@ -120,8 +119,7 @@ class Omega():
                         self.connected = True
                         self.tryHeartbeat(port)
                     except:
-                        self._logger.info(
-                            "Another resource is connected to port")
+                        self._logger.info("Another resource is connected to port")
                         self.updateUI()
             else:
                 self._logger.info("Unable to find port")
@@ -381,7 +379,6 @@ class Omega():
             except Exception as e:
                 self._logger.info("Palette 2 Write Thread Error")
                 self._logger.info(e)
-        self.writeThread = None
 
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
