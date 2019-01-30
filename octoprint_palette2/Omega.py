@@ -313,15 +313,14 @@ class Omega():
                                     if command["params"][1] == "D1":
                                         try:
                                             self.currentSplice = int(command["params"][2][1:], 16)
-                                            self._logger.info("%smm used" % self.currentSplice)
+                                            self._logger.info("Current splice: %s" % self.currentSplice)
                                             self.updateUI()
                                         except:
-                                            self._logger.info(
-                                                "Filament length command invalid: %s" % command)
+                                            self._logger.info("Filament length command invalid: %s" % command)
                                 elif command["params"][0] == "U26":
                                     try:
                                         self.filamentLength = int(command["params"][1][1:], 16)
-                                        self._logger.info(self.filamentLength)
+                                        self._logger.info("%smm used" % self.filamentLength)
                                         self.updateUI()
                                     except:
                                         self._logger.info("Filament length update invalid: %s" % command)
