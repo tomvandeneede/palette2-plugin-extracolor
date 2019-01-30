@@ -18,7 +18,7 @@ if os.path.abspath(".") is "/":
 load_dotenv(env_path)
 BASE_URL_API = os.getenv("DEV_BASE_URL_API", "api.canvas3d.io/")
 from subprocess import call
-from Queue import Queue
+from Queue import Queue, Empty
 
 
 class Omega():
@@ -362,19 +362,25 @@ class Omega():
         while self.writeThreadStop is False:
             try:
                 line = self.writeQueue.get(True, 0.5)
-                self.lastCommandSent = line
-                line = line.strip()
-                line = line + "\n"
-                self._logger.info("Omega Write Thread: Sending: %s" % line)
-                serialConnection.write(line.encode())
-                self._logger.info(line.encode())
-                if "O99" in line:
-                    self._logger.info("O99 sent to P2")
-                    while self.printHeartbeatCheck == "Checking":
-                        self._logger.info("WAITING FOR HEARTBEAT...")
-                        time.sleep(1)
-            except:
+                if line:
+                    self.lastCommandSent = line
+                    line = line.strip()
+                    line = line + "\n"
+                    self._logger.info("Omega Write Thread: Sending: %s" % line)
+                    serialConnection.write(line.encode())
+                    self._logger.info(line.encode())
+                    if "O99" in line:
+                        self._logger.info("O99 sent to P2")
+                        while self.printHeartbeatCheck == "Checking":
+                            self._logger.info("WAITING FOR HEARTBEAT...")
+                            time.sleep(1)
+                else:
+                    self._logger.info("Line is NONE")
+            except Empty:
                 pass
+            except Exception as e:
+                self._logger.info("Palette 2 Write Thread Error")
+                self._logger.info(e)
         self.writeThread = None
 
     def omegaConnectionThread(self):
