@@ -226,8 +226,8 @@ class Omega():
                 line = serialConnection.readline()
                 if line:
                     command = self.parseLine(line)
-                    self._logger.info("Omega: read in line: %s" % command)
                     if command != None:
+                        self._logger.info("Omega: read in line: %s" % command)
                         if command["command"] == 20:
                             if command["total_params"] == 1:
                                 if command["params"][0] == "D5":
@@ -313,7 +313,7 @@ class Omega():
                                     if command["params"][1] == "D1":
                                         try:
                                             self.currentSplice = int(command["params"][2][1:], 16)
-                                            self._logger.info(self.currentSplice)
+                                            self._logger.info("%smm used" % self.currentSplice)
                                             self.updateUI()
                                         except:
                                             self._logger.info(
@@ -370,9 +370,9 @@ class Omega():
                 serialConnection.write(line.encode())
                 self._logger.info(line.encode())
                 if "O99" in line:
-                    self._logger.info("GOT A O99")
+                    self._logger.info("O99 sent to P2")
                     while self.printHeartbeatCheck == "Checking":
-                        self._logger.info("WAITING FOR HEARTBEAT")
+                        self._logger.info("WAITING FOR HEARTBEAT...")
                         time.sleep(1)
             except:
                 pass
@@ -575,9 +575,9 @@ class Omega():
         self._printer.toggle_pause_print()
 
     def gotOmegaCmd(self, cmd):
-        if "O0" in cmd:
-            self.enqueueCmd("O0")
-        elif "O1 " in cmd:
+        # if "O0" in cmd:
+        #     self.enqueueCmd("O0")
+        if "O1 " in cmd:
             timeout = 5
             timeout_start = time.time()
             # Wait for Palette to respond with a handshake within 5 seconds
@@ -698,6 +698,7 @@ class Omega():
             #     self.iterateThroughFolder(file_path, cumulative_folder_name)
 
     def startPrintFromP2(self, file):
+        self._logger.info("Received print command from P2")
         self._printer.select_file(file, False, printAfterSelect=True)
 
     def sendErrorReport(self, error_number, description):
@@ -764,7 +765,7 @@ class Omega():
         return data
 
     def startPrintFromHub(self):
-        self._logger.info("START PRINT FROM HERE")
+        self._logger.info("Hub command to start print received")
         self.enqueueCmd("O39 D1")
 
     def getHubData(self):
@@ -798,14 +799,14 @@ class Omega():
             try:
                 command["command"] = int(command["command"][1:])
             except:
-                # self._logger.info("%s is not a valid command: %s" %(command["command"], line))
+                self._logger.debug("%s is not a valid command: %s" %(command["command"], line))
                 return None
 
             # verify tokens' validity
             if command["total_params"] > 0:
                 for param in command["params"]:
                     if param[0] != "D" and param[0] != "U":
-                        # self._logger.info("%s is not a valid parameter: %s" % (param, line))
+                        self._logger.debug("%s is not a valid parameter: %s" % (param, line))
                         return None
 
             return command
@@ -814,5 +815,5 @@ class Omega():
             self.heartbeat = True
             return None
         else:
-            # self._logger.info("Invalid first character: %s" % line)
+            self._logger.debug("Invalid first character: %s" % line)
             return None
