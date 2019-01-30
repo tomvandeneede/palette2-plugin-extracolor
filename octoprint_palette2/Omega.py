@@ -9,16 +9,17 @@ import binascii
 import sys
 import json
 import requests
+from subprocess import call
+from Queue import Queue
+from dotenv import load_dotenv
 from ruamel.yaml import YAML
 yaml = YAML(typ="safe")
-from dotenv import load_dotenv
 env_path = os.path.abspath(".") + "/.env"
 if os.path.abspath(".") is "/":
     env_path = "/home/pi/.env"
 load_dotenv(env_path)
 BASE_URL_API = os.getenv("DEV_BASE_URL_API", "api.canvas3d.io/")
-from subprocess import call
-from Queue import Queue
+
 
 
 class Omega():
@@ -1013,7 +1014,7 @@ class Omega():
                 self.changeFeedrateNormalPct(data["value"])
             if command == "changeFeedrateSlowPct":
                 self.changeFeedrateSlowPct(data["value"])
-            self.palette.updateUI()
+            self.updateUI()
         except Exception as e:
             print(e)
     # /SKELLATORE
