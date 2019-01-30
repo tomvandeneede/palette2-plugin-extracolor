@@ -167,7 +167,8 @@ class Omega():
                         self._identifier, {"command": "selectedPort", "data": self.selectedPort})
                     self.updateUI()
                     # SKELLATORE
-
+                    if self._settings.get(["AdvancedOptions"]):
+                        self.enqueueCmd("O68 D2")
                     # /SKELLATORE
                     break
                 else:
