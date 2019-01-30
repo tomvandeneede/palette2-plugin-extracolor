@@ -227,7 +227,7 @@ class Omega():
                     if command != None:
                         self._logger.info("Omega: read in line: %s" % command)
                         if command["command"] == 20:
-                            if command["total_params"] == 1:
+                            if command["total_params"] > 0:
                                 if command["params"][0] == "D5":
                                     self._logger.info("FIRST TIME USE WITH PALETTE")
                                     self.firstTime = True
@@ -240,12 +240,13 @@ class Omega():
                                     except:
                                         self._logger.info("Error occured with: %s" % command)
                         elif command["command"] == 34:
-                            if command["total_params"] > 0:
+                            if command["total_params"] == 1:
                                 # if reject ping
                                 if command["params"][0] == "D0":
                                     self._logger.info("REJECTING PING")
+                            elif command["total_params"] > 2:
                                 # if ping
-                                elif command["params"][0] == "D1":
+                                if command["params"][0] == "D1":
                                     percent = command["params"][1][1:]
                                     try:
                                         number = int(command["params"][2][1:], 16)
@@ -273,7 +274,7 @@ class Omega():
                         elif command["command"] == 50:
                             self.sendAllMCFFilenamesToOmega()
                         elif command["command"] == 53:
-                            if command["total_params"] > 0:
+                            if command["total_params"] > 1:
                                 if command["params"][0] == "D1":
                                     try:
                                         index_to_print = int(command["params"][1][1:], 16)
@@ -294,36 +295,39 @@ class Omega():
                         elif command["command"] == 97:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "U0":
-                                    if command["params"][1] == "D0":
-                                        self.currentStatus = "Palette work completed: all splices prepared"
-                                        self.updateUI()
-                                        self._logger.info("Palette work is done.")
-                                    elif command["params"][1] == "D2":
-                                        self._logger.info("CANCELLING START")
-                                        # self._logger.info(self._printer.is_cancelling())
-                                        #TODO: wait for bobby to fix cancelling
-                                        self._printer.cancel_print()
-                                        self.currentStatus = "Cancelling print"
-                                        self.updateUI()
-                                    elif command["params"][1] == "D3":
-                                        self._logger.info("CANCELLING END")
-                                        self.currentStatus = "Print cancelled"
-                                        self.updateUI()
+                                    if command["total_params"] > 1:
+                                        if command["params"][1] == "D0":
+                                            self.currentStatus = "Palette work completed: all splices prepared"
+                                            self.updateUI()
+                                            self._logger.info("Palette work is done.")
+                                        elif command["params"][1] == "D2":
+                                            self._logger.info("CANCELLING START")
+                                            # self._logger.info(self._printer.is_cancelling())
+                                            #TODO: wait for bobby to fix cancelling
+                                            self._printer.cancel_print()
+                                            self.currentStatus = "Cancelling print"
+                                            self.updateUI()
+                                        elif command["params"][1] == "D3":
+                                            self._logger.info("CANCELLING END")
+                                            self.currentStatus = "Print cancelled"
+                                            self.updateUI()
                                 elif command["params"][0] == "U25":
-                                    if command["params"][1] == "D1":
+                                    if command["total_params"] > 2:
+                                        if command["params"][1] == "D1":
+                                            try:
+                                                self.currentSplice = int(command["params"][2][1:], 16)
+                                                self._logger.info("Current splice: %s" % self.currentSplice)
+                                                self.updateUI()
+                                            except:
+                                                self._logger.info("Filament length command invalid: %s" % command)
+                                elif command["params"][0] == "U26":
+                                    if command["total_params"] > 1:
                                         try:
-                                            self.currentSplice = int(command["params"][2][1:], 16)
-                                            self._logger.info("Current splice: %s" % self.currentSplice)
+                                            self.filamentLength = int(command["params"][1][1:], 16)
+                                            self._logger.info("%smm used" % self.filamentLength)
                                             self.updateUI()
                                         except:
-                                            self._logger.info("Filament length command invalid: %s" % command)
-                                elif command["params"][0] == "U26":
-                                    try:
-                                        self.filamentLength = int(command["params"][1][1:], 16)
-                                        self._logger.info("%smm used" % self.filamentLength)
-                                        self.updateUI()
-                                    except:
-                                        self._logger.info("Filament length update invalid: %s" % command)
+                                            self._logger.info("Filament length update invalid: %s" % command)
                                 elif command["params"][0] == "U39":
                                     if command["total_params"] == 1:
                                         self.currentStatus = "Loading filament into extruder"
@@ -342,12 +346,12 @@ class Omega():
                                         self.updateUI()
                                         self.amountLeftToExtrude = ""
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[0]:
-                                    if command["params"][1] == "D0":
+                                    if command["total_params"] > 1 and command["params"][1] == "D0":
                                         self.currentStatus = "Loading ingoing drives"
                                         self.updateUI()
                                         self._logger.info("STARTING TO LOAD FIRST DRIVE")
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[-1]:
-                                    if command["params"][1] == "D1":
+                                    if command["total_params"] > 1 and command["params"][1] == "D1":
                                         self.currentStatus = "Loading filament through outgoing tube"
                                         self.updateUI()
                                         self._logger.info("FINISHED LOADING LAST DRIVE")
