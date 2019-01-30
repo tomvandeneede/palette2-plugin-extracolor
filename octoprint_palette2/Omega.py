@@ -9,16 +9,17 @@ import binascii
 import sys
 import json
 import requests
+from subprocess import call
+from Queue import Queue
+from dotenv import load_dotenv
 from ruamel.yaml import YAML
 yaml = YAML(typ="safe")
-from dotenv import load_dotenv
 env_path = os.path.abspath(".") + "/.env"
 if os.path.abspath(".") is "/":
     env_path = "/home/pi/.env"
 load_dotenv(env_path)
 BASE_URL_API = os.getenv("DEV_BASE_URL_API", "api.canvas3d.io/")
-from subprocess import call
-from Queue import Queue
+
 
 
 class Omega():
@@ -165,6 +166,10 @@ class Omega():
                     self._plugin_manager.send_plugin_message(
                         self._identifier, {"command": "selectedPort", "data": self.selectedPort})
                     self.updateUI()
+                    # SKELLATORE
+                    if self._settings.get(["AdvancedOptions"]):
+                        self.enqueueCmd("O68 D2")
+                    # /SKELLATORE
                     break
                 else:
                     time.sleep(0.01)
@@ -639,7 +644,7 @@ class Omega():
             self._logger.info("Omega: Got MU: %s" % self.header[4])
             drives = self.header[4][4:].split(" ")
             for index, drive in enumerate(drives):
-                if "D0" in drive:
+                if "D1" in drive:
                     if index == 0:
                         drives[index] = "U60"
                     elif index == 1:
@@ -802,16 +807,6 @@ class Omega():
 
         return hub_id, hub_token
 
-    def sendErrorReport(self, send):
-        if send:
-            self._logger.info("SENDING ERROR REPORT TO MOSAIC")
-            call(["tail -n 200 ~/.octoprint/logs/octoprint.log > ~/.mosaicdata/error_report.log"], shell=True)
-        else:
-            self._logger.info("NOT SENDING ERROR REPORT TO MOSAIC")
-
-    def startPrintFromHub(self):
-        self._logger.info("START PRINT FROM HERE")
-        self.enqueueCmd("O39")
 
     # SKELLATORE
     def advanced_reset_values(self):
@@ -820,9 +815,13 @@ class Omega():
         self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
         self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
         self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
+        self.advanced_queue_switch_status()
 
     def advanced_reset_print_values(self):
-        return
+        self.advanced_queue_switch_status()
+
+    def advanced_queue_switch_status(self):
+        self.enqueueCmd("O68 D2")
 
     def advanced_parse_line(self, line):
         # self._logger.info('ADVANCED:' + line)
@@ -831,6 +830,7 @@ class Omega():
             advanced_status = ''
             if 'O97 U25 D0' in line:
                 self._logger.info('ADVANCED: SPLICE START')
+                self.advanced_queue_switch_status()
                 if self.FeedrateControl:
                     self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
                     advanced_status = 'Slice Starting: Speed -> SLOW(%s)' % self.FeedrateSlowPct
@@ -856,6 +856,7 @@ class Omega():
                     self.updateUI()
             if 'O97 U25 D1' in line:
                 self._logger.info('ADVANCED: SPLICE END')
+                self.advanced_queue_switch_status()
                 if self.FeedrateControl:
                     self._logger.info('ADVANCED: Feed-rate NORMAL - ACTIVE (%s)' % self.FeedrateNormalPct)
                     advanced_status = 'Slice Finished: Speed -> NORMAL(%s) ' % self.FeedrateNormalPct
@@ -877,7 +878,7 @@ class Omega():
                     idx = line.find("O34")
                     parms = line[idx+7:].split(" ")
                     try:
-                        self._printer.commands("M117 Ping {} {}pct".format(str(int(parms[1][1:],16)), parms[0][1:]))
+                        self._printer.commands("M117 Ping {} {}pct".format(str(int(parms[1][1:], 16)), parms[0][1:]))
                         self.updateUI()
                     except ValueError:
                         self._printer.commands("M117 {}".format(line[idx+7:]))
@@ -929,7 +930,6 @@ class Omega():
                     self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:UISWITCHES=%s" % switch_status)
             if advanced_status != '':
                 self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:UIMESSAGE=%s" % advanced_status)
-                self.enqueueCmd("O68 D2")  # Queue Switch Status
 
         except Exception as e:
             # Something went wrong with the connection to Palette2
@@ -1002,7 +1002,6 @@ class Omega():
                 self.FeedrateSlowed = self._settings.get(["FeedrateSlowed"])
                 self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
                 self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
-                self.enqueueCmd("O68 D2")  # Queue Switch Status
         except Exception as e:
             print(e)
 
@@ -1016,7 +1015,7 @@ class Omega():
                 self.changeFeedrateNormalPct(data["value"])
             if command == "changeFeedrateSlowPct":
                 self.changeFeedrateSlowPct(data["value"])
-            self.palette.updateUI()
+            self.updateUI()
         except Exception as e:
             print(e)
     # /SKELLATORE

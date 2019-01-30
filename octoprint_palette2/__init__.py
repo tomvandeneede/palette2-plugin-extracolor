@@ -122,7 +122,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_event(self, event, payload):
         # SKELLATORE
-        self.palette.advanced_on_event(event, payload)
+        try:
+            self.palette.advanced_on_event(event, payload)
+        except Exception as e:
+            self._logger.info("Error whilst trying to call advanced_on_event %s" % str(e))
         # /SKELLATORE
         if "ClientOpened" in event:
             self.palette.printerConnection = self._printer.get_current_connection()[0]
