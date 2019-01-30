@@ -300,6 +300,8 @@ class Omega():
                                         self._logger.info("Palette work is done.")
                                     elif command["params"][1] == "D2":
                                         self._logger.info("CANCELLING START")
+                                        # self._logger.info(self._printer.is_cancelling())
+                                        #TODO: wait for bobby to fix cancelling
                                         self._printer.cancel_print()
                                         self.currentStatus = "Cancelling print"
                                         self.updateUI()
@@ -382,7 +384,7 @@ class Omega():
 
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
-            if self.connected is False:
+            if self.connected is False and not self._printer.is_printing():
                 self.connectOmega(self.selectedPort)
             time.sleep(1)
 
