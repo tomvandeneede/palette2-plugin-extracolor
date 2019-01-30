@@ -224,116 +224,138 @@ class Omega():
         try:
             while self.readThreadStop is False:
                 line = serialConnection.readline()
-                line = line.strip()
                 if line:
-                    self._logger.info("Omega: read in line: %s" % line)
-                if 'O20' in line:
-                    # send next line of data
-                    self.sendNextData(int(line[5]))
-                    if "D5" in line:
-                        self._logger.info("FIRST TIME USE WITH PALETTE")
-                        self.firstTime = True
-                        self.updateUI()
-                elif "O34" in line:
-                    commands = [command.strip() for command in line.split('D')]
-                    nature = commands[1]
-                    if nature == "0":
-                        self._logger.info("REJECTING PING")
-                    # if ping
-                    elif nature == "1":
-                        percent = commands[2]
-                        number = int(commands[3], 16)
-                        current = {"number": number, "percent": percent}
-                        self.pings.append(current)
-                    # else pong
-                    elif nature == "2":
-                        percent = commands[2]
-                        number = int(commands[3], 16)
-                        current = {"number": number, "percent": percent}
-                        self.pongs.append(current)
-                    self.updateUI()
-                elif "O40" in line:
-                    self.printPaused = False
-                    self.currentStatus = "Preparing splices"
-                    self.actualPrintStarted = True
-                    self.updateUI()
-                    self._printer.toggle_pause_print()
-                    self._logger.info("Splices being prepared.")
-                elif "O50" in line:
-                    self.sendAllMCFFilenamesToOmega()
-                elif "O53" in line:
-                    if "D1" in line:
-                        index_to_print = int(line[8:], 16)
-                        file = self.allMCFFiles[index_to_print]
-                        self.startPrintFromP2(file)
-                elif "O88" in line:
-                    error = int(line[5:], 16)
-                    self._logger.info("ERROR %d DETECTED" % error)
-                    if os.path.isdir(os.path.expanduser(
-                            '~') + "/.mosaicdata/"):
-                        self._printer.pause_print()
-                        self._plugin_manager.send_plugin_message(
-                            self._identifier, {"command": "error", "data": error})
-                elif "O97" in line:
-                    if "U26" in line:
-                        self.filamentLength = int(line[9:], 16)
-                        self._logger.info(self.filamentLength)
-                        self.updateUI()
-                    elif "U25" in line:
-                        if "D1" in line:
-                            self.currentSplice = int(line[12:], 16)
-                            self._logger.info(self.currentSplice)
+                    command = self.parseLine(line)
+                    self._logger.info("Omega: read in line: %s" % command)
+                    if command != None:
+                        if command["command"] == 20:
+                            if command["total_params"] == 1:
+                                if command["params"][0] == "D5":
+                                    self._logger.info("FIRST TIME USE WITH PALETTE")
+                                    self.firstTime = True
+                                    self.updateUI()
+                                else:
+                                    try:
+                                        param_1 = int(command["params"][0][1:])
+                                        # send next line of data
+                                        self.sendNextData(param_1)
+                                    except:
+                                        self._logger.info("Error occured with: %s" % command)
+                        elif command["command"] == 34:
+                            if command["total_params"] > 0:
+                                # if reject ping
+                                if command["params"][0] == "D0":
+                                    self._logger.info("REJECTING PING")
+                                # if ping
+                                elif command["params"][0] == "D1":
+                                    percent = command["params"][1][1:]
+                                    try:
+                                        number = int(command["params"][2][1:], 16)
+                                        current = {"number": number, "percent": percent}
+                                        self.pings.append(current)
+                                    except:
+                                        self._logger.info("Ping number invalid: %s" % command)
+                                # else pong
+                                elif command["params"][0] == "D2":
+                                    percent = command["params"][1][1:]
+                                    try:
+                                        number = int(command["params"][2][1:], 16)
+                                        current = {"number": number, "percent": percent}
+                                        self.pongs.append(current)
+                                    except:
+                                        self._logger.info("Pong number invalid: %s" % command)
+                                self.updateUI()
+                        elif command["command"] == 40:
+                            self.printPaused = False
+                            self.currentStatus = "Preparing splices"
+                            self.actualPrintStarted = True
                             self.updateUI()
-                    elif "U39" in line:
-                        if "D-" in line:
-                            self.amountLeftToExtrude = int(line[10:])
-                            self._logger.info(
-                                line[10:] + "mm left to extrude.")
-                            self.updateUI()
-                        elif "D" not in line:
-                            self.currentStatus = "Loading filament into extruder"
-                            self.updateUI()
-                            self._logger.info(
-                                "Filament must be loaded into extruder by user")
-                        elif "D0" in line:
-                            self.amountLeftToExtrude = 0
-                            self._logger.info("0" + "mm left to extrude.")
-                            self.updateUI()
-                            self.amountLeftToExtrude = ""
-                    elif self.drivesInUse[0] in line:
-                        if "D0" in line:
-                            self.currentStatus = "Loading ingoing drives"
-                            self.updateUI()
-                            self._logger.info("STARTING TO LOAD FIRST DRIVE")
-                    elif self.drivesInUse[-1] in line:
-                        if "D1" in line:
-                            self.currentStatus = "Loading filament through outgoing tube"
-                            self.updateUI()
-                            self._logger.info("FINISHED LOADING LAST DRIVE")
-                    elif "U0" in line:
-                        if "D0" in line:
-                            self.currentStatus = "Palette work completed: all splices prepared"
-                            self.updateUI()
-                            self._logger.info("Palette work is done.")
-                        elif "D2" in line:
-                            self._logger.info("CANCELLING START")
-                            self._printer.cancel_print()
-                            self.currentStatus = "Cancelling print"
-                            self.updateUI()
-                        elif "D3" in line:
-                            self._logger.info("CANCELLING END")
-                            self.currentStatus = "Print cancelled"
-                            self.updateUI()
-                elif "Connection Okay" in line:
-                    self.heartbeat = True
-                elif "UI:" in line:
-                    if "Ponging" in line:
-                        self.inPong = True
-                    elif "Finished Pong" in line:
-                        self.inPong = False
+                            self._printer.toggle_pause_print()
+                            self._logger.info("Splices being prepared.")
+                        elif command["command"] == 50:
+                            self.sendAllMCFFilenamesToOmega()
+                        elif command["command"] == 53:
+                            if command["total_params"] > 0:
+                                if command["params"][0] == "D1":
+                                    try:
+                                        index_to_print = int(command["params"][1][1:], 16)
+                                        file = self.allMCFFiles[index_to_print]
+                                        self.startPrintFromP2(file)
+                                    except:
+                                        self._logger.info("Print from P2 command invalid: %s" % command)
+                        elif command["command"] == 88:
+                            if command["total_params"] > 0:
+                                try:
+                                    error = int(command["params"][0][1:], 16)
+                                    self._logger.info("ERROR %d DETECTED" % error)
+                                    if os.path.isdir(os.path.expanduser('~') + "/.mosaicdata/"):
+                                        self._printer.pause_print()
+                                        self._plugin_manager.send_plugin_message(self._identifier, {"command": "error", "data": error})
+                                except:
+                                    self._logger.info("Error command invalid: %s" % command)
+                        elif command["command"] == 97:
+                            if command["total_params"] > 0:
+                                if command["params"][0] == "U0":
+                                    if command["params"][1] == "D0":
+                                        self.currentStatus = "Palette work completed: all splices prepared"
+                                        self.updateUI()
+                                        self._logger.info("Palette work is done.")
+                                    elif command["params"][1] == "D2":
+                                        self._logger.info("CANCELLING START")
+                                        self._printer.cancel_print()
+                                        self.currentStatus = "Cancelling print"
+                                        self.updateUI()
+                                    elif command["params"][1] == "D3":
+                                        self._logger.info("CANCELLING END")
+                                        self.currentStatus = "Print cancelled"
+                                        self.updateUI()
+                                elif command["params"][0] == "U25":
+                                    if command["params"][1] == "D1":
+                                        try:
+                                            self.currentSplice = int(command["params"][2][1:], 16)
+                                            self._logger.info(self.currentSplice)
+                                            self.updateUI()
+                                        except:
+                                            self._logger.info(
+                                                "Filament length command invalid: %s" % command)
+                                elif command["params"][0] == "U26":
+                                    try:
+                                        self.filamentLength = int(command["params"][1][1:], 16)
+                                        self._logger.info(self.filamentLength)
+                                        self.updateUI()
+                                    except:
+                                        self._logger.info("Filament length update invalid: %s" % command)
+                                elif command["params"][0] == "U39":
+                                    if command["total_params"] == 1:
+                                        self.currentStatus = "Loading filament into extruder"
+                                        self.updateUI()
+                                        self._logger.info("Filament must be loaded into extruder by user")
+                                    elif command["params"][1][0:2] == "D-":
+                                        try:
+                                            self.amountLeftToExtrude = int(command["params"][1][2:])
+                                            self._logger.info("%s mm left to extrude." % self.amountLeftToExtrude)
+                                            self.updateUI()
+                                        except:
+                                            self._logger.info("Filament extrusion update invalid: %s" % command)
+                                    elif command["params"][1][0:2] == "D0":
+                                        self.amountLeftToExtrude = 0
+                                        self._logger.info("0" + "mm left to extrude.")
+                                        self.updateUI()
+                                        self.amountLeftToExtrude = ""
+                                elif self.drivesInUse and command["params"][0] == self.drivesInUse[0]:
+                                    if command["params"][1] == "D0":
+                                        self.currentStatus = "Loading ingoing drives"
+                                        self.updateUI()
+                                        self._logger.info("STARTING TO LOAD FIRST DRIVE")
+                                elif self.drivesInUse and command["params"][0] == self.drivesInUse[-1]:
+                                    if command["params"][1] == "D1":
+                                        self.currentStatus = "Loading filament through outgoing tube"
+                                        self.updateUI()
+                                        self._logger.info("FINISHED LOADING LAST DRIVE")
             serialConnection.close()
         except Exception as e:
             # Something went wrong with the connection to Palette2
+            self._logger.info("Palette 2 connection error")
             self._logger.info(e)
 
     def omegaWriteThread(self, serialConnection):
@@ -411,12 +433,6 @@ class Omega():
             self._identifier, "UI:AmountLeftToExtrude=%s" % self.amountLeftToExtrude)
         self._plugin_manager.send_plugin_message(
             self._identifier, "UI:PalettePausedPrint=%s" % self.printPaused)
-        if self.inPong:
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:Ponging")
-        else:
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:Finished Pong")
 
     def sendNextData(self, dataNum):
         if dataNum == 0:
@@ -480,7 +496,6 @@ class Omega():
         self.msfNA = "0"
         self.nAlgorithms = 0
         self.currentSplice = "0"
-        self.inPong = False
         self.header = [None] * 9
         self.splices = []
         self.algorithms = []
@@ -520,7 +535,6 @@ class Omega():
         self.msfNA = "0"
         self.nAlgorithms = 0
         self.currentSplice = "0"
-        self.inPong = False
         self.header = [None] * 9
         self.splices = []
         self.algorithms = []
@@ -765,3 +779,40 @@ class Omega():
         hub_token = hub_yaml["canvas-hub"]["token"]
 
         return hub_id, hub_token
+
+    def parseLine(self, line):
+        line = line.strip()
+
+        # is the first character O
+        if line[0] == "O":
+            tokens = [token.strip() for token in line.split(" ")]
+
+            # make command object
+            command = {
+                "command": tokens[0],
+                "total_params": len(tokens) - 1,
+                "params": tokens[1:]
+            }
+
+            # verify command validity
+            try:
+                command["command"] = int(command["command"][1:])
+            except:
+                # self._logger.info("%s is not a valid command: %s" %(command["command"], line))
+                return None
+
+            # verify tokens' validity
+            if command["total_params"] > 0:
+                for param in command["params"]:
+                    if param[0] != "D" and param[0] != "U":
+                        # self._logger.info("%s is not a valid parameter: %s" % (param, line))
+                        return None
+
+            return command
+        # otherwise, is this line the heartbeat response?
+        elif line == "Connection Okay":
+            self.heartbeat = True
+            return None
+        else:
+            # self._logger.info("Invalid first character: %s" % line)
+            return None

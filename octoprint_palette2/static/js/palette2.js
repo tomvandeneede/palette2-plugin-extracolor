@@ -597,6 +597,11 @@ function OmegaViewModel(parameters) {
     } else if (self.currentStatus() === "Cancelling print") {
       omegaApp.printCancelAlert();
       self.removeNotification();
+    } else if (self.currentStatus() === "Preparing splices") {
+      // if user presses start from P2
+      if (Swal.isVisible()) {
+        Swal.close();
+      }
     }
   };
 
@@ -821,21 +826,6 @@ function OmegaViewModel(parameters) {
                 self.sendErrorReport(message.data, description);
               }
             });
-            // (async function getDescription() {
-            // const { value: description } = await Swal.fire({
-            //   title: "Please provide additional details (OPTIONAL)",
-            //   text:
-            //     "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occured, etc)",
-            //   customClass: "error-container",
-            //   input: "textarea",
-            //   inputClass: "error-textarea",
-            //   width: "40rem",
-            //   confirmButtonText: "Send"
-            // });
-            // if (description) {
-            //   console.log(description);
-            // }
-            // })();
           }
           // if user clicks no
           else if (result.dismiss === Swal.DismissReason.cancel) {
@@ -1004,14 +994,6 @@ function OmegaViewModel(parameters) {
         }
       }
     }
-
-    self.updatePongMsg = function(isPonging) {
-      if (isPonging) {
-        $("#ponging-span").removeClass("hide");
-      } else {
-        $("#ponging-span").addClass("hide");
-      }
-    };
   };
 }
 
