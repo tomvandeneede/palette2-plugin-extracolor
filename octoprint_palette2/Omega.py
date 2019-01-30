@@ -165,6 +165,9 @@ class Omega():
                     self._plugin_manager.send_plugin_message(
                         self._identifier, {"command": "selectedPort", "data": self.selectedPort})
                     self.updateUI()
+                    # SKELLATORE
+
+                    # /SKELLATORE
                     break
                 else:
                     time.sleep(0.01)
@@ -820,9 +823,13 @@ class Omega():
         self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
         self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
         self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
+        self.advanced_queue_switch_status()
 
     def advanced_reset_print_values(self):
-        return
+        self.advanced_queue_switch_status()
+
+    def advanced_queue_switch_status(self):
+        self.enqueueCmd("O68 D2")
 
     def advanced_parse_line(self, line):
         # self._logger.info('ADVANCED:' + line)
@@ -831,7 +838,7 @@ class Omega():
             advanced_status = ''
             if 'O97 U25 D0' in line:
                 self._logger.info('ADVANCED: SPLICE START')
-                self.enqueueCmd("O68 D2")  # Queue Switch Status
+                self.advanced_queue_switch_status()
                 if self.FeedrateControl:
                     self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
                     advanced_status = 'Slice Starting: Speed -> SLOW(%s)' % self.FeedrateSlowPct
@@ -856,8 +863,8 @@ class Omega():
                     self._logger.info('ADVANCED: Feed-rate Control: INACTIVE')
                     self.updateUI()
             if 'O97 U25 D1' in line:
-                self.enqueueCmd("O68 D2")  # Queue Switch Status
                 self._logger.info('ADVANCED: SPLICE END')
+                self.advanced_queue_switch_status()
                 if self.FeedrateControl:
                     self._logger.info('ADVANCED: Feed-rate NORMAL - ACTIVE (%s)' % self.FeedrateNormalPct)
                     advanced_status = 'Slice Finished: Speed -> NORMAL(%s) ' % self.FeedrateNormalPct
@@ -1003,7 +1010,6 @@ class Omega():
                 self.FeedrateSlowed = self._settings.get(["FeedrateSlowed"])
                 self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
                 self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
-                self.enqueueCmd("O68 D2")  # Queue Switch Status
         except Exception as e:
             print(e)
 
