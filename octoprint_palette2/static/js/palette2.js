@@ -136,18 +136,6 @@ omegaApp.extrusionAlert = firstTime => {
   }
 };
 
-omegaApp.readyToStartAlert = () => {
-  return swal({
-    title: "Filament in place and ready to go",
-    text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
-    type: "info",
-    input: "checkbox",
-    inputClass: "setup-checkbox",
-    inputPlaceholder: "Don't show me these setup alerts anymore"
-    // confirmButtonText: "START PRINT"
-  });
-};
-
 omegaApp.printCancelAlert = () => {
   return swal({
     title: "Print cancelling ",
@@ -883,10 +871,11 @@ function OmegaViewModel(parameters) {
     }
   };
 
-  self.sendErrorReport = send => {
+  self.sendErrorReport = (errorNumber, description) => {
     var payload = {
       command: "sendErrorReport",
-      send: send
+      errorNumber: errorNumber,
+      description: description
     };
     $.ajax({
       url: API_BASEURL + "plugin/palette2",
@@ -900,11 +889,11 @@ function OmegaViewModel(parameters) {
   self.readyToStartAlert = () => {
     return swal({
       title: "Filament in place and ready to go",
-      text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
+      text: `Please press "Start Print" below or directly on your Palette 2 screen to begin your print.`,
       type: "info",
       input: "checkbox",
       inputPlaceholder: "Don't show me these setup alerts anymore",
-      confirmButtonText: "START PRINT"
+      confirmButtonText: "Start Print"
     });
   };
 
@@ -915,16 +904,47 @@ function OmegaViewModel(parameters) {
       // /SKELLATORE
       if (message.command === "error") {
         omegaApp.errorAlert(message.data).then(result => {
-          sendToMosaic = false;
           // if user clicks yes
           if (result.value) {
-            sendToMosaic = true;
+            swal({
+              title: "Please provide additional details (OPTIONAL)",
+              text:
+                "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occured, etc)",
+              customClass: "error-container",
+              input: "textarea",
+              inputClass: "error-textarea",
+              width: "40rem",
+              confirmButtonText: "Send"
+            }).then(result => {
+              if (result.dismiss === Swal.DismissReason.cancel) {
+              } else {
+                description = "";
+                if (result.value) {
+                  description = result.value;
+                }
+
+                self.sendErrorReport(message.data, description);
+              }
+            });
+            // (async function getDescription() {
+            // const { value: description } = await Swal.fire({
+            //   title: "Please provide additional details (OPTIONAL)",
+            //   text:
+            //     "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occured, etc)",
+            //   customClass: "error-container",
+            //   input: "textarea",
+            //   inputClass: "error-textarea",
+            //   width: "40rem",
+            //   confirmButtonText: "Send"
+            // });
+            // if (description) {
+            //   console.log(description);
+            // }
+            // })();
           }
           // if user clicks no
           else if (result.dismiss === Swal.DismissReason.cancel) {
-            sendToMosaic = false;
           }
-          self.sendErrorReport(sendToMosaic);
         });
       } else if (message.command === "printHeartbeatCheck") {
         if (message.data === "P2NotConnected") {
@@ -1024,21 +1044,20 @@ function OmegaViewModel(parameters) {
             $("body").on("click", ".setup-checkbox input", event => {
               self.changeAlertSettings(event.target.checked);
             });
-            omegaApp.readyToStartAlert();
-            // .then(result => {
-            // if (result.hasOwnProperty("value")) {
-            // var payload = {
-            // command: "startPrint"
-            // };
-            // $.ajax({
-            // url: API_BASEURL + "plugin/palette2",
-            // type: "POST",
-            // dataType: "json",
-            // data: JSON.stringify(payload),
-            // contentType: "application/json; charset=UTF-8"
-            // });
-            // }
-            // });
+            self.readyToStartAlert().then(result => {
+              if (result.hasOwnProperty("value")) {
+                var payload = {
+                  command: "startPrint"
+                };
+                $.ajax({
+                  url: API_BASEURL + "plugin/palette2",
+                  type: "POST",
+                  dataType: "json",
+                  data: JSON.stringify(payload),
+                  contentType: "application/json; charset=UTF-8"
+                });
+              }
+            });
           }
         } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
           self.updateFilamentCountdown(true);

@@ -7,6 +7,16 @@ import subprocess
 import os
 import binascii
 import sys
+import json
+import requests
+from ruamel.yaml import YAML
+yaml = YAML(typ="safe")
+from dotenv import load_dotenv
+env_path = os.path.abspath(".") + "/.env"
+if os.path.abspath(".") is "/":
+    env_path = "/home/pi/.env"
+load_dotenv(env_path)
+BASE_URL_API = os.getenv("DEV_BASE_URL_API", "api.canvas3d.io/")
 from subprocess import call
 from Queue import Queue
 
@@ -279,9 +289,11 @@ class Omega():
                 elif "O88" in line:
                     error = int(line[5:], 16)
                     self._logger.info("ERROR %d DETECTED" % error)
-                    self._printer.pause_print()
-                    self._plugin_manager.send_plugin_message(
-                        self._identifier, {"command": "error", "data": error})
+                    if os.path.isdir(os.path.expanduser(
+                            '~') + "/.mosaicdata/"):
+                        self._printer.pause_print()
+                        self._plugin_manager.send_plugin_message(
+                            self._identifier, {"command": "error", "data": error})
                 elif "O97" in line:
                     if "U26" in line:
                         self.filamentLength = int(line[9:], 16)
@@ -342,7 +354,7 @@ class Omega():
             serialConnection.close()
         except Exception as e:
             # Something went wrong with the connection to Palette2
-            print(e)
+            self._logger.info(e)
 
     def omegaWriteThread(self, serialConnection):
         self._logger.info("Omega Write Thread: Starting Thread")
@@ -592,7 +604,7 @@ class Omega():
             timeout_start = time.time()
             # Wait for Palette to respond with a handshake within 5 seconds
             while not self.heartbeat and time.time() < timeout_start + timeout:
-                pass
+                time.sleep(0.01)
             if self.heartbeat:
                 self._logger.info("Palette did respond to O99")
                 self.enqueueCmd(cmd)
@@ -710,16 +722,85 @@ class Omega():
     def startPrintFromP2(self, file):
         self._printer.select_file(file, False, printAfterSelect=True)
 
-    def sendErrorReport(self, send):
-        if send:
-            self._logger.info("SENDING ERROR REPORT TO MOSAIC")
-            call(["tail -n 200 ~/.octoprint/logs/octoprint.log > ~/.mosaicdata/error_report.log"], shell=True)
+    def sendErrorReport(self, error_number, description):
+        self._logger.info("SENDING ERROR REPORT TO MOSAIC")
+        log_content = self.prepareErroReport(error_number, description)
+
+        hub_id, hub_token = self.getHubData()
+        url = "https://" + BASE_URL_API + "hubs/" + hub_id + "/log"
+        payload = {
+            "log": log_content
+        }
+        authorization = "Bearer " + hub_token
+        headers = {"Authorization": authorization}
+        try:
+            response = requests.post(url, json=payload, headers=headers).json()
+            if response.get("status") >= 300:
+                self._logger.info(response)
+            else:
+                self._logger.info("Email sent successfully")
+        except requests.exceptions.RequestException as e:
+            self._logger.info(e)
+
+    def prepareErroReport(self, error_number, description):
+        error_report_path = os.path.expanduser(
+            '~') + "/.mosaicdata/error_report.log"
+
+        # error number
+        error_report_log = open(error_report_path, "w")
+        error_report_log.write("===== ERROR %s =====\n\n" % error_number)
+
+        # plugins + versions
+        error_report_log.write("=== PLUGINS ===\n")
+        plugins = self._plugin_manager.plugins.keys()
+        for plugin in plugins:
+            error_report_log.write("%s: %s\n" % (
+                plugin, self._plugin_manager.get_plugin_info(plugin).version))
+
+        # Hub or DIY
+        error_report_log.write("\n=== TYPE ===\n")
+        if os.path.isdir("/home/pi/.mosaicdata/turquoise/"):
+            error_report_log.write("CANVAS HUB\n")
         else:
-            self._logger.info("NOT SENDING ERROR REPORT TO MOSAIC")
+            error_report_log.write("DIY HUB\n")
+
+        # description
+        if description:
+            error_report_log.write("\n=== USER ADDITIONAL DESCRIPTION ===\n")
+            error_report_log.write(description + "\n")
+
+        error_report_log.write("\n=== OCTOPRINT LOG ===\n")
+        error_report_log.close()
+
+        # OctoPrint log
+        octoprint_log_path = os.path.expanduser(
+            '~') + "/.octoprint/logs/octoprint.log"
+        linux_command = "tail -n 1000 %s >> %s" % (
+            octoprint_log_path, error_report_path)
+        call([linux_command], shell=True)
+
+        data = ""
+        with open(error_report_path, "r") as myfile:
+            data = myfile.read()
+
+        return data
 
     def startPrintFromHub(self):
         self._logger.info("START PRINT FROM HERE")
-        self.enqueueCmd("O39")
+        self.enqueueCmd("O39 D1")
+
+    def getHubData(self):
+        hub_file_path = os.path.expanduser(
+            '~') + "/.mosaicdata/canvas-hub-data.yml"
+
+        hub_data = open(hub_file_path, "r")
+        hub_yaml = yaml.load(hub_data)
+        hub_data.close()
+
+        hub_id = hub_yaml["canvas-hub"]["id"]
+        hub_token = hub_yaml["canvas-hub"]["token"]
+
+        return hub_id, hub_token
 
     def sendErrorReport(self, send):
         if send:
@@ -750,6 +831,7 @@ class Omega():
             advanced_status = ''
             if 'O97 U25 D0' in line:
                 self._logger.info('ADVANCED: SPLICE START')
+                self.enqueueCmd("O68 D2")  # Queue Switch Status
                 if self.FeedrateControl:
                     self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
                     advanced_status = 'Slice Starting: Speed -> SLOW(%s)' % self.FeedrateSlowPct
@@ -774,6 +856,7 @@ class Omega():
                     self._logger.info('ADVANCED: Feed-rate Control: INACTIVE')
                     self.updateUI()
             if 'O97 U25 D1' in line:
+                self.enqueueCmd("O68 D2")  # Queue Switch Status
                 self._logger.info('ADVANCED: SPLICE END')
                 if self.FeedrateControl:
                     self._logger.info('ADVANCED: Feed-rate NORMAL - ACTIVE (%s)' % self.FeedrateNormalPct)
@@ -796,7 +879,7 @@ class Omega():
                     idx = line.find("O34")
                     parms = line[idx+7:].split(" ")
                     try:
-                        self._printer.commands("M117 Ping {} {}pct".format(str(int(parms[1][1:],16)), parms[0][1:]))
+                        self._printer.commands("M117 Ping {} {}pct".format(str(int(parms[1][1:], 16)), parms[0][1:]))
                         self.updateUI()
                     except ValueError:
                         self._printer.commands("M117 {}".format(line[idx+7:]))
@@ -848,7 +931,6 @@ class Omega():
                     self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:UISWITCHES=%s" % switch_status)
             if advanced_status != '':
                 self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:UIMESSAGE=%s" % advanced_status)
-                self.enqueueCmd("O68 D2")  # Queue Switch Status
 
         except Exception as e:
             # Something went wrong with the connection to Palette2

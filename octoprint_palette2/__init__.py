@@ -19,9 +19,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                octoprint.plugin.EventHandlerPlugin,
                octoprint.plugin.ShutdownPlugin):
 
-    def on_after_startup(self):
-        self._logger.info("Palette 2 Plugin STARTED")
+    def get_sorting_key(self, context):
+        if context == "StartupPlugin.on_after_startup":
+            return 1
+        return None
 
+    def on_after_startup(self):
+        self._logger.info("%s Plugin STARTED" % self._plugin_info)
         if os.path.isdir("/home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/") and os.path.isdir("/home/pi/.mosaicdata/turquoise/"):
             call(["sudo rm -rf /home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"], shell=True)
             call(
@@ -64,7 +68,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
             displayPorts=["condition"],
-            sendErrorReport=["send"],
+            sendErrorReport=["errorNumber", "description"],
             startPrint=[],
             # SKELLATORE
             changeShowPingPongOnPrinter=["condition"],
@@ -102,7 +106,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "displayPorts":
             self.palette.displayPorts(data["condition"])
         elif command == "sendErrorReport":
-            self.palette.sendErrorReport(data["send"])
+            self.palette.sendErrorReport(
+                data["errorNumber"], data["description"])
         elif command == "startPrint":
             self.palette.startPrintFromHub()
         # SKELLATORE
