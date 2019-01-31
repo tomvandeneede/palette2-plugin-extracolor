@@ -132,14 +132,17 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
                 self.palette.updateUI()
+                self.palette.enqueueCmd("O9")
         elif "PrintFailed" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
                 self.palette.updateUI()
+                self.palette.enqueueCmd("O9")
         elif "PrintCancelled" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
                 self.palette.updateUI()
+                self.palette.enqueueCmd("O9")
         elif "FileAdded" in event:
             # User uploads a new file to Octoprint, we should update the demo list of files
             self.palette.getAllMCFFilenames()
@@ -169,15 +172,18 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette.shutdown()
 
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode=None, tags=None):
-        if "O31" in cmd:
-            self.palette.handlePing(cmd.strip())
-            return "G4 P10",
-        elif 'O' in cmd[0]:
-            self.palette.gotOmegaCmd(cmd)
-            return None,
-        elif 'M0' in cmd[0]:
-            return None,
-        # return gcode
+        if cmd is not None:
+            if len(cmd) > 1:
+                # TOdO
+                if "O31" in cmd:
+                    self.palette.handlePing(cmd.strip())
+                    return "G4 P10",
+                elif 'O' in cmd[0]:
+                    self.palette.gotOmegaCmd(cmd)
+                    return None,
+                elif 'M0' in cmd[0:2]:
+                    return None,
+                    # return gcode
 
     def support_msf_machinecode(*args, **kwargs):
         return dict(

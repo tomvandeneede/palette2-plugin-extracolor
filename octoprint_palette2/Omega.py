@@ -583,9 +583,7 @@ class Omega():
         self._printer.toggle_pause_print()
 
     def gotOmegaCmd(self, cmd):
-        # if "O0" in cmd:
-        #     self.enqueueCmd("O0")
-        if "O1 " in cmd:
+        if "O1" in cmd:
             timeout = 5
             timeout_start = time.time()
             # Wait for Palette to respond with a handshake within 5 seconds
@@ -612,8 +610,7 @@ class Omega():
             self._logger.info("Omega: Got Version: %s" % self.header[0])
         elif "O22" in cmd:
             self.header[1] = cmd
-            self._logger.info("Omega: Got Printer Profile: %s" %
-                              self.header[1])
+            self._logger.info("Omega: Got Printer Profile: %s" %self.header[1])
         elif "O23" in cmd:
             self.header[2] = cmd
             self._logger.info("Omega: Got Slicer Profile: %s" % self.header[2])
@@ -634,8 +631,7 @@ class Omega():
                         drives[index] = "U62"
                     elif index == 3:
                         drives[index] = "U63"
-            self.drivesInUse = list(
-                filter(lambda drive: drive != "D0", drives))
+            self.drivesInUse = list(filter(lambda drive: drive != "D0", drives))
             self._logger.info("Used Drives: %s" % self.drivesInUse)
         elif "O26" in cmd:
             self.header[5] = cmd
@@ -659,15 +655,15 @@ class Omega():
         elif "O30" in cmd:
             splice = (int(cmd[5:6]), cmd[8:])
             self.splices.append(splice)
-            self._logger.info("Omega: Got splice D: %s, dist: %s" %
-                              (splice[0], splice[1]))
+            self._logger.info("Omega: Got splice D: %s, dist: %s" %(splice[0], splice[1]))
         elif "O32" in cmd:
             self.algorithms.append(cmd)
             self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
         elif "O9" is cmd:
             # reset values
-            self.resetOmega()
+            # self.resetOmega()
             self.enqueueCmd(cmd)
+        #TODO: Keep this?
         else:
             self._logger.info("Omega: Got an Omega command '%s'" % cmd)
             self.enqueueCmd(cmd)
