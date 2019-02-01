@@ -143,17 +143,16 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "PrintCancelled" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
+                self._logger.info("THIS IS WHERE THE UPDATE COMES FROM")
                 self.palette.updateUI()
         elif "FileAdded" in event:
+            self.palette.getAllMCFFilenames()
             # User uploads a new file to Octoprint, we should update the demo list of files
-            self.palette.getAllMCFFilenames()
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:Refresh Demo List")
+            # self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "FileRemoved" in event:
-            # User removed a file from Octoprint, we should update the demo list of files
             self.palette.getAllMCFFilenames()
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:Refresh Demo List")
+            # User removed a file from Octoprint, we should update the demo list of files
+            # self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
             self._logger.info("Auto-reconnect: %s" %
                               str(self._settings.get(["autoconnect"])))

@@ -78,13 +78,18 @@ omegaApp.temperatureHighlight = () => {
 };
 
 /* 3.1 HIGHLIGHT TO HELP USER USE EXTRUSION CONTROLS */
-omegaApp.extrusionHighlight = () => {
+omegaApp.extrusionHighlight = firstFilamentValue => {
   $("body")
     .find("#control-jog-extrusion .input-mini.text-right")
     .addClass("highlight-glow")
     .on("focus", event => {
       $(event.target).removeClass("highlight-glow");
     });
+  if (firstFilamentValue) {
+    $("body")
+      .find("#control-jog-extrusion .input-mini.text-right")
+      .attr("placeholder", firstFilamentValue);
+  }
   $("body")
     .find("#control-jog-extrusion > div :nth-child(3)")
     .addClass("highlight-glow-border")
@@ -124,13 +129,13 @@ omegaApp.extrusionAlert = firstTime => {
   if (firstTime) {
     return swal({
       title: "Follow instructions on Palette 2 ",
-      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder until you see the desired color. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder until you see the desired color. To accurately load, we recommend setting the extrusion amount to a low number.`,
       type: "info"
     });
   } else {
     return swal({
       title: "Follow instructions on Palette 2 ",
-      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number.`,
       type: "info"
     });
   }
@@ -604,7 +609,7 @@ function OmegaViewModel(parameters) {
           });
         } else {
           omegaApp.extrusionAlert(false).then(res => {
-            omegaApp.extrusionHighlight();
+            omegaApp.extrusionHighlight(self.firstFilamentValue);
           });
         }
       }
@@ -967,6 +972,7 @@ function OmegaViewModel(parameters) {
           }
         } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
           self.updateFilamentCountdown(true);
+          self.firstFilamentValue = self.amountLeftToExtrude;
         } else if (self.amountLeftToExtrude.length && $("#jog-filament-notification").is(":visible")) {
           self.updateFilamentCountdown(false);
         }

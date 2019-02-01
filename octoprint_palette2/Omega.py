@@ -301,14 +301,14 @@ class Omega():
                                             self.updateUI()
                                             self._logger.info("Palette work is done.")
                                         elif command["params"][1] == "D2":
-                                            self._logger.info("CANCELLING START")
+                                            self._logger.info("P2 CANCELLING START")
                                             if not self.cancelFromHub and not self.cancelFromP2:
                                                 self.cancelFromP2 = True
                                                 self._printer.cancel_print()
                                             self.currentStatus = "Cancelling print"
                                             self.updateUI()
                                         elif command["params"][1] == "D3":
-                                            self._logger.info("CANCELLING END")
+                                            self._logger.info("P2 CANCELLING END")
                                             self.currentStatus = "Print cancelled"
                                             self.updateUI()
                                             self.cancelFromHub = False
