@@ -186,6 +186,13 @@ omegaApp.displayHeartbeatAlert = status => {
   }
 };
 
+/* 4.1 CLOSE ALERT */
+omegaApp.closeAlert = () => {
+  if (Swal.isVisible()) {
+    Swal.close();
+  }
+};
+
 /* ======================
 OMEGA VIEWMODEL FOR OCTOPRINT
 ======================= */
@@ -448,9 +455,16 @@ function OmegaViewModel(parameters) {
   };
 
   self.sendCancelCmd = () => {
-    self.omegaCommand("O0");
-    self.sendOmegaCmd();
-    self.omegaCommand("");
+    var payload = {
+      command: "cancelPalette2"
+    };
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
+    });
   };
 
   self.sendPrintStart = () => {
@@ -599,9 +613,10 @@ function OmegaViewModel(parameters) {
       self.removeNotification();
     } else if (self.currentStatus() === "Preparing splices") {
       // if user presses start from P2
-      if (Swal.isVisible()) {
-        Swal.close();
-      }
+      omegaApp.closeAlert();
+    } else if (self.currentStatus() === "Print cancelled") {
+      self.removeNotification();
+      omegaApp.closeAlert();
     }
   };
 
@@ -764,11 +779,17 @@ function OmegaViewModel(parameters) {
     }
   };
 
+  self.onEventPrintCancelling = payload => {
+    self.currentStatus("Cancelling print");
+    self.updateCurrentStatus();
+  };
+
   self.onEventPrintCancelled = payload => {
     if (payload.name.includes(".mcf.gcode")) {
       self.currentStatus("Print cancelled");
       self.findCurrentFilename();
       self.updateCurrentStatus();
+      self.removeNotification();
       self.sendCancelCmd();
     }
   };

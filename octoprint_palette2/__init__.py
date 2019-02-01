@@ -68,8 +68,12 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def on_api_command(self, command, data):
         self._logger.info("Got a command %s" % command)
         if command == "cancelPalette2":
-            self._logger.info("Cancelling print")
-            self.palette.enqueueCmd("O0")
+            if not self.palette.cancelFromP2:
+                self._logger.info("Cancelling print from Hub")
+                self.palette.cancelFromHub = True
+                self.palette.cancel()
+            else:
+                self._logger.info("Cancel already done from P2.")
         elif command == "clearPalette2":
             self.palette.clear()
         elif command == "connectOmega":

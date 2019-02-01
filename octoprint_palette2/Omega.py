@@ -302,15 +302,17 @@ class Omega():
                                             self._logger.info("Palette work is done.")
                                         elif command["params"][1] == "D2":
                                             self._logger.info("CANCELLING START")
-                                            # self._logger.info(self._printer.is_cancelling())
-                                            #TODO: wait for bobby to fix cancelling
-                                            self._printer.cancel_print()
+                                            if not self.cancelFromHub and not self.cancelFromP2:
+                                                self.cancelFromP2 = True
+                                                self._printer.cancel_print()
                                             self.currentStatus = "Cancelling print"
                                             self.updateUI()
                                         elif command["params"][1] == "D3":
                                             self._logger.info("CANCELLING END")
                                             self.currentStatus = "Print cancelled"
                                             self.updateUI()
+                                            self.cancelFromHub = False
+                                            self.cancelFromP2 = False
                                 elif command["params"][0] == "U25":
                                     if command["total_params"] > 2:
                                         if command["params"][1] == "D1":
@@ -319,7 +321,7 @@ class Omega():
                                                 self._logger.info("Current splice: %s" % self.currentSplice)
                                                 self.updateUI()
                                             except:
-                                                self._logger.info("Filament length command invalid: %s" % command)
+                                                self._logger.info("Splice command invalid: %s" % command)
                                 elif command["params"][0] == "U26":
                                     if command["total_params"] > 1:
                                         try:
@@ -406,6 +408,9 @@ class Omega():
                      "O10 D2 D0 D0 DFFE1", "O10 D3 D0 D0 DFFE1", "O10 D4 D0 D0 D0069"]
         for command in clearCmds:
             self.enqueueCmd(command)
+
+    def cancel(self):
+        self.enqueueCmd("O0")
 
     def updateUI(self):
         self._logger.info("Sending UIUpdate from Palette")
@@ -533,6 +538,8 @@ class Omega():
         self.pings = []
         self.pongs = []
         self.printHeartbeatCheck = ""
+        self.cancelFromHub = False
+        self.cancelFromP2 = False
 
         self.filename = ""
 
@@ -572,6 +579,8 @@ class Omega():
         self.pings = []
         self.pongs = []
         self.printHeartbeatCheck = ""
+        self.cancelFromHub = False
+        self.cancelFromP2 = False
 
         self.filename = ""
 
