@@ -668,7 +668,6 @@ class Omega():
                 time.sleep(0.01)
             if self.heartbeat:
                 self._logger.info("Palette did respond to O99")
-                self.enqueueCmd("O9")
                 self.enqueueCmd(cmd)
                 self.currentStatus = "Initializing ..."
                 self.palette2SetupStarted = True

@@ -140,7 +140,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
                 self.palette.updateUI()
-                self.palette.enqueueCmd("O9")
         elif "FileAdded" in event:
             # User uploads a new file to Octoprint, we should update the demo list of files
             self.palette.getAllMCFFilenames()
