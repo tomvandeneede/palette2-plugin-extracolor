@@ -132,12 +132,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
                 self.palette.updateUI()
-                self.palette.enqueueCmd("O9")
         elif "PrintFailed" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
                 self.palette.updateUI()
-                self.palette.enqueueCmd("O9")
         elif "PrintCancelled" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
@@ -158,7 +156,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                               str(self._settings.get(["autoconnect"])))
             self._logger.info("Display alerts: %s" % str(
                 self._settings.get(["palette2Alerts"])))
-            # self.palette.updateUI()
             self._plugin_manager.send_plugin_message(
                 self._identifier, "UI:AutoConnect=%s" % self._settings.get(["autoconnect"]))
             self._plugin_manager.send_plugin_message(
@@ -172,18 +169,16 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette.shutdown()
 
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode=None, tags=None):
-        if cmd is not None:
-            if len(cmd) > 1:
-                # TOdO
-                if "O31" in cmd:
-                    self.palette.handlePing(cmd.strip())
-                    return "G4 P10",
-                elif 'O' in cmd[0]:
-                    self.palette.gotOmegaCmd(cmd)
-                    return None,
-                elif 'M0' in cmd[0:2]:
-                    return None,
-                    # return gcode
+        if cmd is not None and len(cmd) > 1:
+            if "O31" in cmd:
+                self.palette.handlePing(cmd.strip())
+                return "G4 P10",
+            elif 'O' in cmd[0]:
+                self.palette.gotOmegaCmd(cmd)
+                return None,
+            elif 'M0' in cmd[0:2]:
+                return None,
+                # return gcode
 
     def support_msf_machinecode(*args, **kwargs):
         return dict(

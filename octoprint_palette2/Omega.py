@@ -444,25 +444,35 @@ class Omega():
 
     def sendNextData(self, dataNum):
         if dataNum == 0:
-            self.enqueueCmd(self.header[self.sentCounter])
-            self._logger.info("Omega: Sent '%s'" % self.sentCounter)
-            self.sentCounter = self.sentCounter + 1
+            try:
+                self.enqueueCmd(self.header[self.sentCounter])
+                self._logger.info("Omega: Sent '%s'" % self.sentCounter)
+                self.sentCounter = self.sentCounter + 1
+            except:
+                self._logger.info("Incorrect header information: %s" % self.header)
+                self._logger.info("Sent counter: %s" % self.sentCounter)
+        elif dataNum == 1:
+            try:
+                self._logger.info("Omega: send splice")
+                splice = self.splices[self.spliceCounter]
+                cmdStr = "O30 D%d D%s\n" % (int(splice[0]), splice[1])
+                self.enqueueCmd(cmdStr)
+                self.spliceCounter = self.spliceCounter + 1
+            except:
+                self._logger.info("Incorrect splice information: %s" % self.splices)
+                self._logger.info("Splice counter: %s" % self.spliceCounter)
         elif dataNum == 2:
-            self._logger.info(
-                "Sending ping: %s to Palette on request" % self.currentPingCmd)
+            self._logger.info("Sending ping: %s to Palette on request" % self.currentPingCmd)
             self.enqueueCmd(self.currentPingCmd)
         elif dataNum == 4:
-            self._logger.info("Omega: send algo")
-            self.enqueueCmd(self.algorithms[self.algoCounter])
-            self._logger.info("Omega: Sent '%s'" %
-                              self.algorithms[self.algoCounter])
-            self.algoCounter = self.algoCounter + 1
-        elif dataNum == 1:
-            self._logger.info("Omega: send splice")
-            splice = self.splices[self.spliceCounter]
-            cmdStr = "O30 D%d D%s\n" % (int(splice[0]), splice[1])
-            self.enqueueCmd(cmdStr)
-            self.spliceCounter = self.spliceCounter + 1
+            try:
+                self._logger.info("Omega: send algo")
+                self.enqueueCmd(self.algorithms[self.algoCounter])
+                self._logger.info("Omega: Sent '%s'" % self.algorithms[self.algoCounter])
+                self.algoCounter = self.algoCounter + 1
+            except:
+                self._logger.info("Incorrect algo information: %s" % self.algorithms)
+                self._logger.info("Algo counter: %s" % self.algoCounter)
         elif dataNum == 8:
             self._logger.info("Need to resend last line")
             self.enqueueCmd(self.lastCommandSent)
@@ -583,7 +593,74 @@ class Omega():
         self._printer.toggle_pause_print()
 
     def gotOmegaCmd(self, cmd):
-        if "O1" in cmd:
+        if "O1" not in cmd:
+            if "O21" in cmd:
+                self.header[0] = cmd
+                self._logger.info("Omega: Got Version: %s" % self.header[0])
+            elif "O22" in cmd:
+                self.header[1] = cmd
+                self._logger.info("Omega: Got Printer Profile: %s" %self.header[1])
+            elif "O23" in cmd:
+                self.header[2] = cmd
+                self._logger.info("Omega: Got Slicer Profile: %s" % self.header[2])
+            elif "O24" in cmd:
+                self.header[3] = cmd
+                self._logger.info("Omega: Got PPM Adjustment: %s" % self.header[3])
+            elif "O25" in cmd:
+                self.header[4] = cmd
+                self._logger.info("Omega: Got MU: %s" % self.header[4])
+                drives = self.header[4][4:].split(" ")
+                for index, drive in enumerate(drives):
+                    if not "D0" in drive:
+                        if index == 0:
+                            drives[index] = "U60"
+                        elif index == 1:
+                            drives[index] = "U61"
+                        elif index == 2:
+                            drives[index] = "U62"
+                        elif index == 3:
+                            drives[index] = "U63"
+                self.drivesInUse = list(filter(lambda drive: drive != "D0", drives))
+                self._logger.info("Used Drives: %s" % self.drivesInUse)
+            elif "O26" in cmd:
+                self.header[5] = cmd
+                try:
+                    self.msfNS = int(cmd[5:], 16)
+                    self._logger.info("Omega: Got NS: %s" % self.header[5])
+                    self.updateUI()
+                except:
+                    self._logger.info("NS information not properly formatted: %s" % cmd)
+            elif "O27" in cmd:
+                self.header[6] = cmd
+                try:
+                    self.totalPings = int(cmd[5:], 16)
+                    self._logger.info("Omega: Got NP: %s" % self.header[6])
+                    self._logger.info("TOTAL PINGS: %s" % self.totalPings)
+                    self.updateUI()
+                except:
+                    self._logger.info("NP information not properly formatted: %s" % cmd)
+            elif "O28" in cmd:
+                self.header[7] = cmd
+                try:
+                    self.msfNA = cmd[5:]
+                    self.nAlgorithms = int(self.msfNA, 16)
+                    self._logger.info("Omega: Got NA: %s" % self.header[7])
+                except:
+                    self._logger.info("NA information not properly formatted: %s" % cmd)
+            elif "O29" in cmd:
+                self.header[8] = cmd
+                self._logger.info("Omega: Got NH: %s" % self.header[8])
+            elif "O30" in cmd:
+                try:
+                    splice = (int(cmd[5:6]), cmd[8:])
+                    self.splices.append(splice)
+                    self._logger.info("Omega: Got splice D: %s, dist: %s" %(splice[0], splice[1]))
+                except:
+                    self._logger.info("Splice information not properly formatted: %s" % cmd)
+            elif "O32" in cmd:
+                self.algorithms.append(cmd)
+                self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
+        elif "O1" in cmd:
             timeout = 5
             timeout_start = time.time()
             # Wait for Palette to respond with a handshake within 5 seconds
@@ -591,6 +668,7 @@ class Omega():
                 time.sleep(0.01)
             if self.heartbeat:
                 self._logger.info("Palette did respond to O99")
+                self.enqueueCmd("O9")
                 self.enqueueCmd(cmd)
                 self.currentStatus = "Initializing ..."
                 self.palette2SetupStarted = True
@@ -605,67 +683,13 @@ class Omega():
                 self.disconnect()
                 self._logger.info("NO P2 detected. Cancelling print")
                 self._printer.cancel_print()
-        elif "O21" in cmd:
-            self.header[0] = cmd
-            self._logger.info("Omega: Got Version: %s" % self.header[0])
-        elif "O22" in cmd:
-            self.header[1] = cmd
-            self._logger.info("Omega: Got Printer Profile: %s" %self.header[1])
-        elif "O23" in cmd:
-            self.header[2] = cmd
-            self._logger.info("Omega: Got Slicer Profile: %s" % self.header[2])
-        elif "O24" in cmd:
-            self.header[3] = cmd
-            self._logger.info("Omega: Got PPM Adjustment: %s" % self.header[3])
-        elif "O25" in cmd:
-            self.header[4] = cmd
-            self._logger.info("Omega: Got MU: %s" % self.header[4])
-            drives = self.header[4][4:].split(" ")
-            for index, drive in enumerate(drives):
-                if not "D0" in drive:
-                    if index == 0:
-                        drives[index] = "U60"
-                    elif index == 1:
-                        drives[index] = "U61"
-                    elif index == 2:
-                        drives[index] = "U62"
-                    elif index == 3:
-                        drives[index] = "U63"
-            self.drivesInUse = list(filter(lambda drive: drive != "D0", drives))
-            self._logger.info("Used Drives: %s" % self.drivesInUse)
-        elif "O26" in cmd:
-            self.header[5] = cmd
-            self.msfNS = int(cmd[5:], 16)
-            self._logger.info("Omega: Got NS: %s" % self.header[5])
-            self.updateUI()
-        elif "O27" in cmd:
-            self.header[6] = cmd
-            self.totalPings = int(cmd[5:], 16)
-            self._logger.info("Omega: Got NP: %s" % self.header[6])
-            self._logger.info("TOTAL PINGS: %s" % self.totalPings)
-            self.updateUI()
-        elif "O28" in cmd:
-            self.msfNA = cmd[5:]
-            self.nAlgorithms = int(self.msfNA, 16)
-            self.header[7] = cmd
-            self._logger.info("Omega: Got NA: %s" % self.header[7])
-        elif "O29" in cmd:
-            self.header[8] = cmd
-            self._logger.info("Omega: Got NH: %s" % self.header[8])
-        elif "O30" in cmd:
-            splice = (int(cmd[5:6]), cmd[8:])
-            self.splices.append(splice)
-            self._logger.info("Omega: Got splice D: %s, dist: %s" %(splice[0], splice[1]))
-        elif "O32" in cmd:
-            self.algorithms.append(cmd)
-            self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
-        elif "O9" is cmd:
+        elif cmd == "O9":
             # reset values
             # self.resetOmega()
+            self._logger.info("Omega: Soft resetting P2: %s" % cmd)
             self.enqueueCmd(cmd)
-        #TODO: Keep this?
         else:
-            self._logger.info("Omega: Got an Omega command '%s'" % cmd)
+            self._logger.info("Omega: Got another Omega command '%s'" % cmd)
             self.enqueueCmd(cmd)
 
     def changeAlertSettings(self, condition):
