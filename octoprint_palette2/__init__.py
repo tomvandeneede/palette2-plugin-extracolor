@@ -28,8 +28,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self._logger.info("%s Plugin STARTED" % self._plugin_info)
         if os.path.isdir("/home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/") and os.path.isdir("/home/pi/.mosaicdata/turquoise/"):
             call(["sudo rm -rf /home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"], shell=True)
-            call(
-                ["sudo chown -R pi:pi /home/pi/OctoPrint/venv/lib/python2.7/site-packages/"], shell=True)
+            call(["sudo chown -R pi:pi /home/pi/OctoPrint/venv/lib/python2.7/site-packages/"], shell=True)
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
@@ -90,7 +89,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "connectWifi":
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "uiUpdate":
-            self.palette.updateUI()
+            self.palette.updateUIAll()
         elif command == "changeAlertSettings":
             self.palette.changeAlertSettings(data["condition"])
         elif command == "displayPorts":
@@ -109,42 +108,52 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_event(self, event, payload):
         if "ClientOpened" in event:
-            self.palette.printerConnection = self._printer.get_current_connection()[
-                0]
-            self.palette.updateUI()
-            self.palette.printerConnection = ""
+            self.palette.updateUIAll()
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
                 self._logger.info("PRINT STARTED P2")
                 self.palette.resetPrintValues()
                 self.palette.tryHeartbeatBeforePrint()
-                self._logger.info("Filename: %s" %
-                                  payload["name"].split('.')[0])
+                self._logger.info("Filename: %s" % payload["name"].split('.')[0])
                 self.palette.setFilename(payload["name"].split(".")[0])
-                self.palette.updateUI()
+                self.palette.updateUIAll()
                 self.palette.printHeartbeatCheck = ""
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True
-                self.palette.updateUI()
+                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
         elif "PrintResumed" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.palette2SetupStarted = False
                 self.palette.printPaused = False
-                self.palette.updateUI()
+                self.palette.updateUI({"command": "palette2SetupStarted", "data": self.palette.palette2SetupStarted})
+                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
         elif "PrintDone" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
-                self.palette.updateUI()
+                self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
         elif "PrintFailed" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
-                self.palette.updateUI()
+                self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
+        elif "PrintCancelling" in event:
+            if ".mcf.gcode" in payload["name"] and self.palette.connected:
+                self.palette.currentStatus = "Cancelling print"
+                self.palette.updateUI({"command": "currentStatus", "data": self.palette.currentStatus})
+                self.palette.updateUI({"command": "alert", "data": "cancelling"})
         elif "PrintCancelled" in event:
-            if ".mcf.gcode" in payload["name"]:
+            if ".mcf.gcode" in payload["name"] and self.palette.connected:
                 self.palette.actualPrintStarted = False
-                self._logger.info("THIS IS WHERE THE UPDATE COMES FROM")
-                self.palette.updateUI()
+                self.palette.currentStatus = "Print cancelled"
+                self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
+                self.palette.updateUI({"command": "currentStatus", "data": self.palette.currentStatus})
+                self.palette.updateUI({"command": "alert", "data": "cancelled"})
+                if not self.palette.cancelFromP2:
+                    self._logger.info("Cancelling print from Hub")
+                    self.palette.cancelFromHub = True
+                    self.palette.cancel()
+                else:
+                    self._logger.info("Cancel already done from P2.")
         elif "FileAdded" in event:
             self.palette.getAllMCFFilenames()
             # User uploads a new file to Octoprint, we should update the demo list of files
@@ -154,14 +163,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             # User removed a file from Octoprint, we should update the demo list of files
             # self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
-            self._logger.info("Auto-reconnect: %s" %
-                              str(self._settings.get(["autoconnect"])))
-            self._logger.info("Display alerts: %s" % str(
-                self._settings.get(["palette2Alerts"])))
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:AutoConnect=%s" % self._settings.get(["autoconnect"]))
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:DisplayAlerts=%s" % self._settings.get(["palette2Alerts"]))
+            self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
+            self._logger.info("Display alerts: %s" % str(self._settings.get(["palette2Alerts"])))
+            self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
+            self.palette.updateUI({"command": "displayAlert", "data": self._settings.get(["palette2Alerts"])})
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
             else:

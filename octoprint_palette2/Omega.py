@@ -69,10 +69,8 @@ class Omega():
         if self.ports and not self.selectedPort:
             self.selectedPort = self.ports[0]
         self._logger.info(self.selectedPort)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "ports", "data": self.ports})
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "selectedPort", "data": self.selectedPort})
+        self.updateUI({"command": "ports", "data": self.ports})
+        self.updateUI({"command": "selectedPort", "data": self.selectedPort})
 
     def getRealPaths(self, ports):
         self._logger.info(ports)
@@ -111,22 +109,22 @@ class Omega():
                     port = self.ports[0]
                 if self.isPrinterPort(port):
                     self._logger.info("This is the printer port. Will not connect to this.")
-                    self.updateUI()
+                    self.updateUIAll()
                 else:
                     try:
                         self.omegaSerial = serial.Serial(
-                            port, 250000, timeout=0.5)
+                            port, 115200, timeout=0.5)
                         self.connected = True
                         self.tryHeartbeat(port)
                     except:
                         self._logger.info("Another resource is connected to port")
-                        self.updateUI()
+                        self.updateUIAll()
             else:
                 self._logger.info("Unable to find port")
-                self.updateUI()
+                self.updateUIAll()
         else:
             self._logger.info("Already Connected")
-            self.updateUI()
+            self.updateUIAll()
 
     def tryHeartbeat(self, port):
         if self.connected:
@@ -143,18 +141,16 @@ class Omega():
                     self.connected = True
                     self._logger.info("Connected to Omega")
                     self.selectedPort = port
-                    self._plugin_manager.send_plugin_message(
-                        self._identifier, {"command": "selectedPort", "data": self.selectedPort})
-                    self.updateUI()
+                    self.updateUI({"command": "selectedPort", "data": self.selectedPort})
+                    self.updateUIAll()
                     break
                 else:
                     time.sleep(0.01)
             if not self.heartbeat:
-                self._logger.info(
-                    "Palette is not turned on OR this is not the serial port for Palette.")
+                self._logger.info("Palette is not turned on OR this is not the serial port for Palette.")
                 self.resetVariables()
                 self.resetConnection()
-                self.updateUI()
+                self.updateUIAll()
 
     def tryHeartbeatBeforePrint(self):
         self.heartbeat = False
@@ -231,7 +227,7 @@ class Omega():
                                 if command["params"][0] == "D5":
                                     self._logger.info("FIRST TIME USE WITH PALETTE")
                                     self.firstTime = True
-                                    self.updateUI()
+                                    self.updateUI({"command": "firstTime", "data": self.firstTime})
                                 else:
                                     try:
                                         param_1 = int(command["params"][0][1:])
@@ -252,6 +248,7 @@ class Omega():
                                         number = int(command["params"][2][1:], 16)
                                         current = {"number": number, "percent": percent}
                                         self.pings.append(current)
+                                        self.updateUI({"command": "pings", "data": self.pings})
                                     except:
                                         self._logger.info("Ping number invalid: %s" % command)
                                 # else pong
@@ -261,14 +258,17 @@ class Omega():
                                         number = int(command["params"][2][1:], 16)
                                         current = {"number": number, "percent": percent}
                                         self.pongs.append(current)
+                                        self.updateUI({"command": "pongs", "data": self.pongs})
                                     except:
                                         self._logger.info("Pong number invalid: %s" % command)
-                                self.updateUI()
                         elif command["command"] == 40:
                             self.printPaused = False
                             self.currentStatus = "Preparing splices"
                             self.actualPrintStarted = True
-                            self.updateUI()
+                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                            self.updateUI({"command": "printPaused", "data": self.printPaused})
+                            self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
+                            self.updateUI({"command": "alert", "data": "printStarted"})
                             self._printer.toggle_pause_print()
                             self._logger.info("Splices being prepared.")
                         elif command["command"] == 50:
@@ -289,7 +289,7 @@ class Omega():
                                     self._logger.info("ERROR %d DETECTED" % error)
                                     if os.path.isdir(os.path.expanduser('~') + "/.mosaicdata/"):
                                         self._printer.pause_print()
-                                        self._plugin_manager.send_plugin_message(self._identifier, {"command": "error", "data": error})
+                                        self.updateUI({"command": "error", "data": error})
                                 except:
                                     self._logger.info("Error command invalid: %s" % command)
                         elif command["command"] == 97:
@@ -298,7 +298,7 @@ class Omega():
                                     if command["total_params"] > 1:
                                         if command["params"][1] == "D0":
                                             self.currentStatus = "Palette work completed: all splices prepared"
-                                            self.updateUI()
+                                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
                                             self._logger.info("Palette work is done.")
                                         elif command["params"][1] == "D2":
                                             self._logger.info("P2 CANCELLING START")
@@ -306,11 +306,13 @@ class Omega():
                                                 self.cancelFromP2 = True
                                                 self._printer.cancel_print()
                                             self.currentStatus = "Cancelling print"
-                                            self.updateUI()
+                                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                                            self.updateUI({"command": "alert", "data": "cancelling"})
                                         elif command["params"][1] == "D3":
                                             self._logger.info("P2 CANCELLING END")
                                             self.currentStatus = "Print cancelled"
-                                            self.updateUI()
+                                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                                            self.updateUI({"command": "alert", "data": "cancelled"})
                                             self.cancelFromHub = False
                                             self.cancelFromP2 = False
                                 elif command["params"][0] == "U25":
@@ -319,7 +321,7 @@ class Omega():
                                             try:
                                                 self.currentSplice = int(command["params"][2][1:], 16)
                                                 self._logger.info("Current splice: %s" % self.currentSplice)
-                                                self.updateUI()
+                                                self.updateUI({"command": "currentSplice", "data": self.currentSplice})
                                             except:
                                                 self._logger.info("Splice command invalid: %s" % command)
                                 elif command["params"][0] == "U26":
@@ -327,35 +329,39 @@ class Omega():
                                         try:
                                             self.filamentLength = int(command["params"][1][1:], 16)
                                             self._logger.info("%smm used" % self.filamentLength)
-                                            self.updateUI()
+                                            self.updateUI({"command": "filamentLength", "data": self.filamentLength})
                                         except:
                                             self._logger.info("Filament length update invalid: %s" % command)
                                 elif command["params"][0] == "U39":
                                     if command["total_params"] == 1:
                                         self.currentStatus = "Loading filament into extruder"
-                                        self.updateUI()
+                                        self.updateUI({"command": "alert", "data": "extruder"})
+                                        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
                                         self._logger.info("Filament must be loaded into extruder by user")
                                     elif command["params"][1][0:2] == "D-":
                                         try:
                                             self.amountLeftToExtrude = int(command["params"][1][2:])
                                             self._logger.info("%s mm left to extrude." % self.amountLeftToExtrude)
-                                            self.updateUI()
+                                            self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
                                         except:
                                             self._logger.info("Filament extrusion update invalid: %s" % command)
                                     elif command["params"][1][0:2] == "D0":
                                         self.amountLeftToExtrude = 0
                                         self._logger.info("0" + "mm left to extrude.")
-                                        self.updateUI()
+                                        self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
+                                        if not self.cancelFromHub or not self.cancelFromP2:
+                                            self.updateUI({"command": "alert", "data": "startPrint"})
                                         self.amountLeftToExtrude = ""
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[0]:
                                     if command["total_params"] > 1 and command["params"][1] == "D0":
                                         self.currentStatus = "Loading ingoing drives"
-                                        self.updateUI()
+                                        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
                                         self._logger.info("STARTING TO LOAD FIRST DRIVE")
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[-1]:
                                     if command["total_params"] > 1 and command["params"][1] == "D1":
                                         self.currentStatus = "Loading filament through outgoing tube"
-                                        self.updateUI()
+                                        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                                        self.updateUI({"command": "alert", "data": "temperature"})
                                         self._logger.info("FINISHED LOADING LAST DRIVE")
             serialConnection.close()
         except Exception as e:
@@ -412,40 +418,29 @@ class Omega():
     def cancel(self):
         self.enqueueCmd("O0")
 
-    def updateUI(self):
-        self._logger.info("Sending UIUpdate from Palette")
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "pings", "data": self.pings})
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "pongs", "data": self.pongs})
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:ActualPrintStarted=%s" % self.actualPrintStarted)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:Palette2SetupStarted=%s" % self.palette2SetupStarted)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:AutoConnect=%s" % self._settings.get(["autoconnect"]))
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:FirstTime=%s" % self.firstTime)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:PrinterCon=%s" % self.printerConnection)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:DisplayAlerts=%s" % self._settings.get(["palette2Alerts"]))
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:currentStatus=%s" % self.currentStatus)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:nSplices=%s" % self.msfNS)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:currentSplice=%s" % self.currentSplice)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:Con=%s" % self.connected)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:FilamentLength=%s" % self.filamentLength)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:AmountLeftToExtrude=%s" % self.amountLeftToExtrude)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:PalettePausedPrint=%s" % self.printPaused)
+    def updateUIAll(self):
+        self._logger.info("Updating all UI variables")
+        self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck}, True)
+        self.updateUI({"command": "pings", "data": self.pings}, True)
+        self.updateUI({"command": "pongs", "data": self.pongs}, True)
+        self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted}, True)
+        self.updateUI({"command": "palette2SetupStarted", "data": self.palette2SetupStarted}, True)
+        self.updateUI({"command": "displayAlert", "data": self._settings.get(["palette2Alerts"])}, True)
+        self.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])}, True)
+        self.updateUI({"command": "firstTime", "data": self.firstTime}, True)
+        self.updateUI({"command": "printerConnection", "data": self._printer.get_current_connection()[0]}, True)
+        self.updateUI({"command": "currentStatus", "data": self.currentStatus}, True)
+        self.updateUI({"command": "totalSplices", "data": self.msfNS}, True)
+        self.updateUI({"command": "currentSplice", "data": self.currentSplice}, True)
+        self.updateUI({"command": "P2Connection", "data": self.connected}, True)
+        self.updateUI({"command": "filamentLength", "data": self.filamentLength}, True)
+        self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
+        self.updateUI({"command": "printPaused", "data": self.printPaused}, True)
+
+    def updateUI(self, data, log=None):
+        if not log:
+            self._logger.info("Updating UI")
+        self._plugin_manager.send_plugin_message(self._identifier, data)
 
     def sendNextData(self, dataNum):
         if dataNum == 0:
@@ -595,7 +590,7 @@ class Omega():
     def disconnect(self):
         self._logger.info("Disconnecting from Palette")
         self.resetOmega()
-        self.updateUI()
+        self.updateUIAll()
 
     def sendPrintStart(self):
         self._logger.info("Omega toggle pause")
@@ -608,7 +603,7 @@ class Omega():
                 self._logger.info("Omega: Got Version: %s" % self.header[0])
             elif "O22" in cmd:
                 self.header[1] = cmd
-                self._logger.info("Omega: Got Printer Profile: %s" %self.header[1])
+                self._logger.info("Omega: Got Printer Profile: %s" % self.header[1])
             elif "O23" in cmd:
                 self.header[2] = cmd
                 self._logger.info("Omega: Got Slicer Profile: %s" % self.header[2])
@@ -636,7 +631,7 @@ class Omega():
                 try:
                     self.msfNS = int(cmd[5:], 16)
                     self._logger.info("Omega: Got NS: %s" % self.header[5])
-                    self.updateUI()
+                    self.updateUI({"command": "totalSplices", "data": self.msfNS})
                 except:
                     self._logger.info("NS information not properly formatted: %s" % cmd)
             elif "O27" in cmd:
@@ -645,7 +640,6 @@ class Omega():
                     self.totalPings = int(cmd[5:], 16)
                     self._logger.info("Omega: Got NP: %s" % self.header[6])
                     self._logger.info("TOTAL PINGS: %s" % self.totalPings)
-                    self.updateUI()
                 except:
                     self._logger.info("NP information not properly formatted: %s" % cmd)
             elif "O28" in cmd:
@@ -663,7 +657,7 @@ class Omega():
                 try:
                     splice = (int(cmd[5:6]), cmd[8:])
                     self.splices.append(splice)
-                    self._logger.info("Omega: Got splice D: %s, dist: %s" %(splice[0], splice[1]))
+                    self._logger.info("Omega: Got splice D: %s, dist: %s" % (splice[0], splice[1]))
                 except:
                     self._logger.info("Splice information not properly formatted: %s" % cmd)
             elif "O32" in cmd:
@@ -681,13 +675,14 @@ class Omega():
                 self.currentStatus = "Initializing ..."
                 self.palette2SetupStarted = True
                 self.printHeartbeatCheck = "P2Responded"
-                self.updateUI()
+                self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                self.updateUI({"command": "palette2SetupStarted", "data": self.palette2SetupStarted})
+                self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
                 self.printHeartbeatCheck = ""
             else:
                 self._logger.info("Palette did not respond to O99")
                 self.printHeartbeatCheck = "P2NotConnected"
-                self.updateUI()
-                self.printHeartbeatCheck = ""
+                self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
                 self.disconnect()
                 self._logger.info("NO P2 detected. Cancelling print")
                 self._printer.cancel_print()
@@ -835,7 +830,7 @@ class Omega():
             try:
                 command["command"] = int(command["command"][1:])
             except:
-                self._logger.debug("%s is not a valid command: %s" %(command["command"], line))
+                self._logger.debug("%s is not a valid command: %s" % (command["command"], line))
                 return None
 
             # verify tokens' validity
