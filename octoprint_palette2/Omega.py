@@ -113,7 +113,7 @@ class Omega():
                 else:
                     try:
                         self.omegaSerial = serial.Serial(
-                            port, 115200, timeout=0.5)
+                            port, 250000, timeout=0.5)
                         self.connected = True
                         self.tryHeartbeat(port)
                     except:
