@@ -113,7 +113,7 @@ class Omega():
                 else:
                     try:
                         self.omegaSerial = serial.Serial(
-                            port, 250000, timeout=0.5)
+                            port, 115200, timeout=0.5)
                         self.connected = True
                         self.tryHeartbeat(port)
                     except:
@@ -131,6 +131,7 @@ class Omega():
             self.connected = False
             self.startReadThread()
             self.startWriteThread()
+            self.enqueueCmd("\n")
             self.enqueueCmd("O99")
 
             timeout = 5
@@ -154,6 +155,7 @@ class Omega():
 
     def tryHeartbeatBeforePrint(self):
         self.heartbeat = False
+        self.enqueueCmd("\n")
         self.enqueueCmd("O99")
         self.printHeartbeatCheck = "Checking"
 
