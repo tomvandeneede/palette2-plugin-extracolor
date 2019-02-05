@@ -438,7 +438,7 @@ class Omega():
         self.updateUI({"command": "pongs", "data": self.pongs}, True)
         self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted}, True)
         self.updateUI({"command": "palette2SetupStarted", "data": self.palette2SetupStarted}, True)
-        self.updateUI({"command": "displayAlert", "data": self._settings.get(["palette2Alerts"])}, True)
+        self.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])}, True)
         self.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])}, True)
         self.updateUI({"command": "firstTime", "data": self.firstTime}, True)
         self.updateUI({"command": "printerConnection", "data": self._printer.get_current_connection()[0]}, True)
@@ -602,10 +602,6 @@ class Omega():
         self._logger.info("Disconnecting from Palette")
         self.resetOmega()
         self.updateUIAll()
-
-    def sendPrintStart(self):
-        self._logger.info("Omega toggle pause")
-        self._printer.toggle_pause_print()
 
     def gotOmegaCmd(self, cmd):
         if "O1" not in cmd:

@@ -49,11 +49,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def get_api_commands(self):
         return dict(
-            cancelPalette2=[],
             clearPalette2=[],
             connectOmega=["port"],
             disconnectPalette2=[],
-            printStart=[],
             sendCutCmd=[],
             sendOmegaCmd=["cmd"],
             uiUpdate=[],
@@ -66,28 +64,17 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_api_command(self, command, data):
         self._logger.info("Got a command %s" % command)
-        if command == "cancelPalette2":
-            if not self.palette.cancelFromP2:
-                self._logger.info("Cancelling print from Hub")
-                self.palette.cancelFromHub = True
-                self.palette.cancel()
-            else:
-                self._logger.info("Cancel already done from P2.")
-        elif command == "clearPalette2":
-            self.palette.clear()
-        elif command == "connectOmega":
+        if command == "connectOmega":
             self._logger.info("Command received")
             self.palette.connectOmega(data["port"])
         elif command == "disconnectPalette2":
             self.palette.disconnect()
-        elif command == "printStart":
-            self.palette.sendPrintStart()
         elif command == "sendCutCmd":
             self.palette.cut()
+        elif command == "clearPalette2":
+            self.palette.clear()
         elif command == "sendOmegaCmd":
             self.palette.enqueueCmd(data["cmd"])
-        elif command == "connectWifi":
-            self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "uiUpdate":
             self.palette.updateUIAll()
         elif command == "changeAlertSettings":
@@ -98,6 +85,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.sendErrorReport(data["errorNumber"], data["description"])
         elif command == "startPrint":
             self.palette.startPrintFromHub()
+        elif command == "connectWifi":
+            self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -164,7 +153,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
             self._logger.info("Display alerts: %s" % str(self._settings.get(["palette2Alerts"])))
             self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
-            self.palette.updateUI({"command": "displayAlert", "data": self._settings.get(["palette2Alerts"])})
+            self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
             else:
