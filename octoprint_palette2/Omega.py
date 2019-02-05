@@ -117,6 +117,7 @@ class Omega():
                     try:
                         self.omegaSerial = serial.Serial(port, default_baudrate, timeout=0.5)
                         if not self.tryHeartbeat(port, default_baudrate):
+                            self._logger.info("Not the %s baudrate" % default_baudrate)
                             self.omegaSerial = serial.Serial(port, second_baudrate, timeout=0.5)
                             if not self.tryHeartbeat(port, second_baudrate):
                                 self._logger.info("Not the %s baudrate" % second_baudrate)
