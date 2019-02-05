@@ -32,7 +32,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=False, palette2Alerts=True)
+        return dict(autoconnect=False, palette2Alerts=True, baudrate=115200)
 
     def get_template_configs(self):
         return [

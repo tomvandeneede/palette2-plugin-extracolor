@@ -111,11 +111,17 @@ class Omega():
                     self._logger.info("This is the printer port. Will not connect to this.")
                     self.updateUIAll()
                 else:
+                    default_baudrate = self._settings.get(["baudrate"])
+                    second_baudrate = self.getSecondBaudrate(default_baudrate)
+                    self._logger.info("Trying: %s" % default_baudrate)
                     try:
-                        self.omegaSerial = serial.Serial(
-                            port, 115200, timeout=0.5)
-                        self.connected = True
-                        self.tryHeartbeat(port)
+                        self.omegaSerial = serial.Serial(port, default_baudrate, timeout=0.5)
+                        if not self.tryHeartbeat(port, default_baudrate):
+                            self.omegaSerial = serial.Serial(port, second_baudrate, timeout=0.5)
+                            if not self.tryHeartbeat(port, second_baudrate):
+                                self._logger.info("Not the %s baudrate" % second_baudrate)
+                                self.updateUIAll()
+
                     except:
                         self._logger.info("Another resource is connected to port")
                         self.updateUIAll()
@@ -126,32 +132,38 @@ class Omega():
             self._logger.info("Already Connected")
             self.updateUIAll()
 
-    def tryHeartbeat(self, port):
-        if self.connected:
-            self.connected = False
-            self.startReadThread()
-            self.startWriteThread()
-            self.enqueueCmd("\n")
-            self.enqueueCmd("O99")
+    def getSecondBaudrate(self, default_baudrate):
+        if default_baudrate == 115200:
+            return 250000
+        elif default_baudrate == 250000:
+            return 115200
 
-            timeout = 5
-            timeout_start = time.time()
-            # Wait for Palette to respond with a handshake within 5 seconds
-            while time.time() < timeout_start + timeout:
-                if self.heartbeat:
-                    self.connected = True
-                    self._logger.info("Connected to Omega")
-                    self.selectedPort = port
-                    self.updateUI({"command": "selectedPort", "data": self.selectedPort})
-                    self.updateUIAll()
-                    break
-                else:
-                    time.sleep(0.01)
-            if not self.heartbeat:
-                self._logger.info("Palette is not turned on OR this is not the serial port for Palette.")
-                self.resetVariables()
-                self.resetConnection()
+    def tryHeartbeat(self, port, baudrate):
+        self._logger.info(self.omegaSerial)
+        self.startReadThread()
+        self.startWriteThread()
+        self.enqueueCmd("\n")
+        self.enqueueCmd("O99")
+
+        timeout = 5
+        timeout_start = time.time()
+        # Wait for Palette to respond with a handshake within 5 seconds
+        while time.time() < timeout_start + timeout:
+            if self.heartbeat:
+                self.connected = True
+                self._logger.info("Connected to Omega")
+                self.selectedPort = port
+                self._settings.set(["baudrate"], baudrate, force=True)
+                self._settings.save(force=True)
+                self.updateUI({"command": "selectedPort", "data": self.selectedPort})
                 self.updateUIAll()
+                return True
+            else:
+                time.sleep(0.01)
+        if not self.heartbeat:
+            self._logger.info("Palette is not turned on OR this is not the serial port for Palette OR this is the wrong baudrate.")
+            self.resetOmega()
+            return False
 
     def tryHeartbeatBeforePrint(self):
         self.heartbeat = False
@@ -217,8 +229,8 @@ class Omega():
 
     def omegaReadThread(self, serialConnection):
         self._logger.info("Omega Read Thread: Starting thread")
-        try:
-            while self.readThreadStop is False:
+        while self.readThreadStop is False:
+            try:
                 line = serialConnection.readline()
                 if line:
                     command = self.parseLine(line)
@@ -365,11 +377,10 @@ class Omega():
                                         self.updateUI({"command": "currentStatus", "data": self.currentStatus})
                                         self.updateUI({"command": "alert", "data": "temperature"})
                                         self._logger.info("FINISHED LOADING LAST DRIVE")
-            serialConnection.close()
-        except Exception as e:
-            # Something went wrong with the connection to Palette2
-            self._logger.info("Palette 2 connection error")
-            self._logger.info(e)
+            except Exception as e:
+                # Something went wrong with the connection to Palette2
+                self._logger.info("Palette 2 Read Thread error")
+                self._logger.info(e)
 
     def omegaWriteThread(self, serialConnection):
         self._logger.info("Omega Write Thread: Starting Thread")
