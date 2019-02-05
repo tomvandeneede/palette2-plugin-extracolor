@@ -108,13 +108,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True
-                self.palette.updateUI({"command": "printPaused", "data": self.printPaused})
+                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
         elif "PrintResumed" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.palette2SetupStarted = False
                 self.palette.updateUI({"command": "palette2SetupStarted", "data": self.palette.palette2SetupStarted})
                 self.palette.printPaused = False
-                self.palette.updateUI({"command": "printPaused", "data": self.printPaused})
+                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
         elif "PrintDone" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
@@ -175,7 +175,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             # pause print locally
             elif 'M0' in cmd[0:2]:
                 self.palette.printPaused = True
-                self.palette.updateUI({"command": "printPaused", "data": self.printPaused})
+                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
                 return None,
                 # return gcode
 
