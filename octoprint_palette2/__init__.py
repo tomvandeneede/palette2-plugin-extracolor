@@ -95,15 +95,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "displayPorts":
             self.palette.displayPorts(data["condition"])
         elif command == "sendErrorReport":
-            self.palette.sendErrorReport(
-                data["errorNumber"], data["description"])
+            self.palette.sendErrorReport(data["errorNumber"], data["description"])
         elif command == "startPrint":
             self.palette.startPrintFromHub()
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "Omega Message")
+        self._plugin_manager.send_plugin_message(self._identifier, "Omega Message")
         return flask.jsonify(foo="bar")
 
     def on_event(self, event, payload):
@@ -121,13 +119,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True
-                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
+                self.palette.updateUI({"command": "printPaused", "data": self.printPaused})
         elif "PrintResumed" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.palette2SetupStarted = False
-                self.palette.printPaused = False
                 self.palette.updateUI({"command": "palette2SetupStarted", "data": self.palette.palette2SetupStarted})
-                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
+                self.palette.printPaused = False
+                self.palette.updateUI({"command": "printPaused", "data": self.printPaused})
         elif "PrintDone" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
@@ -177,13 +175,18 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode=None, tags=None):
         if cmd is not None and len(cmd) > 1:
+            # pings in GCODE
             if "O31" in cmd:
                 self.palette.handlePing(cmd.strip())
                 return "G4 P10",
+            # header information
             elif 'O' in cmd[0]:
                 self.palette.gotOmegaCmd(cmd)
                 return None,
+            # pause print locally
             elif 'M0' in cmd[0:2]:
+                self.palette.printPaused = True
+                self.palette.updateUI({"command": "printPaused", "data": self.printPaused})
                 return None,
                 # return gcode
 

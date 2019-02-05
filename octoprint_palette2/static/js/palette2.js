@@ -223,7 +223,6 @@ function OmegaViewModel(parameters) {
   self.totalSplicesDisplay = ko.computed(function() {
     return " / " + self.nSplices() + " Splices";
   });
-  // self.connectionStateMsg = ko.observable();
   self.connected = ko.observable(false);
   self.connectPaletteText = ko.computed(function() {
     return self.connected() ? "Connected" : "Connect to Palette 2";
@@ -613,21 +612,21 @@ function OmegaViewModel(parameters) {
         $("body").on("click", ".setup-checkbox input", event => {
           self.changeAlertSettings(event.target.checked);
         });
-        self.readyToStartAlert().then(result => {
-          if (result.hasOwnProperty("value")) {
-            var payload = {
-              command: "startPrint"
-            };
-            $.ajax({
-              url: API_BASEURL + "plugin/palette2",
-              type: "POST",
-              dataType: "json",
-              data: JSON.stringify(payload),
-              contentType: "application/json; charset=UTF-8"
-            });
-          }
-        });
       }
+      self.readyToStartAlert(self.displayAlerts).then(result => {
+        if (result.hasOwnProperty("value")) {
+          var payload = {
+            command: "startPrint"
+          };
+          $.ajax({
+            url: API_BASEURL + "plugin/palette2",
+            type: "POST",
+            dataType: "json",
+            data: JSON.stringify(payload),
+            contentType: "application/json; charset=UTF-8"
+          });
+        }
+      });
     }
   };
 
@@ -811,21 +810,29 @@ function OmegaViewModel(parameters) {
     });
   };
 
-  self.readyToStartAlert = () => {
-    return swal({
-      title: "Filament in place and ready to go",
-      text: `Please press "Start Print" below or directly on your Palette 2 screen to begin your print.`,
-      type: "info",
-      inputClass: "setup-checkbox",
-      input: "checkbox",
-      inputPlaceholder: "Don't show me these setup alerts anymore",
-      confirmButtonText: "Start Print"
-    });
+  self.readyToStartAlert = setupAlertSetting => {
+    if (setupAlertSetting) {
+      return swal({
+        title: "Filament in place and ready to go",
+        text: `Please press "Start Print" below or directly on your Palette 2 screen to begin your print.`,
+        type: "info",
+        inputClass: "setup-checkbox",
+        input: "checkbox",
+        inputPlaceholder: "Don't show me these setup alerts anymore",
+        confirmButtonText: "Start Print"
+      });
+    } else {
+      return swal({
+        title: "Filament in place and ready to go",
+        text: `Please press "Start Print" below or directly on your Palette 2 screen to begin your print.`,
+        type: "info",
+        confirmButtonText: "Start Print"
+      });
+    }
   };
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      console.log(message.command + ": " + message.data);
       if (message.command === "error") {
         omegaApp.errorAlert(message.data).then(result => {
           // if user clicks yes
@@ -937,9 +944,14 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "printPaused") {
         self.printPaused = message.data;
       } else if (message.command === "printerConnection") {
-        if (message.data === "Operational") {
+        if (message.data === "Operational" || message.data === "Printing" || message.data === "Paused") {
           self.printerConnected = true;
-        } else if (message.data === "Closed") {
+        } else if (
+          message.data === "Closed" ||
+          message.data === "Offline" ||
+          message.data === "None" ||
+          message.data === "Unknown"
+        ) {
           self.printerConnected = false;
         }
       } else if (message.command === "firstTime") {

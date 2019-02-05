@@ -276,14 +276,14 @@ class Omega():
                                     except:
                                         self._logger.info("Pong number invalid: %s" % command)
                         elif command["command"] == 40:
-                            self.printPaused = False
                             self.currentStatus = "Preparing splices"
                             self.actualPrintStarted = True
+                            self.printPaused = False
                             self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-                            self.updateUI({"command": "printPaused", "data": self.printPaused})
                             self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
                             self.updateUI({"command": "alert", "data": "printStarted"})
                             self._printer.toggle_pause_print()
+                            self.updateUI({"command": "printPaused", "data": self.printPaused})
                             self._logger.info("Splices being prepared.")
                         elif command["command"] == 50:
                             self.sendAllMCFFilenamesToOmega()
@@ -448,7 +448,7 @@ class Omega():
         self.updateUI({"command": "P2Connection", "data": self.connected}, True)
         self.updateUI({"command": "filamentLength", "data": self.filamentLength}, True)
         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
-        self.updateUI({"command": "printPaused", "data": self.printPaused}, True)
+        self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
 
     def updateUI(self, data, log=None):
         if not log:
@@ -535,7 +535,6 @@ class Omega():
         self.drivesInUse = []
         self.amountLeftToExtrude = ""
         self.printPaused = ""
-        self.printerConnection = ""
         self.firstTime = False
         self.lastCommandSent = ""
         self.currentPingCmd = ""
@@ -576,7 +575,6 @@ class Omega():
         self.drivesInUse = []
         self.amountLeftToExtrude = ""
         self.printPaused = ""
-        self.printerConnection = ""
         self.firstTime = False
         self.lastCommandSent = ""
         self.currentPingCmd = ""
@@ -688,9 +686,11 @@ class Omega():
                 self.currentStatus = "Initializing ..."
                 self.palette2SetupStarted = True
                 self.printHeartbeatCheck = "P2Responded"
+                self.printPaused = True
                 self.updateUI({"command": "currentStatus", "data": self.currentStatus})
                 self.updateUI({"command": "palette2SetupStarted", "data": self.palette2SetupStarted})
                 self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
+                self.updateUI({"command": "printPaused", "data": self.printPaused})
                 self.printHeartbeatCheck = ""
             else:
                 self._logger.info("Palette did not respond to O99")
