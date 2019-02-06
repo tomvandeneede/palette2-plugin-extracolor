@@ -38,36 +38,7 @@ omegaApp.loadingOverlay = (condition, status) => {
   }
 };
 
-/* 2. DISABLE PRINT ICON SMALL */
-omegaApp.disableSmallPrintIcon = condition => {
-  if (condition) {
-    $(".palette-tag")
-      .siblings(".action-buttons")
-      .find(".btn:last-child")
-      .css("pointer-events", "none")
-      .attr("disabled", true);
-  } else {
-    $(".palette-tag")
-      .siblings(".action-buttons")
-      .find(".btn:last-child")
-      .css("pointer-events", "auto")
-      .attr("disabled", false);
-  }
-};
-
-/* 2.1 DISABLE PRINT ICON LARGE */
-omegaApp.disableLargePrintIcon = condition => {
-  $("#job_print").attr("disabled", condition);
-};
-
-/* 2.2 DISABLE PAUSE ICON LARGE */
-omegaApp.disablePause = condition => {
-  $("body")
-    .find("#job_pause")
-    .attr("disabled", condition);
-};
-
-/* 3. HIGHLIGHT TO HELP USER USE TEMP CONTROLS */
+/* 2. HIGHLIGHT TO HELP USER USE TEMP CONTROLS */
 omegaApp.temperatureHighlight = () => {
   $("body")
     .find(`#temperature-table .input-mini.input-nospin:first`)
@@ -77,7 +48,7 @@ omegaApp.temperatureHighlight = () => {
     });
 };
 
-/* 3.1 HIGHLIGHT TO HELP USER USE EXTRUSION CONTROLS */
+/* 2.1 HIGHLIGHT TO HELP USER USE EXTRUSION CONTROLS */
 omegaApp.extrusionHighlight = () => {
   $("body")
     .find("#control-jog-extrusion .input-mini.text-right")
@@ -93,7 +64,7 @@ omegaApp.extrusionHighlight = () => {
     });
 };
 
-/* 4. ALERT TEXTS */
+/* 3. ALERT TEXTS */
 omegaApp.cannotConnectAlert = () => {
   return swal({
     title: "Could not connect to Palette 2",
@@ -220,7 +191,7 @@ omegaApp.readyToStartAlert = setupAlertSetting => {
   }
 };
 
-/* 4.1 CLOSE ALERT */
+/* 3.1 CLOSE ALERT */
 omegaApp.closeAlert = () => {
   if (Swal.isVisible()) {
     Swal.close();
@@ -233,6 +204,12 @@ OMEGA VIEWMODEL FOR OCTOPRINT
 
 function OmegaViewModel(parameters) {
   var self = this;
+
+  /* OTHER VIEWMODELS */
+  self.settings = parameters[0];
+  self.control = parameters[1];
+  self.printerState = parameters[2];
+  self.files = parameters[3];
 
   /* GLOBAL VARIABLES */
   self.omegaCommand = ko.observable();
@@ -258,8 +235,6 @@ function OmegaViewModel(parameters) {
   self.jogId = "";
   self.displaySetupAlerts = true;
   self.tryingToConnect = false;
-  self.currentFile = "";
-  self.printerConnected = false;
   self.firstTime = false;
   self.actualPrintStarted = false;
   self.autoconnect = false;
@@ -274,6 +249,7 @@ function OmegaViewModel(parameters) {
   self.filaLengthDisplay = ko.computed(function() {
     return (Number(self.filaLength()) / 1000.0).toFixed(2) + "m";
   });
+  self.palette2SetupStarted = ko.observable();
 
   // self.files = ko.observableArray([]);
 
@@ -396,8 +372,6 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
-    }).then(res => {
-      self.applyPaletteDisabling();
     });
   };
 
@@ -414,8 +388,6 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
-    }).then(res => {
-      self.applyPaletteDisabling();
     });
   };
 
@@ -539,78 +511,6 @@ function OmegaViewModel(parameters) {
 
   /* UI FUNCTIONS */
 
-  self.findCurrentFilename = () => {
-    self.currentFile = $("#state_wrapper")
-      .find(`strong[title]`)
-      .text();
-  };
-
-  self.applyPaletteDisabling = () => {
-    if (self.printerConnected) {
-      if (!self.connected()) {
-        let count = 0;
-        let applyDisabling = setInterval(function() {
-          if (count > 30) {
-            clearInterval(applyDisabling);
-          }
-          count++;
-          if (self.currentFile.includes(".mcf.gcode")) {
-            omegaApp.disableLargePrintIcon(true);
-            omegaApp.disableSmallPrintIcon(true);
-          } else if (self.currentFile && !self.currentFile.includes(".mcf.gcode")) {
-            omegaApp.disableLargePrintIcon(false);
-          }
-        }, 100);
-      } else {
-        let count = 0;
-        let applyDisabling2 = setInterval(function() {
-          if (count > 30) {
-            clearInterval(applyDisabling2);
-          }
-          count++;
-          if (!self.currentFile || self.actualPrintStarted) {
-            if (self.printPaused) {
-              omegaApp.disableLargePrintIcon(false);
-            } else {
-              omegaApp.disableLargePrintIcon(true);
-            }
-          } else {
-            omegaApp.disableSmallPrintIcon(false);
-            omegaApp.disableLargePrintIcon(false);
-            if (self.printPaused && !self.actualPrintStarted) {
-              omegaApp.disablePause(true);
-            }
-          }
-        }, 100);
-      }
-    } else {
-      let count = 0;
-      let applyDisabling3 = setInterval(function() {
-        if (count > 20) {
-          clearInterval(applyDisabling3);
-        }
-        omegaApp.disableLargePrintIcon(true);
-        count++;
-      }, 100);
-    }
-  };
-
-  self.handleGCODEFolders = payload => {
-    self.removeFolderBinding();
-    $("#files .gcode_files .entry.back.clickable").on("click", () => {
-      self.applyPaletteDisabling();
-    });
-  };
-
-  self.removeFolderBinding = payload => {
-    $("#files .gcode_files")
-      .find(".folder .title")
-      .removeAttr("data-bind")
-      .on("click", event => {
-        self.applyPaletteDisabling();
-      });
-  };
-
   self.displayFilamentCountdown = () => {
     let notification = $(`<li id="jog-filament-notification" class="popup-notification">
               <i class="material-icons remove-popup">clear</i>
@@ -666,7 +566,6 @@ function OmegaViewModel(parameters) {
       // if user presses start from P2
       omegaApp.closeAlert();
     } else if (command === "cancelled") {
-      self.findCurrentFilename();
       self.removeNotification();
       omegaApp.closeAlert();
     } else if (command === "startPrint") {
@@ -706,121 +605,115 @@ function OmegaViewModel(parameters) {
       });
     } else if (command === "noSerialPorts") {
       omegaApp.noSerialPortsAlert();
+    } else if (command === "turnOnP2") {
+      omegaApp.palette2NotConnectedAlert();
     }
+  };
+
+  /* VIEWMODELS MODIFICATIONS FOR P2 PLUGIN */
+
+  self.modifyPrinterStateVM = () => {
+    self.printerState.enablePrint = ko.pureComputed(function() {
+      if (self.printerState.filename() && self.printerState.filename().includes(".mcf.gcode")) {
+        return (
+          self.printerState.isOperational() &&
+          self.printerState.isReady() &&
+          !self.printerState.isPrinting() &&
+          !self.printerState.isCancelling() &&
+          !self.printerState.isPausing() &&
+          self.printerState.loginState.isUser() &&
+          self.printerState.filename() &&
+          self.connected()
+        );
+      } else {
+        return (
+          self.printerState.isOperational() &&
+          self.printerState.isReady() &&
+          !self.printerState.isPrinting() &&
+          !self.printerState.isCancelling() &&
+          !self.printerState.isPausing() &&
+          self.printerState.loginState.isUser() &&
+          self.printerState.filename()
+        );
+      }
+    });
+
+    self.printerState.enablePause = ko.pureComputed(function() {
+      if (
+        self.printerState.filename() &&
+        self.printerState.filename().includes(".mcf.gcode") &&
+        self.palette2SetupStarted()
+      ) {
+        return false;
+      } else {
+        return (
+          self.printerState.isOperational() &&
+          (self.printerState.isPrinting() || self.printerState.isPaused()) &&
+          !self.printerState.isCancelling() &&
+          !self.printerState.isPausing() &&
+          self.printerState.loginState.isUser()
+        );
+      }
+    });
+  };
+
+  self.modifyFilesVM = () => {
+    self.files.enablePrint = function(data) {
+      if (data.name.includes(".mcf.gcode")) {
+        return (
+          self.files.loginState.isUser() &&
+          self.files.isOperational() &&
+          !(self.files.isPrinting() || self.files.isPaused() || self.files.isLoading()) &&
+          self.connected()
+        );
+      } else {
+        return (
+          self.files.loginState.isUser() &&
+          self.files.isOperational() &&
+          !(self.files.isPrinting() || self.files.isPaused() || self.files.isLoading())
+        );
+      }
+    };
+
+    self.files.enableSelect = function(data, printAfterSelect) {
+      if (
+        data.name.includes(".mcf.gcode") &&
+        !(self.files.isPrinting() || self.files.isPaused() || self.files.isLoading())
+      ) {
+        return true && !self.files.listHelper.isSelected(data);
+      } else {
+        return self.files.enablePrint(data) && !self.files.listHelper.isSelected(data);
+      }
+    };
   };
 
   /* OCTOPRINT-SPECIFIC EVENT HANDLERS */
 
   self.onBeforeBinding = () => {
-    self.settings = parameters[0];
-    self.control = parameters[1];
+    self.uiUpdate();
+    self.modifyPrinterStateVM();
+    self.modifyFilesVM();
+
     self.currentSplice(0);
     self.nSplices(0);
     self.filaLength(0);
     self.connected(false);
-    self.uiUpdate();
   };
 
   self.onAfterBinding = () => {
     // self.refreshDemoList();
-    if (self.palette2SetupStarted) {
-      let count = 0;
-      let applyDisablingResume = setInterval(function() {
-        if (count > 50) {
-          clearInterval(applyDisablingResume);
-        }
-        omegaApp.disablePause(true);
-        count++;
-      }, 100);
-    }
-    // self.settings = parameters[0];
     self.uiUpdate();
   };
 
-  self.onStartupComplete = () => {
-    self.findCurrentFilename();
-    self.removeFolderBinding();
-    self.handleGCODEFolders();
-    self.applyPaletteDisabling();
-  };
-
-  self.onEventConnected = payload => {
-    self.printerConnected = true;
-    self.findCurrentFilename();
-    self.applyPaletteDisabling();
-  };
-
-  self.onEventDisconnected = payload => {
-    self.printerConnected = false;
-    self.applyPaletteDisabling();
-  };
-
-  self.onEventFileRemoved = payload => {
-    self.applyPaletteDisabling();
-  };
-
-  self.onEventUpdatedFiles = payload => {
-    self.applyPaletteDisabling();
-  };
-
   self.onEventFileSelected = payload => {
-    self.currentFile = payload.name;
-
-    if (self.currentFile.includes(".mcf.gcode")) {
-      self.applyPaletteDisabling();
-      if (!self.connected()) {
-        omegaApp.palette2NotConnectedAlert();
-      }
+    if (payload.name.includes(".mcf.gcode") && !self.connected()) {
+      self.showAlert("turnOnP2");
     }
-  };
-
-  self.onEventFileDeselected = payload => {
-    self.applyPaletteDisabling();
   };
 
   self.onEventPrintStarted = payload => {
-    if (payload.name.includes(".mcf.gcode")) {
-      if (self.connected()) {
-        omegaApp.loadingOverlay(true, "heartbeat");
-      }
-    }
-  };
-
-  self.onEventPrintPaused = payload => {
-    if (self.connected() && payload.name.includes(".mcf.gcode")) {
-      if (!self.actualPrintStarted) {
-        let count = 0;
-        let applyDisablingResume = setInterval(function() {
-          if (count > 50) {
-            clearInterval(applyDisablingResume);
-          }
-          omegaApp.disablePause(true);
-          count++;
-        }, 100);
-      } else {
-        let count = 0;
-        let applyDisablingResume = setInterval(function() {
-          if (count > 50) {
-            clearInterval(applyDisablingResume);
-          }
-          omegaApp.disableLargePrintIcon(false);
-          count++;
-        }, 100);
-      }
-    }
-  };
-
-  self.onEventPrintResumed = payload => {
-    if (self.connected() && payload.name.includes(".mcf.gcode") && self.actualPrintStarted) {
-      let count = 0;
-      let applyDisablingResume2 = setInterval(function() {
-        if (count > 50) {
-          clearInterval(applyDisablingResume2);
-        }
-        omegaApp.disablePause(false);
-        omegaApp.disableLargePrintIcon(true);
-        count++;
-      }, 100);
+    if (payload.name.includes(".mcf.gcode") && self.connected()) {
+      omegaApp.loadingOverlay(true, "heartbeat");
     }
   };
 
@@ -841,8 +734,6 @@ function OmegaViewModel(parameters) {
           let base_url = window.location.origin;
           window.location.href = `${base_url}/#tab_plugin_palette2`;
         }
-        self.findCurrentFilename();
-        self.applyPaletteDisabling();
         self.showAlert("heartbeat", message.data);
       } else if (message.command === "pings") {
         if (message.data.length) {
@@ -886,16 +777,14 @@ function OmegaViewModel(parameters) {
         self.displaySetupAlerts = message.data;
       } else if (message.command === "totalSplices") {
         self.nSplices(message.data);
-      } else if (message.command === "P2Connection") {
+      } else if (message.command === "p2Connection") {
         if (self.tryingToConnect) {
           omegaApp.loadingOverlay(false);
         }
         self.connected(message.data);
         if (self.connected()) {
           self.tryingToConnect = false;
-          self.applyPaletteDisabling();
         } else {
-          self.applyPaletteDisabling();
           omegaApp.loadingOverlay(false);
           if (self.tryingToConnect) {
             self.tryingToConnect = false;
@@ -929,23 +818,12 @@ function OmegaViewModel(parameters) {
         }
       } else if (message.command === "printPaused") {
         self.printPaused = message.data;
-      } else if (message.command === "printerConnection") {
-        if (message.data === "Operational" || message.data === "Printing" || message.data === "Paused") {
-          self.printerConnected = true;
-        } else if (
-          message.data === "Closed" ||
-          message.data === "Offline" ||
-          message.data === "None" ||
-          message.data === "Unknown"
-        ) {
-          self.printerConnected = false;
-        }
       } else if (message.command === "firstTime") {
         self.firstTime = message.data;
       } else if (message.command === "autoConnect") {
         self.autoconnect = message.data;
-      } else if (message.command === "Palette2SetupStarted") {
-        self.palette2SetupStarted = message.data;
+      } else if (message.command === "palette2SetupStarted") {
+        self.palette2SetupStarted(message.data);
       } else if (message.command === "actualPrintStarted") {
         self.actualPrintStarted = message.data;
       } else if (message.command === "alert") {
@@ -960,11 +838,10 @@ function OmegaViewModel(parameters) {
   ======================= */
 
 $(function() {
-  OmegaViewModel();
   OCTOPRINT_VIEWMODELS.push({
     // This is the constructor to call for instantiating the plugin
     construct: OmegaViewModel,
-    dependencies: ["settingsViewModel", "controlViewModel"],
+    dependencies: ["settingsViewModel", "controlViewModel", "printerStateViewModel", "filesViewModel"],
     elements: ["#tab_plugin_palette2"]
   }); // This is a list of dependencies to inject into the plugin. The order will correspond to the "parameters" arguments above // Finally, this is the list of selectors for all elements we want this view model to be bound to.
 });
