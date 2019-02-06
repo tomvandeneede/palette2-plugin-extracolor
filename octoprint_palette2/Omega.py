@@ -18,7 +18,7 @@ if os.path.abspath(".") is "/":
 load_dotenv(env_path)
 BASE_URL_API = os.getenv("DEV_BASE_URL_API", "api.canvas3d.io/")
 from subprocess import call
-from Queue import Queue
+from Queue import Queue, Empty
 
 
 class Omega():
@@ -69,10 +69,8 @@ class Omega():
         if self.ports and not self.selectedPort:
             self.selectedPort = self.ports[0]
         self._logger.info(self.selectedPort)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "ports", "data": self.ports})
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "selectedPort", "data": self.selectedPort})
+        self.updateUI({"command": "ports", "data": self.ports})
+        self.updateUI({"command": "selectedPort", "data": self.selectedPort})
 
     def getRealPaths(self, ports):
         self._logger.info(ports)
@@ -110,56 +108,67 @@ class Omega():
                 if not port:
                     port = self.ports[0]
                 if self.isPrinterPort(port):
-                    self._logger.info(
-                        "This is the printer port. Will not connect to this.")
-                    self.updateUI()
+                    self._logger.info("This is the printer port. Will not connect to this.")
+                    self.updateUIAll()
                 else:
+                    default_baudrate = self._settings.get(["baudrate"])
+                    second_baudrate = self.getSecondBaudrate(default_baudrate)
+                    self._logger.info("Trying: %s" % default_baudrate)
                     try:
-                        self.omegaSerial = serial.Serial(
-                            port, 250000, timeout=0.5)
-                        self.connected = True
-                        self.tryHeartbeat(port)
+                        self.omegaSerial = serial.Serial(port, default_baudrate, timeout=0.5)
+                        if not self.tryHeartbeat(port, default_baudrate):
+                            self._logger.info("Not the %s baudrate" % default_baudrate)
+                            self.omegaSerial = serial.Serial(port, second_baudrate, timeout=0.5)
+                            if not self.tryHeartbeat(port, second_baudrate):
+                                self._logger.info("Not the %s baudrate" % second_baudrate)
+                                self.updateUIAll()
+
                     except:
-                        self._logger.info(
-                            "Another resource is connected to port")
-                        self.updateUI()
+                        self._logger.info("Another resource is connected to port")
+                        self.updateUIAll()
             else:
                 self._logger.info("Unable to find port")
-                self.updateUI()
+                self.updateUIAll()
         else:
             self._logger.info("Already Connected")
-            self.updateUI()
+            self.updateUIAll()
 
-    def tryHeartbeat(self, port):
-        if self.connected:
-            self.connected = False
-            self.startReadThread()
-            self.startWriteThread()
-            self.enqueueCmd("O99")
+    def getSecondBaudrate(self, default_baudrate):
+        if default_baudrate == 115200:
+            return 250000
+        elif default_baudrate == 250000:
+            return 115200
 
-            timeout = 5
-            timeout_start = time.time()
-            # Wait for Palette to respond with a handshake within 5 seconds
-            while time.time() < timeout_start + timeout:
-                if self.heartbeat:
-                    self.connected = True
-                    self._logger.info("Connected to Omega")
-                    self.selectedPort = port
-                    self._plugin_manager.send_plugin_message(
-                        self._identifier, {"command": "selectedPort", "data": self.selectedPort})
-                    self.updateUI()
-                    break
-                else:
-                    time.sleep(0.01)
-            if not self.heartbeat:
-                self._logger.info(
-                    "Palette is not turned on OR this is not the serial port for Palette.")
-                self.resetVariables()
-                self.resetConnection()
-                self.updateUI()
+    def tryHeartbeat(self, port, baudrate):
+        self._logger.info(self.omegaSerial)
+        self.startReadThread()
+        self.startWriteThread()
+        self.enqueueCmd("\n")
+        self.enqueueCmd("O99")
+
+        timeout = 5
+        timeout_start = time.time()
+        # Wait for Palette to respond with a handshake within 5 seconds
+        while time.time() < timeout_start + timeout:
+            if self.heartbeat:
+                self.connected = True
+                self._logger.info("Connected to Omega")
+                self.selectedPort = port
+                self._settings.set(["baudrate"], baudrate, force=True)
+                self._settings.save(force=True)
+                self.updateUI({"command": "selectedPort", "data": self.selectedPort})
+                self.updateUIAll()
+                return True
+            else:
+                time.sleep(0.01)
+        if not self.heartbeat:
+            self._logger.info("Palette is not turned on OR this is not the serial port for Palette OR this is the wrong baudrate.")
+            self.resetOmega()
+            return False
 
     def tryHeartbeatBeforePrint(self):
         self.heartbeat = False
+        self.enqueueCmd("\n")
         self.enqueueCmd("O99")
         self.printHeartbeatCheck = "Checking"
 
@@ -221,144 +230,187 @@ class Omega():
 
     def omegaReadThread(self, serialConnection):
         self._logger.info("Omega Read Thread: Starting thread")
-        try:
-            while self.readThreadStop is False:
+        while self.readThreadStop is False:
+            try:
                 line = serialConnection.readline()
-                line = line.strip()
                 if line:
-                    self._logger.info("Omega: read in line: %s" % line)
-                if 'O20' in line:
-                    # send next line of data
-                    self.sendNextData(int(line[5]))
-                    if "D5" in line:
-                        self._logger.info("FIRST TIME USE WITH PALETTE")
-                        self.firstTime = True
-                        self.updateUI()
-                elif "O34" in line:
-                    commands = [command.strip() for command in line.split('D')]
-                    nature = commands[1]
-                    if nature == "0":
-                        self._logger.info("REJECTING PING")
-                    # if ping
-                    elif nature == "1":
-                        percent = commands[2]
-                        number = int(commands[3], 16)
-                        current = {"number": number, "percent": percent}
-                        self.pings.append(current)
-                    # else pong
-                    elif nature == "2":
-                        percent = commands[2]
-                        number = int(commands[3], 16)
-                        current = {"number": number, "percent": percent}
-                        self.pongs.append(current)
-                    self.updateUI()
-                elif "O40" in line:
-                    self.printPaused = False
-                    self.currentStatus = "Preparing splices"
-                    self.actualPrintStarted = True
-                    self.updateUI()
-                    self._printer.toggle_pause_print()
-                    self._logger.info("Splices being prepared.")
-                elif "O50" in line:
-                    self.sendAllMCFFilenamesToOmega()
-                elif "O53" in line:
-                    if "D1" in line:
-                        index_to_print = int(line[8:], 16)
-                        file = self.allMCFFiles[index_to_print]
-                        self.startPrintFromP2(file)
-                elif "O88" in line:
-                    error = int(line[5:], 16)
-                    self._logger.info("ERROR %d DETECTED" % error)
-                    if os.path.isdir(os.path.expanduser(
-                            '~') + "/.mosaicdata/"):
-                        self._printer.pause_print()
-                        self._plugin_manager.send_plugin_message(
-                            self._identifier, {"command": "error", "data": error})
-                elif "O97" in line:
-                    if "U26" in line:
-                        self.filamentLength = int(line[9:], 16)
-                        self._logger.info(self.filamentLength)
-                        self.updateUI()
-                    elif "U25" in line:
-                        if "D1" in line:
-                            self.currentSplice = int(line[12:], 16)
-                            self._logger.info(self.currentSplice)
-                            self.updateUI()
-                    elif "U39" in line:
-                        if "D-" in line:
-                            self.amountLeftToExtrude = int(line[10:])
-                            self._logger.info(
-                                line[10:] + "mm left to extrude.")
-                            self.updateUI()
-                        elif "D" not in line:
-                            self.currentStatus = "Loading filament into extruder"
-                            self.updateUI()
-                            self._logger.info(
-                                "Filament must be loaded into extruder by user")
-                        elif "D0" in line:
-                            self.amountLeftToExtrude = 0
-                            self._logger.info("0" + "mm left to extrude.")
-                            self.updateUI()
-                            self.amountLeftToExtrude = ""
-                    elif self.drivesInUse[0] in line:
-                        if "D0" in line:
-                            self.currentStatus = "Loading ingoing drives"
-                            self.updateUI()
-                            self._logger.info("STARTING TO LOAD FIRST DRIVE")
-                    elif self.drivesInUse[-1] in line:
-                        if "D1" in line:
-                            self.currentStatus = "Loading filament through outgoing tube"
-                            self.updateUI()
-                            self._logger.info("FINISHED LOADING LAST DRIVE")
-                    elif "U0" in line:
-                        if "D0" in line:
-                            self.currentStatus = "Palette work completed: all splices prepared"
-                            self.updateUI()
-                            self._logger.info("Palette work is done.")
-                        elif "D2" in line:
-                            self._logger.info("CANCELLING START")
-                            self._printer.cancel_print()
-                            self.currentStatus = "Cancelling print"
-                            self.updateUI()
-                        elif "D3" in line:
-                            self._logger.info("CANCELLING END")
-                            self.currentStatus = "Print cancelled"
-                            self.updateUI()
-                elif "Connection Okay" in line:
-                    self.heartbeat = True
-                elif "UI:" in line:
-                    if "Ponging" in line:
-                        self.inPong = True
-                    elif "Finished Pong" in line:
-                        self.inPong = False
-            serialConnection.close()
-        except Exception as e:
-            # Something went wrong with the connection to Palette2
-            self._logger.info(e)
+                    command = self.parseLine(line)
+                    if command != None:
+                        self._logger.info("Omega: read in line: %s" % command)
+                        if command["command"] == 20:
+                            if command["total_params"] > 0:
+                                if command["params"][0] == "D5":
+                                    self._logger.info("FIRST TIME USE WITH PALETTE")
+                                    self.firstTime = True
+                                    self.updateUI({"command": "firstTime", "data": self.firstTime})
+                                else:
+                                    try:
+                                        param_1 = int(command["params"][0][1:])
+                                        # send next line of data
+                                        self.sendNextData(param_1)
+                                    except:
+                                        self._logger.info("Error occured with: %s" % command)
+                        elif command["command"] == 34:
+                            if command["total_params"] == 1:
+                                # if reject ping
+                                if command["params"][0] == "D0":
+                                    self._logger.info("REJECTING PING")
+                            elif command["total_params"] > 2:
+                                # if ping
+                                if command["params"][0] == "D1":
+                                    percent = command["params"][1][1:]
+                                    try:
+                                        number = int(command["params"][2][1:], 16)
+                                        current = {"number": number, "percent": percent}
+                                        self.pings.append(current)
+                                        self.updateUI({"command": "pings", "data": self.pings})
+                                    except:
+                                        self._logger.info("Ping number invalid: %s" % command)
+                                # else pong
+                                elif command["params"][0] == "D2":
+                                    percent = command["params"][1][1:]
+                                    try:
+                                        number = int(command["params"][2][1:], 16)
+                                        current = {"number": number, "percent": percent}
+                                        self.pongs.append(current)
+                                        self.updateUI({"command": "pongs", "data": self.pongs})
+                                    except:
+                                        self._logger.info("Pong number invalid: %s" % command)
+                        elif command["command"] == 40:
+                            self.currentStatus = "Preparing splices"
+                            self.actualPrintStarted = True
+                            self.printPaused = False
+                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                            self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
+                            self.updateUI({"command": "alert", "data": "printStarted"})
+                            self._printer.toggle_pause_print()
+                            self.updateUI({"command": "printPaused", "data": self.printPaused})
+                            self._logger.info("Splices being prepared.")
+                        elif command["command"] == 50:
+                            self.sendAllMCFFilenamesToOmega()
+                        elif command["command"] == 53:
+                            if command["total_params"] > 1:
+                                if command["params"][0] == "D1":
+                                    try:
+                                        index_to_print = int(command["params"][1][1:], 16)
+                                        file = self.allMCFFiles[index_to_print]
+                                        self.startPrintFromP2(file)
+                                    except:
+                                        self._logger.info("Print from P2 command invalid: %s" % command)
+                        elif command["command"] == 88:
+                            if command["total_params"] > 0:
+                                try:
+                                    error = int(command["params"][0][1:], 16)
+                                    self._logger.info("ERROR %d DETECTED" % error)
+                                    if os.path.isdir(os.path.expanduser('~') + "/.mosaicdata/"):
+                                        self._printer.pause_print()
+                                        self.updateUI({"command": "error", "data": error})
+                                except:
+                                    self._logger.info("Error command invalid: %s" % command)
+                        elif command["command"] == 97:
+                            if command["total_params"] > 0:
+                                if command["params"][0] == "U0":
+                                    if command["total_params"] > 1:
+                                        if command["params"][1] == "D0":
+                                            self.currentStatus = "Palette work completed: all splices prepared"
+                                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                                            self._logger.info("Palette work is done.")
+                                        elif command["params"][1] == "D2":
+                                            self._logger.info("P2 CANCELLING START")
+                                            if not self.cancelFromHub and not self.cancelFromP2:
+                                                self.cancelFromP2 = True
+                                                self._printer.cancel_print()
+                                            self.currentStatus = "Cancelling print"
+                                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                                            self.updateUI({"command": "alert", "data": "cancelling"})
+                                        elif command["params"][1] == "D3":
+                                            self._logger.info("P2 CANCELLING END")
+                                            self.currentStatus = "Print cancelled"
+                                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                                            self.updateUI({"command": "alert", "data": "cancelled"})
+                                            self.cancelFromHub = False
+                                            self.cancelFromP2 = False
+                                elif command["params"][0] == "U25":
+                                    if command["total_params"] > 2:
+                                        if command["params"][1] == "D1":
+                                            try:
+                                                self.currentSplice = int(command["params"][2][1:], 16)
+                                                self._logger.info("Current splice: %s" % self.currentSplice)
+                                                self.updateUI({"command": "currentSplice", "data": self.currentSplice})
+                                            except:
+                                                self._logger.info("Splice command invalid: %s" % command)
+                                elif command["params"][0] == "U26":
+                                    if command["total_params"] > 1:
+                                        try:
+                                            self.filamentLength = int(command["params"][1][1:], 16)
+                                            self._logger.info("%smm used" % self.filamentLength)
+                                            self.updateUI({"command": "filamentLength", "data": self.filamentLength})
+                                        except:
+                                            self._logger.info("Filament length update invalid: %s" % command)
+                                elif command["params"][0] == "U39":
+                                    if command["total_params"] == 1:
+                                        self.currentStatus = "Loading filament into extruder"
+                                        self.updateUI({"command": "alert", "data": "extruder"})
+                                        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                                        self._logger.info("Filament must be loaded into extruder by user")
+                                    elif command["params"][1][0:2] == "D-":
+                                        try:
+                                            self.amountLeftToExtrude = int(command["params"][1][2:])
+                                            self._logger.info("%s mm left to extrude." % self.amountLeftToExtrude)
+                                            self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
+                                        except:
+                                            self._logger.info("Filament extrusion update invalid: %s" % command)
+                                    elif command["params"][1][0:2] == "D0":
+                                        self.amountLeftToExtrude = 0
+                                        self._logger.info("0" + "mm left to extrude.")
+                                        self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
+                                        if not self.cancelFromHub or not self.cancelFromP2:
+                                            self.updateUI({"command": "alert", "data": "startPrint"})
+                                        self.amountLeftToExtrude = ""
+                                elif self.drivesInUse and command["params"][0] == self.drivesInUse[0]:
+                                    if command["total_params"] > 1 and command["params"][1] == "D0":
+                                        self.currentStatus = "Loading ingoing drives"
+                                        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                                        self._logger.info("STARTING TO LOAD FIRST DRIVE")
+                                elif self.drivesInUse and command["params"][0] == self.drivesInUse[-1]:
+                                    if command["total_params"] > 1 and command["params"][1] == "D1":
+                                        self.currentStatus = "Loading filament through outgoing tube"
+                                        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                                        self.updateUI({"command": "alert", "data": "temperature"})
+                                        self._logger.info("FINISHED LOADING LAST DRIVE")
+            except Exception as e:
+                # Something went wrong with the connection to Palette2
+                self._logger.info("Palette 2 Read Thread error")
+                self._logger.info(e)
 
     def omegaWriteThread(self, serialConnection):
         self._logger.info("Omega Write Thread: Starting Thread")
         while self.writeThreadStop is False:
             try:
                 line = self.writeQueue.get(True, 0.5)
-                self.lastCommandSent = line
-                line = line.strip()
-                line = line + "\n"
-                self._logger.info("Omega Write Thread: Sending: %s" % line)
-                serialConnection.write(line.encode())
-                self._logger.info(line.encode())
-                if "O99" in line:
-                    self._logger.info("GOT A O99")
-                    while self.printHeartbeatCheck == "Checking":
-                        self._logger.info("WAITING FOR HEARTBEAT")
-                        time.sleep(1)
-            except:
+                if line:
+                    self.lastCommandSent = line
+                    line = line.strip()
+                    line = line + "\n"
+                    self._logger.info("Omega Write Thread: Sending: %s" % line)
+                    serialConnection.write(line.encode())
+                    self._logger.info(line.encode())
+                    if "O99" in line:
+                        self._logger.info("O99 sent to P2")
+                        while self.printHeartbeatCheck == "Checking":
+                            self._logger.info("WAITING FOR HEARTBEAT...")
+                            time.sleep(1)
+                else:
+                    self._logger.info("Line is NONE")
+            except Empty:
                 pass
-        self.writeThread = None
+            except Exception as e:
+                self._logger.info("Palette 2 Write Thread Error")
+                self._logger.info(e)
 
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
-            if self.connected is False:
+            if self.connected is False and not self._printer.is_printing():
                 self.connectOmega(self.selectedPort)
             time.sleep(1)
 
@@ -377,68 +429,63 @@ class Omega():
         for command in clearCmds:
             self.enqueueCmd(command)
 
-    def updateUI(self):
-        self._logger.info("Sending UIUpdate from Palette")
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "pings", "data": self.pings})
-        self._plugin_manager.send_plugin_message(
-            self._identifier, {"command": "pongs", "data": self.pongs})
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:ActualPrintStarted=%s" % self.actualPrintStarted)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:Palette2SetupStarted=%s" % self.palette2SetupStarted)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:AutoConnect=%s" % self._settings.get(["autoconnect"]))
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:FirstTime=%s" % self.firstTime)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:PrinterCon=%s" % self.printerConnection)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:DisplayAlerts=%s" % self._settings.get(["palette2Alerts"]))
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:currentStatus=%s" % self.currentStatus)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:nSplices=%s" % self.msfNS)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:currentSplice=%s" % self.currentSplice)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:Con=%s" % self.connected)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:FilamentLength=%s" % self.filamentLength)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:AmountLeftToExtrude=%s" % self.amountLeftToExtrude)
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "UI:PalettePausedPrint=%s" % self.printPaused)
-        if self.inPong:
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:Ponging")
-        else:
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:Finished Pong")
+    def cancel(self):
+        self.enqueueCmd("O0")
+
+    def updateUIAll(self):
+        self._logger.info("Updating all UI variables")
+        self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck}, True)
+        self.updateUI({"command": "pings", "data": self.pings}, True)
+        self.updateUI({"command": "pongs", "data": self.pongs}, True)
+        self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted}, True)
+        self.updateUI({"command": "palette2SetupStarted", "data": self.palette2SetupStarted}, True)
+        self.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])}, True)
+        self.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])}, True)
+        self.updateUI({"command": "firstTime", "data": self.firstTime}, True)
+        self.updateUI({"command": "currentStatus", "data": self.currentStatus}, True)
+        self.updateUI({"command": "totalSplices", "data": self.msfNS}, True)
+        self.updateUI({"command": "currentSplice", "data": self.currentSplice}, True)
+        self.updateUI({"command": "p2Connection", "data": self.connected}, True)
+        self.updateUI({"command": "filamentLength", "data": self.filamentLength}, True)
+        self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
+        self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
+
+    def updateUI(self, data, log=None):
+        if not log:
+            self._logger.info("Updating UI")
+        self._plugin_manager.send_plugin_message(self._identifier, data)
 
     def sendNextData(self, dataNum):
         if dataNum == 0:
-            self.enqueueCmd(self.header[self.sentCounter])
-            self._logger.info("Omega: Sent '%s'" % self.sentCounter)
-            self.sentCounter = self.sentCounter + 1
+            try:
+                self.enqueueCmd(self.header[self.sentCounter])
+                self._logger.info("Omega: Sent '%s'" % self.sentCounter)
+                self.sentCounter = self.sentCounter + 1
+            except:
+                self._logger.info("Incorrect header information: %s" % self.header)
+                self._logger.info("Sent counter: %s" % self.sentCounter)
+        elif dataNum == 1:
+            try:
+                self._logger.info("Omega: send splice")
+                splice = self.splices[self.spliceCounter]
+                cmdStr = "O30 D%d D%s\n" % (int(splice[0]), splice[1])
+                self.enqueueCmd(cmdStr)
+                self.spliceCounter = self.spliceCounter + 1
+            except:
+                self._logger.info("Incorrect splice information: %s" % self.splices)
+                self._logger.info("Splice counter: %s" % self.spliceCounter)
         elif dataNum == 2:
-            self._logger.info(
-                "Sending ping: %s to Palette on request" % self.currentPingCmd)
+            self._logger.info("Sending ping: %s to Palette on request" % self.currentPingCmd)
             self.enqueueCmd(self.currentPingCmd)
         elif dataNum == 4:
-            self._logger.info("Omega: send algo")
-            self.enqueueCmd(self.algorithms[self.algoCounter])
-            self._logger.info("Omega: Sent '%s'" %
-                              self.algorithms[self.algoCounter])
-            self.algoCounter = self.algoCounter + 1
-        elif dataNum == 1:
-            self._logger.info("Omega: send splice")
-            splice = self.splices[self.spliceCounter]
-            cmdStr = "O30 D%d D%s\n" % (int(splice[0]), splice[1])
-            self.enqueueCmd(cmdStr)
-            self.spliceCounter = self.spliceCounter + 1
+            try:
+                self._logger.info("Omega: send algo")
+                self.enqueueCmd(self.algorithms[self.algoCounter])
+                self._logger.info("Omega: Sent '%s'" % self.algorithms[self.algoCounter])
+                self.algoCounter = self.algoCounter + 1
+            except:
+                self._logger.info("Incorrect algo information: %s" % self.algorithms)
+                self._logger.info("Algo counter: %s" % self.algoCounter)
         elif dataNum == 8:
             self._logger.info("Need to resend last line")
             self.enqueueCmd(self.lastCommandSent)
@@ -480,7 +527,6 @@ class Omega():
         self.msfNA = "0"
         self.nAlgorithms = 0
         self.currentSplice = "0"
-        self.inPong = False
         self.header = [None] * 9
         self.splices = []
         self.algorithms = []
@@ -489,7 +535,6 @@ class Omega():
         self.drivesInUse = []
         self.amountLeftToExtrude = ""
         self.printPaused = ""
-        self.printerConnection = ""
         self.firstTime = False
         self.lastCommandSent = ""
         self.currentPingCmd = ""
@@ -500,6 +545,8 @@ class Omega():
         self.pings = []
         self.pongs = []
         self.printHeartbeatCheck = ""
+        self.cancelFromHub = False
+        self.cancelFromP2 = False
 
         self.filename = ""
 
@@ -520,7 +567,6 @@ class Omega():
         self.msfNA = "0"
         self.nAlgorithms = 0
         self.currentSplice = "0"
-        self.inPong = False
         self.header = [None] * 9
         self.splices = []
         self.algorithms = []
@@ -529,7 +575,6 @@ class Omega():
         self.drivesInUse = []
         self.amountLeftToExtrude = ""
         self.printPaused = ""
-        self.printerConnection = ""
         self.firstTime = False
         self.lastCommandSent = ""
         self.currentPingCmd = ""
@@ -540,6 +585,8 @@ class Omega():
         self.pings = []
         self.pongs = []
         self.printHeartbeatCheck = ""
+        self.cancelFromHub = False
+        self.cancelFromP2 = False
 
         self.filename = ""
 
@@ -554,16 +601,76 @@ class Omega():
     def disconnect(self):
         self._logger.info("Disconnecting from Palette")
         self.resetOmega()
-        self.updateUI()
-
-    def sendPrintStart(self):
-        self._logger.info("Omega toggle pause")
-        self._printer.toggle_pause_print()
+        self.updateUIAll()
 
     def gotOmegaCmd(self, cmd):
-        if "O0" in cmd:
-            self.enqueueCmd("O0")
-        elif "O1 " in cmd:
+        if "O1" not in cmd:
+            if "O21" in cmd:
+                self.header[0] = cmd
+                self._logger.info("Omega: Got Version: %s" % self.header[0])
+            elif "O22" in cmd:
+                self.header[1] = cmd
+                self._logger.info("Omega: Got Printer Profile: %s" % self.header[1])
+            elif "O23" in cmd:
+                self.header[2] = cmd
+                self._logger.info("Omega: Got Slicer Profile: %s" % self.header[2])
+            elif "O24" in cmd:
+                self.header[3] = cmd
+                self._logger.info("Omega: Got PPM Adjustment: %s" % self.header[3])
+            elif "O25" in cmd:
+                self.header[4] = cmd
+                self._logger.info("Omega: Got MU: %s" % self.header[4])
+                drives = self.header[4][4:].split(" ")
+                for index, drive in enumerate(drives):
+                    if not "D0" in drive:
+                        if index == 0:
+                            drives[index] = "U60"
+                        elif index == 1:
+                            drives[index] = "U61"
+                        elif index == 2:
+                            drives[index] = "U62"
+                        elif index == 3:
+                            drives[index] = "U63"
+                self.drivesInUse = list(filter(lambda drive: drive != "D0", drives))
+                self._logger.info("Used Drives: %s" % self.drivesInUse)
+            elif "O26" in cmd:
+                self.header[5] = cmd
+                try:
+                    self.msfNS = int(cmd[5:], 16)
+                    self._logger.info("Omega: Got NS: %s" % self.header[5])
+                    self.updateUI({"command": "totalSplices", "data": self.msfNS})
+                except:
+                    self._logger.info("NS information not properly formatted: %s" % cmd)
+            elif "O27" in cmd:
+                self.header[6] = cmd
+                try:
+                    self.totalPings = int(cmd[5:], 16)
+                    self._logger.info("Omega: Got NP: %s" % self.header[6])
+                    self._logger.info("TOTAL PINGS: %s" % self.totalPings)
+                except:
+                    self._logger.info("NP information not properly formatted: %s" % cmd)
+            elif "O28" in cmd:
+                self.header[7] = cmd
+                try:
+                    self.msfNA = cmd[5:]
+                    self.nAlgorithms = int(self.msfNA, 16)
+                    self._logger.info("Omega: Got NA: %s" % self.header[7])
+                except:
+                    self._logger.info("NA information not properly formatted: %s" % cmd)
+            elif "O29" in cmd:
+                self.header[8] = cmd
+                self._logger.info("Omega: Got NH: %s" % self.header[8])
+            elif "O30" in cmd:
+                try:
+                    splice = (int(cmd[5:6]), cmd[8:])
+                    self.splices.append(splice)
+                    self._logger.info("Omega: Got splice D: %s, dist: %s" % (splice[0], splice[1]))
+                except:
+                    self._logger.info("Splice information not properly formatted: %s" % cmd)
+            elif "O32" in cmd:
+                self.algorithms.append(cmd)
+                self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
+        elif "O1" in cmd:
             timeout = 5
             timeout_start = time.time()
             # Wait for Palette to respond with a handshake within 5 seconds
@@ -575,79 +682,26 @@ class Omega():
                 self.currentStatus = "Initializing ..."
                 self.palette2SetupStarted = True
                 self.printHeartbeatCheck = "P2Responded"
-                self.updateUI()
+                self.printPaused = True
+                self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                self.updateUI({"command": "palette2SetupStarted", "data": self.palette2SetupStarted})
+                self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
+                self.updateUI({"command": "printPaused", "data": self.printPaused})
                 self.printHeartbeatCheck = ""
             else:
                 self._logger.info("Palette did not respond to O99")
                 self.printHeartbeatCheck = "P2NotConnected"
-                self.updateUI()
-                self.printHeartbeatCheck = ""
+                self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
                 self.disconnect()
                 self._logger.info("NO P2 detected. Cancelling print")
                 self._printer.cancel_print()
-        elif "O21" in cmd:
-            self.header[0] = cmd
-            self._logger.info("Omega: Got Version: %s" % self.header[0])
-        elif "O22" in cmd:
-            self.header[1] = cmd
-            self._logger.info("Omega: Got Printer Profile: %s" %
-                              self.header[1])
-        elif "O23" in cmd:
-            self.header[2] = cmd
-            self._logger.info("Omega: Got Slicer Profile: %s" % self.header[2])
-        elif "O24" in cmd:
-            self.header[3] = cmd
-            self._logger.info("Omega: Got PPM Adjustment: %s" % self.header[3])
-        elif "O25" in cmd:
-            self.header[4] = cmd
-            self._logger.info("Omega: Got MU: %s" % self.header[4])
-            drives = self.header[4][4:].split(" ")
-            for index, drive in enumerate(drives):
-                if not "D0" in drive:
-                    if index == 0:
-                        drives[index] = "U60"
-                    elif index == 1:
-                        drives[index] = "U61"
-                    elif index == 2:
-                        drives[index] = "U62"
-                    elif index == 3:
-                        drives[index] = "U63"
-            self.drivesInUse = list(
-                filter(lambda drive: drive != "D0", drives))
-            self._logger.info("Used Drives: %s" % self.drivesInUse)
-        elif "O26" in cmd:
-            self.header[5] = cmd
-            self.msfNS = int(cmd[5:], 16)
-            self._logger.info("Omega: Got NS: %s" % self.header[5])
-            self.updateUI()
-        elif "O27" in cmd:
-            self.header[6] = cmd
-            self.totalPings = int(cmd[5:], 16)
-            self._logger.info("Omega: Got NP: %s" % self.header[6])
-            self._logger.info("TOTAL PINGS: %s" % self.totalPings)
-            self.updateUI()
-        elif "O28" in cmd:
-            self.msfNA = cmd[5:]
-            self.nAlgorithms = int(self.msfNA, 16)
-            self.header[7] = cmd
-            self._logger.info("Omega: Got NA: %s" % self.header[7])
-        elif "O29" in cmd:
-            self.header[8] = cmd
-            self._logger.info("Omega: Got NH: %s" % self.header[8])
-        elif "O30" in cmd:
-            splice = (int(cmd[5:6]), cmd[8:])
-            self.splices.append(splice)
-            self._logger.info("Omega: Got splice D: %s, dist: %s" %
-                              (splice[0], splice[1]))
-        elif "O32" in cmd:
-            self.algorithms.append(cmd)
-            self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
-        elif "O9" is cmd:
+        elif cmd == "O9":
             # reset values
-            self.resetOmega()
+            # self.resetOmega()
+            self._logger.info("Omega: Soft resetting P2: %s" % cmd)
             self.enqueueCmd(cmd)
         else:
-            self._logger.info("Omega: Got an Omega command '%s'" % cmd)
+            self._logger.info("Omega: Got another Omega command '%s'" % cmd)
             self.enqueueCmd(cmd)
 
     def changeAlertSettings(self, condition):
@@ -684,6 +738,7 @@ class Omega():
             #     self.iterateThroughFolder(file_path, cumulative_folder_name)
 
     def startPrintFromP2(self, file):
+        self._logger.info("Received print command from P2")
         self._printer.select_file(file, False, printAfterSelect=True)
 
     def sendErrorReport(self, error_number, description):
@@ -750,7 +805,7 @@ class Omega():
         return data
 
     def startPrintFromHub(self):
-        self._logger.info("START PRINT FROM HERE")
+        self._logger.info("Hub command to start print received")
         self.enqueueCmd("O39 D1")
 
     def getHubData(self):
@@ -765,3 +820,40 @@ class Omega():
         hub_token = hub_yaml["canvas-hub"]["token"]
 
         return hub_id, hub_token
+
+    def parseLine(self, line):
+        line = line.strip()
+
+        # is the first character O
+        if line[0] == "O":
+            tokens = [token.strip() for token in line.split(" ")]
+
+            # make command object
+            command = {
+                "command": tokens[0],
+                "total_params": len(tokens) - 1,
+                "params": tokens[1:]
+            }
+
+            # verify command validity
+            try:
+                command["command"] = int(command["command"][1:])
+            except:
+                self._logger.debug("%s is not a valid command: %s" % (command["command"], line))
+                return None
+
+            # verify tokens' validity
+            if command["total_params"] > 0:
+                for param in command["params"]:
+                    if param[0] != "D" and param[0] != "U":
+                        self._logger.debug("%s is not a valid parameter: %s" % (param, line))
+                        return None
+
+            return command
+        # otherwise, is this line the heartbeat response?
+        elif line == "Connection Okay":
+            self.heartbeat = True
+            return None
+        else:
+            self._logger.debug("Invalid first character: %s" % line)
+            return None

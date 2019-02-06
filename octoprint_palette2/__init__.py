@@ -28,12 +28,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self._logger.info("%s Plugin STARTED" % self._plugin_info)
         if os.path.isdir("/home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/") and os.path.isdir("/home/pi/.mosaicdata/turquoise/"):
             call(["sudo rm -rf /home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"], shell=True)
-            call(
-                ["sudo chown -R pi:pi /home/pi/OctoPrint/venv/lib/python2.7/site-packages/"], shell=True)
+            call(["sudo chown -R pi:pi /home/pi/OctoPrint/venv/lib/python2.7/site-packages/"], shell=True)
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=False, palette2Alerts=True)
+        return dict(autoconnect=False, palette2Alerts=True, baudrate=115200)
 
     def get_template_configs(self):
         return [
@@ -50,11 +49,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def get_api_commands(self):
         return dict(
-            cancelPalette2=[],
             clearPalette2=[],
             connectOmega=["port"],
             disconnectPalette2=[],
-            printStart=[],
             sendCutCmd=[],
             sendOmegaCmd=["cmd"],
             uiUpdate=[],
@@ -67,99 +64,96 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_api_command(self, command, data):
         self._logger.info("Got a command %s" % command)
-        if command == "cancelPalette2":
-            self._logger.info("Cancelling print")
-            self.palette.enqueueCmd("O0")
-        elif command == "clearPalette2":
-            self.palette.clear()
-        elif command == "connectOmega":
+        if command == "connectOmega":
             self._logger.info("Command received")
             self.palette.connectOmega(data["port"])
         elif command == "disconnectPalette2":
             self.palette.disconnect()
-        elif command == "printStart":
-            self.palette.sendPrintStart()
         elif command == "sendCutCmd":
             self.palette.cut()
+        elif command == "clearPalette2":
+            self.palette.clear()
         elif command == "sendOmegaCmd":
             self.palette.enqueueCmd(data["cmd"])
-        elif command == "connectWifi":
-            self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "uiUpdate":
-            self.palette.updateUI()
+            self.palette.updateUIAll()
         elif command == "changeAlertSettings":
             self.palette.changeAlertSettings(data["condition"])
         elif command == "displayPorts":
             self.palette.displayPorts(data["condition"])
         elif command == "sendErrorReport":
-            self.palette.sendErrorReport(
-                data["errorNumber"], data["description"])
+            self.palette.sendErrorReport(data["errorNumber"], data["description"])
         elif command == "startPrint":
             self.palette.startPrintFromHub()
+        elif command == "connectWifi":
+            self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
-        self._plugin_manager.send_plugin_message(
-            self._identifier, "Omega Message")
+        self._plugin_manager.send_plugin_message(self._identifier, "Omega Message")
         return flask.jsonify(foo="bar")
 
     def on_event(self, event, payload):
         if "ClientOpened" in event:
-            self.palette.printerConnection = self._printer.get_current_connection()[
-                0]
-            self.palette.updateUI()
-            self.palette.printerConnection = ""
+            self.palette.updateUIAll()
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
                 self._logger.info("PRINT STARTED P2")
                 self.palette.resetPrintValues()
                 self.palette.tryHeartbeatBeforePrint()
-                self._logger.info("Filename: %s" %
-                                  payload["name"].split('.')[0])
+                self._logger.info("Filename: %s" % payload["name"].split('.')[0])
                 self.palette.setFilename(payload["name"].split(".")[0])
-                self.palette.updateUI()
+                self.palette.updateUIAll()
                 self.palette.printHeartbeatCheck = ""
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True
-                self.palette.updateUI()
+                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
         elif "PrintResumed" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.palette2SetupStarted = False
+                self.palette.updateUI({"command": "palette2SetupStarted", "data": self.palette.palette2SetupStarted})
                 self.palette.printPaused = False
-                self.palette.updateUI()
+                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
         elif "PrintDone" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
-                self.palette.updateUI()
+                self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
         elif "PrintFailed" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
-                self.palette.updateUI()
+                self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
+        elif "PrintCancelling" in event:
+            if ".mcf.gcode" in payload["name"] and self.palette.connected:
+                self.palette.currentStatus = "Cancelling print"
+                self.palette.updateUI({"command": "currentStatus", "data": self.palette.currentStatus})
+                self.palette.updateUI({"command": "alert", "data": "cancelling"})
         elif "PrintCancelled" in event:
-            if ".mcf.gcode" in payload["name"]:
+            if ".mcf.gcode" in payload["name"] and self.palette.connected:
                 self.palette.actualPrintStarted = False
-                self.palette.updateUI()
+                self.palette.currentStatus = "Print cancelled"
+                self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
+                self.palette.updateUI({"command": "currentStatus", "data": self.palette.currentStatus})
+                self.palette.updateUI({"command": "alert", "data": "cancelled"})
+                if not self.palette.cancelFromP2:
+                    self._logger.info("Cancelling print from Hub")
+                    self.palette.cancelFromHub = True
+                    self.palette.cancel()
+                else:
+                    self._logger.info("Cancel already done from P2.")
         elif "FileAdded" in event:
+            self.palette.getAllMCFFilenames()
             # User uploads a new file to Octoprint, we should update the demo list of files
-            self.palette.getAllMCFFilenames()
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:Refresh Demo List")
+            # self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "FileRemoved" in event:
-            # User removed a file from Octoprint, we should update the demo list of files
             self.palette.getAllMCFFilenames()
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:Refresh Demo List")
+            # User removed a file from Octoprint, we should update the demo list of files
+            # self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
-            self._logger.info("Auto-reconnect: %s" %
-                              str(self._settings.get(["autoconnect"])))
-            self._logger.info("Display alerts: %s" % str(
-                self._settings.get(["palette2Alerts"])))
-            # self.palette.updateUI()
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:AutoConnect=%s" % self._settings.get(["autoconnect"]))
-            self._plugin_manager.send_plugin_message(
-                self._identifier, "UI:DisplayAlerts=%s" % self._settings.get(["palette2Alerts"]))
+            self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
+            self._logger.info("Display alerts: %s" % str(self._settings.get(["palette2Alerts"])))
+            self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
+            self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
             else:
@@ -169,15 +163,21 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette.shutdown()
 
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode=None, tags=None):
-        if "O31" in cmd:
-            self.palette.handlePing(cmd.strip())
-            return "G4 P10",
-        elif 'O' in cmd[0]:
-            self.palette.gotOmegaCmd(cmd)
-            return None,
-        elif 'M0' in cmd[0]:
-            return None,
-        # return gcode
+        if cmd is not None and len(cmd) > 1:
+            # pings in GCODE
+            if "O31" in cmd:
+                self.palette.handlePing(cmd.strip())
+                return "G4 P10",
+            # header information
+            elif 'O' in cmd[0]:
+                self.palette.gotOmegaCmd(cmd)
+                return None,
+            # pause print locally
+            elif 'M0' in cmd[0:2]:
+                self.palette.printPaused = True
+                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
+                return None,
+                # return gcode
 
     def support_msf_machinecode(*args, **kwargs):
         return dict(

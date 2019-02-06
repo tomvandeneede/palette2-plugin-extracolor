@@ -38,36 +38,7 @@ omegaApp.loadingOverlay = (condition, status) => {
   }
 };
 
-/* 2. DISABLE PRINT ICON SMALL */
-omegaApp.disableSmallPrintIcon = condition => {
-  if (condition) {
-    $(".palette-tag")
-      .siblings(".action-buttons")
-      .find(".btn:last-child")
-      .css("pointer-events", "none")
-      .attr("disabled", true);
-  } else {
-    $(".palette-tag")
-      .siblings(".action-buttons")
-      .find(".btn:last-child")
-      .css("pointer-events", "auto")
-      .attr("disabled", false);
-  }
-};
-
-/* 2.1 DISABLE PRINT ICON LARGE */
-omegaApp.disableLargePrintIcon = condition => {
-  $("#job_print").attr("disabled", condition);
-};
-
-/* 2.2 DISABLE PAUSE ICON LARGE */
-omegaApp.disablePause = condition => {
-  $("body")
-    .find("#job_pause")
-    .attr("disabled", condition);
-};
-
-/* 3. HIGHLIGHT TO HELP USER USE TEMP CONTROLS */
+/* 2. HIGHLIGHT TO HELP USER USE TEMP CONTROLS */
 omegaApp.temperatureHighlight = () => {
   $("body")
     .find(`#temperature-table .input-mini.input-nospin:first`)
@@ -77,7 +48,7 @@ omegaApp.temperatureHighlight = () => {
     });
 };
 
-/* 3.1 HIGHLIGHT TO HELP USER USE EXTRUSION CONTROLS */
+/* 2.1 HIGHLIGHT TO HELP USER USE EXTRUSION CONTROLS */
 omegaApp.extrusionHighlight = () => {
   $("body")
     .find("#control-jog-extrusion .input-mini.text-right")
@@ -93,7 +64,7 @@ omegaApp.extrusionHighlight = () => {
     });
 };
 
-/* 4. ALERT TEXTS */
+/* 3. ALERT TEXTS */
 omegaApp.cannotConnectAlert = () => {
   return swal({
     title: "Could not connect to Palette 2",
@@ -124,13 +95,13 @@ omegaApp.extrusionAlert = firstTime => {
   if (firstTime) {
     return swal({
       title: "Follow instructions on Palette 2 ",
-      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder until you see the desired color. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder until you see the desired color. To accurately load, we recommend setting the extrusion amount to a low number.`,
       type: "info"
     });
   } else {
     return swal({
       title: "Follow instructions on Palette 2 ",
-      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number (1mm - 5mm).`,
+      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number.`,
       type: "info"
     });
   }
@@ -172,6 +143,19 @@ omegaApp.errorAlert = errorNumber => {
   });
 };
 
+omegaApp.errorTextAlert = () => {
+  return swal({
+    title: "Please provide additional details (OPTIONAL)",
+    text:
+      "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occured, etc)",
+    customClass: "error-container",
+    input: "textarea",
+    inputClass: "error-textarea",
+    width: "40rem",
+    confirmButtonText: "Send"
+  });
+};
+
 omegaApp.displayHeartbeatAlert = status => {
   if (status === "P2NotConnected") {
     omegaApp.loadingOverlay(false);
@@ -186,12 +170,46 @@ omegaApp.displayHeartbeatAlert = status => {
   }
 };
 
+omegaApp.readyToStartAlert = setupAlertSetting => {
+  if (setupAlertSetting) {
+    return swal({
+      title: "Filament in place and ready to go",
+      text: `Please press "Start Print" below or directly on your Palette 2 screen to begin your print.`,
+      type: "info",
+      inputClass: "setup-checkbox",
+      input: "checkbox",
+      inputPlaceholder: "Don't show me these setup alerts anymore",
+      confirmButtonText: "Start Print"
+    });
+  } else {
+    return swal({
+      title: "Filament in place and ready to go",
+      text: `Please press "Start Print" below or directly on your Palette 2 screen to begin your print.`,
+      type: "info",
+      confirmButtonText: "Start Print"
+    });
+  }
+};
+
+/* 3.1 CLOSE ALERT */
+omegaApp.closeAlert = () => {
+  if (Swal.isVisible()) {
+    Swal.close();
+  }
+};
+
 /* ======================
 OMEGA VIEWMODEL FOR OCTOPRINT
 ======================= */
 
 function OmegaViewModel(parameters) {
   var self = this;
+
+  /* OTHER VIEWMODELS */
+  self.settings = parameters[0];
+  self.control = parameters[1];
+  self.printerState = parameters[2];
+  self.files = parameters[3];
 
   /* GLOBAL VARIABLES */
   self.omegaCommand = ko.observable();
@@ -203,7 +221,6 @@ function OmegaViewModel(parameters) {
   self.totalSplicesDisplay = ko.computed(function() {
     return " / " + self.nSplices() + " Splices";
   });
-  self.connectionStateMsg = ko.observable();
   self.connected = ko.observable(false);
   self.connectPaletteText = ko.computed(function() {
     return self.connected() ? "Connected" : "Connect to Palette 2";
@@ -216,19 +233,25 @@ function OmegaViewModel(parameters) {
   self.currentStatus = ko.observable();
   self.amountLeftToExtrude = "";
   self.jogId = "";
-  self.displayAlerts = true;
+  self.displaySetupAlerts = true;
   self.tryingToConnect = false;
-  self.currentFile = "";
-  self.printerConnected = false;
   self.firstTime = false;
   self.actualPrintStarted = false;
   self.autoconnect = false;
+  self.connectionStateMsg = ko.computed(function() {
+    if (self.connected()) {
+      return "Connected";
+    } else {
+      return self.autoconnect ? "Not Connected - Trying To Connect..." : "Not Connected";
+    }
+  });
   self.filaLength = ko.observable();
   self.filaLengthDisplay = ko.computed(function() {
     return (Number(self.filaLength()) / 1000.0).toFixed(2) + "m";
   });
+  self.palette2SetupStarted = ko.observable();
 
-  self.files = ko.observableArray([]);
+  // self.files = ko.observableArray([]);
 
   self.selectedDemoFile = ko.observable();
 
@@ -256,16 +279,16 @@ function OmegaViewModel(parameters) {
     }
   };
 
-  window.onload = () => {
-    self.refreshDemoList();
-  };
+  // window.onload = () => {
+  //   self.refreshDemoList();
+  // };
 
-  self.filterDemoFiles = ko.computed(function() {
-    var filteredFiles = self.files().filter(f => {
-      return f.match(/.msf$/i);
-    });
-    return filteredFiles;
-  });
+  // self.filterDemoFiles = ko.computed(function() {
+  //   var filteredFiles = self.files().filter(f => {
+  //     return f.match(/.msf$/i);
+  //   });
+  //   return filteredFiles;
+  // });
 
   self.displayPorts = () => {
     let condition = "";
@@ -291,26 +314,26 @@ function OmegaViewModel(parameters) {
     });
   };
 
-  self.refreshDemoList = () => {
-    var payload = {};
-    $.ajax({
-      headers: {
-        "X-Api-Key": UI_API_KEY
-      },
-      url: API_BASEURL + "files?recursive=true",
-      type: "GET",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8",
-      success: function(d) {
-        self.files(
-          d.files.map(function(file, index) {
-            return file.name;
-          })
-        );
-      }
-    });
-  };
+  // self.refreshDemoList = () => {
+  //   var payload = {};
+  //   $.ajax({
+  //     headers: {
+  //       "X-Api-Key": UI_API_KEY
+  //     },
+  //     url: API_BASEURL + "files?recursive=true",
+  //     type: "GET",
+  //     dataType: "json",
+  //     data: JSON.stringify(payload),
+  //     contentType: "application/json; charset=UTF-8",
+  //     success: function(d) {
+  //       self.files(
+  //         d.files.map(function(file, index) {
+  //           return file.name;
+  //         })
+  //       );
+  //     }
+  //   });
+  // };
 
   self.startSpliceDemo = () => {
     if (self.selectedDemoFile()) {
@@ -349,8 +372,6 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
-    }).then(res => {
-      self.applyPaletteDisabling();
     });
   };
 
@@ -367,14 +388,12 @@ function OmegaViewModel(parameters) {
       dataType: "json",
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
-    }).then(res => {
-      self.applyPaletteDisabling();
     });
   };
 
   self.changeAlertSettings = condition => {
-    self.displayAlerts = !condition;
-    var payload = { command: "changeAlertSettings", condition: self.displayAlerts };
+    self.displaySetupAlerts = !condition;
+    var payload = { command: "changeAlertSettings", condition: self.displaySetupAlerts };
 
     $.ajax({
       url: API_BASEURL + "plugin/palette2",
@@ -399,6 +418,19 @@ function OmegaViewModel(parameters) {
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8",
       success: self.fromResponse
+    });
+  };
+
+  self.uiUpdate = () => {
+    console.log("Requesting BE to update UI");
+    var payload = { command: "uiUpdate" };
+
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
     });
   };
 
@@ -447,158 +479,37 @@ function OmegaViewModel(parameters) {
     });
   };
 
-  self.sendCancelCmd = () => {
-    self.omegaCommand("O0");
-    self.sendOmegaCmd();
-    self.omegaCommand("");
-  };
-
-  self.sendPrintStart = () => {
+  self.sendErrorReport = (errorNumber, description) => {
     var payload = {
-      command: "printStart"
+      command: "sendErrorReport",
+      errorNumber: errorNumber,
+      description: description
     };
     $.ajax({
       url: API_BASEURL + "plugin/palette2",
       type: "POST",
       dataType: "json",
       data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8",
-      success: self.fromResponse
+      contentType: "application/json; charset=UTF-8"
+    });
+  };
+
+  self.startPrintFromHub = () => {
+    var payload = {
+      command: "startPrint"
+    };
+    $.ajax({
+      url: API_BASEURL + "plugin/palette2",
+      type: "POST",
+      dataType: "json",
+      data: JSON.stringify(payload),
+      contentType: "application/json; charset=UTF-8"
     });
   };
 
   self.fromResponse = () => {};
 
   /* UI FUNCTIONS */
-
-  self.findCurrentFilename = () => {
-    self.currentFile = $("#state_wrapper")
-      .find(`strong[title]`)
-      .text();
-  };
-
-  self.applyPaletteDisabling = () => {
-    if (self.printerConnected) {
-      if (!self.connected()) {
-        let count = 0;
-        let applyDisabling = setInterval(function() {
-          if (count > 30) {
-            clearInterval(applyDisabling);
-          }
-          count++;
-          if (self.currentFile.includes(".mcf.gcode")) {
-            omegaApp.disableLargePrintIcon(true);
-            omegaApp.disableSmallPrintIcon(true);
-          } else if (self.currentFile && !self.currentFile.includes(".mcf.gcode")) {
-            omegaApp.disableLargePrintIcon(false);
-          }
-        }, 100);
-      } else {
-        let count = 0;
-        let applyDisabling2 = setInterval(function() {
-          if (count > 30) {
-            clearInterval(applyDisabling2);
-          }
-          count++;
-          if (!self.currentFile || self.actualPrintStarted) {
-            if (self.printPaused) {
-              omegaApp.disableLargePrintIcon(false);
-            } else {
-              omegaApp.disableLargePrintIcon(true);
-            }
-          } else {
-            omegaApp.disableSmallPrintIcon(false);
-            omegaApp.disableLargePrintIcon(false);
-            if (self.printPaused && !self.actualPrintStarted) {
-              omegaApp.disablePause(true);
-            }
-          }
-        }, 100);
-      }
-    } else {
-      let count = 0;
-      let applyDisabling3 = setInterval(function() {
-        if (count > 20) {
-          clearInterval(applyDisabling3);
-        }
-        omegaApp.disableLargePrintIcon(true);
-        count++;
-      }, 100);
-    }
-  };
-
-  self.handleGCODEFolders = payload => {
-    self.removeFolderBinding();
-    $("#files .gcode_files .entry.back.clickable").on("click", () => {
-      self.applyPaletteDisabling();
-    });
-  };
-
-  self.removeFolderBinding = payload => {
-    $("#files .gcode_files")
-      .find(".folder .title")
-      .removeAttr("data-bind")
-      .on("click", event => {
-        self.applyPaletteDisabling();
-      });
-  };
-
-  self.updateConnection = () => {
-    if (self.connected()) {
-      $("#connection-state-msg")
-        .removeClass("text-muted")
-        .addClass("text-success")
-        .css("color", "green");
-      self.connectionStateMsg("Connected");
-      self.applyPaletteDisabling();
-    } else {
-      if (self.autoconnect) {
-        $("#connection-state-msg")
-          .removeClass("text-success")
-          .addClass("text-muted")
-          .css("color", "red");
-        self.connectionStateMsg("Not Connected - Trying To Connect...");
-        self.applyPaletteDisabling();
-      } else {
-        $("#connection-state-msg")
-          .removeClass("text-success")
-          .addClass("text-muted")
-          .css("color", "red");
-        self.connectionStateMsg("Not Connected");
-        self.applyPaletteDisabling();
-      }
-    }
-  };
-
-  self.updateCurrentStatus = () => {
-    if (self.currentStatus() === "Loading filament through outgoing tube") {
-      if (self.displayAlerts) {
-        let base_url = window.location.origin;
-        window.location.href = `${base_url}/#temp`;
-        omegaApp.preheatAlert().then(res => {
-          omegaApp.temperatureHighlight();
-        });
-      }
-    } else if (self.currentStatus() === "Loading filament into extruder") {
-      self.displayFilamentCountdown();
-      if (self.displayAlerts) {
-        let base_url = window.location.origin;
-        window.location.href = `${base_url}/#control`;
-        if (self.firstTime) {
-          omegaApp.extrusionAlert(true).then(res => {
-            omegaApp.extrusionHighlight();
-          });
-        } else {
-          omegaApp.extrusionAlert(false).then(res => {
-            omegaApp.extrusionHighlight();
-          });
-        }
-      }
-    } else if (self.currentStatus() === "Cancelling print") {
-      omegaApp.printCancelAlert();
-      self.removeNotification();
-    }
-  };
 
   self.displayFilamentCountdown = () => {
     let notification = $(`<li id="jog-filament-notification" class="popup-notification">
@@ -629,226 +540,201 @@ function OmegaViewModel(parameters) {
     });
   };
 
+  self.showAlert = (command, condition) => {
+    if (command === "temperature") {
+      if (self.displaySetupAlerts) {
+        let base_url = window.location.origin;
+        window.location.href = `${base_url}/#temp`;
+        omegaApp.temperatureHighlight();
+        omegaApp.preheatAlert();
+      }
+    } else if (command === "extruder") {
+      if (self.displaySetupAlerts) {
+        let base_url = window.location.origin;
+        window.location.href = `${base_url}/#control`;
+        omegaApp.extrusionHighlight();
+        if (self.firstTime) {
+          omegaApp.extrusionAlert(true);
+        } else {
+          omegaApp.extrusionAlert(false);
+        }
+      }
+    } else if (command === "cancelling") {
+      omegaApp.printCancelAlert();
+      self.removeNotification();
+    } else if (command === "printStarted") {
+      // if user presses start from P2
+      omegaApp.closeAlert();
+    } else if (command === "cancelled") {
+      self.removeNotification();
+      omegaApp.closeAlert();
+    } else if (command === "startPrint") {
+      self.removeNotification();
+      if (self.displaySetupAlerts) {
+        $("body").on("click", ".setup-checkbox input", event => {
+          self.changeAlertSettings(event.target.checked);
+        });
+      }
+      omegaApp.readyToStartAlert(self.displaySetupAlerts).then(result => {
+        if (result.hasOwnProperty("value")) {
+          self.startPrintFromHub();
+        }
+      });
+    } else if (command === "cannotConnect") {
+      omegaApp.cannotConnectAlert();
+    } else if (command === "heartbeat") {
+      omegaApp.displayHeartbeatAlert(condition);
+    } else if (command === "error") {
+      omegaApp.errorAlert(condition).then(result => {
+        // if user clicks yes
+        if (result.value) {
+          omegaApp.errorTextAlert().then(result => {
+            if (result.dismiss === Swal.DismissReason.cancel) {
+            } else {
+              description = "";
+              if (result.value) {
+                description = result.value;
+              }
+              self.sendErrorReport(condition, description);
+            }
+          });
+        }
+        // if user clicks no
+        else if (result.dismiss === Swal.DismissReason.cancel) {
+        }
+      });
+    } else if (command === "noSerialPorts") {
+      omegaApp.noSerialPortsAlert();
+    } else if (command === "turnOnP2") {
+      omegaApp.palette2NotConnectedAlert();
+    }
+  };
+
+  /* VIEWMODELS MODIFICATIONS FOR P2 PLUGIN */
+
+  self.modifyPrinterStateVM = () => {
+    self.printerState.enablePrint = ko.pureComputed(function() {
+      if (self.printerState.filename() && self.printerState.filename().includes(".mcf.gcode")) {
+        return (
+          self.printerState.isOperational() &&
+          self.printerState.isReady() &&
+          !self.printerState.isPrinting() &&
+          !self.printerState.isCancelling() &&
+          !self.printerState.isPausing() &&
+          self.printerState.loginState.isUser() &&
+          self.printerState.filename() &&
+          self.connected()
+        );
+      } else {
+        return (
+          self.printerState.isOperational() &&
+          self.printerState.isReady() &&
+          !self.printerState.isPrinting() &&
+          !self.printerState.isCancelling() &&
+          !self.printerState.isPausing() &&
+          self.printerState.loginState.isUser() &&
+          self.printerState.filename()
+        );
+      }
+    });
+
+    self.printerState.enablePause = ko.pureComputed(function() {
+      if (
+        self.printerState.filename() &&
+        self.printerState.filename().includes(".mcf.gcode") &&
+        self.palette2SetupStarted()
+      ) {
+        return false;
+      } else {
+        return (
+          self.printerState.isOperational() &&
+          (self.printerState.isPrinting() || self.printerState.isPaused()) &&
+          !self.printerState.isCancelling() &&
+          !self.printerState.isPausing() &&
+          self.printerState.loginState.isUser()
+        );
+      }
+    });
+  };
+
+  self.modifyFilesVM = () => {
+    self.files.enablePrint = function(data) {
+      if (data.name.includes(".mcf.gcode")) {
+        return (
+          self.files.loginState.isUser() &&
+          self.files.isOperational() &&
+          !(self.files.isPrinting() || self.files.isPaused() || self.files.isLoading()) &&
+          self.connected()
+        );
+      } else {
+        return (
+          self.files.loginState.isUser() &&
+          self.files.isOperational() &&
+          !(self.files.isPrinting() || self.files.isPaused() || self.files.isLoading())
+        );
+      }
+    };
+
+    self.files.enableSelect = function(data, printAfterSelect) {
+      if (
+        data.name.includes(".mcf.gcode") &&
+        !(self.files.isPrinting() || self.files.isPaused() || self.files.isLoading())
+      ) {
+        return true && !self.files.listHelper.isSelected(data);
+      } else {
+        return self.files.enablePrint(data) && !self.files.listHelper.isSelected(data);
+      }
+    };
+  };
+
   /* OCTOPRINT-SPECIFIC EVENT HANDLERS */
 
   self.onBeforeBinding = () => {
-    self.settings = parameters[0];
+    self.uiUpdate();
+    self.modifyPrinterStateVM();
+    self.modifyFilesVM();
+
     self.currentSplice(0);
     self.nSplices(0);
     self.filaLength(0);
-    self.connectionStateMsg("Not Connected");
-    self.currentStatus("No ongoing Palette 2 print");
     self.connected(false);
-
-    self.uiUpdate();
   };
 
   self.onAfterBinding = () => {
-    self.refreshDemoList();
-    if (self.palette2SetupStarted) {
-      let count = 0;
-      let applyDisablingResume = setInterval(function() {
-        if (count > 50) {
-          clearInterval(applyDisablingResume);
-        }
-        omegaApp.disablePause(true);
-        count++;
-      }, 100);
-    }
-    // self.settings = parameters[0];
+    // self.refreshDemoList();
     self.uiUpdate();
   };
 
-  self.uiUpdate = () => {
-    console.log("Requesting BE to update UI");
-    var payload = { command: "uiUpdate" };
-
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
-  };
-
-  self.onStartupComplete = () => {
-    self.findCurrentFilename();
-    self.removeFolderBinding();
-    self.handleGCODEFolders();
-    self.applyPaletteDisabling();
-  };
-
-  self.onEventConnected = payload => {
-    self.printerConnected = true;
-    self.findCurrentFilename();
-    self.applyPaletteDisabling();
-  };
-
-  self.onEventDisconnected = payload => {
-    self.printerConnected = false;
-    self.applyPaletteDisabling();
-  };
-
-  self.onEventFileRemoved = payload => {
-    self.applyPaletteDisabling();
-  };
-
-  self.onEventUpdatedFiles = payload => {
-    self.applyPaletteDisabling();
-  };
-
   self.onEventFileSelected = payload => {
-    self.currentFile = payload.name;
-
-    if (self.currentFile.includes(".mcf.gcode")) {
-      self.applyPaletteDisabling();
-      if (!self.connected()) {
-        omegaApp.palette2NotConnectedAlert();
-      }
+    if (payload.name.includes(".mcf.gcode") && !self.connected()) {
+      self.showAlert("turnOnP2");
     }
-  };
-
-  self.onEventFileDeselected = payload => {
-    self.applyPaletteDisabling();
   };
 
   self.onEventPrintStarted = payload => {
-    if (payload.name.includes(".mcf.gcode")) {
-      if (self.connected()) {
-        omegaApp.loadingOverlay(true, "heartbeat");
-      }
+    if (payload.name.includes(".mcf.gcode") && self.connected()) {
+      omegaApp.loadingOverlay(true, "heartbeat");
     }
   };
 
-  self.onEventPrintPaused = payload => {
-    if (self.connected() && payload.name.includes(".mcf.gcode")) {
-      if (!self.actualPrintStarted) {
-        let count = 0;
-        let applyDisablingResume = setInterval(function() {
-          if (count > 50) {
-            clearInterval(applyDisablingResume);
-          }
-          omegaApp.disablePause(true);
-          count++;
-        }, 100);
-      } else {
-        let count = 0;
-        let applyDisablingResume = setInterval(function() {
-          if (count > 50) {
-            clearInterval(applyDisablingResume);
-          }
-          omegaApp.disableLargePrintIcon(false);
-          count++;
-        }, 100);
-      }
-    }
-  };
-
-  self.onEventPrintResumed = payload => {
-    if (self.connected() && payload.name.includes(".mcf.gcode") && self.actualPrintStarted) {
-      let count = 0;
-      let applyDisablingResume2 = setInterval(function() {
-        if (count > 50) {
-          clearInterval(applyDisablingResume2);
-        }
-        omegaApp.disablePause(false);
-        omegaApp.disableLargePrintIcon(true);
-        count++;
-      }, 100);
-    }
+  self.onEventPrintCancelling = payload => {
+    self.removeNotification();
   };
 
   self.onEventPrintCancelled = payload => {
-    if (payload.name.includes(".mcf.gcode")) {
-      self.currentStatus("Print cancelled");
-      self.findCurrentFilename();
-      self.updateCurrentStatus();
-      self.sendCancelCmd();
-    }
-  };
-
-  self.sendErrorReport = (errorNumber, description) => {
-    var payload = {
-      command: "sendErrorReport",
-      errorNumber: errorNumber,
-      description: description
-    };
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
-  };
-
-  self.readyToStartAlert = () => {
-    return swal({
-      title: "Filament in place and ready to go",
-      text: `Please press "Start Print" below or directly on your Palette 2 screen to begin your print.`,
-      type: "info",
-      inputClass: "setup-checkbox",
-      input: "checkbox",
-      inputPlaceholder: "Don't show me these setup alerts anymore",
-      confirmButtonText: "Start Print"
-    });
+    self.removeNotification();
   };
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
       if (message.command === "error") {
-        omegaApp.errorAlert(message.data).then(result => {
-          // if user clicks yes
-          if (result.value) {
-            swal({
-              title: "Please provide additional details (OPTIONAL)",
-              text:
-                "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occured, etc)",
-              customClass: "error-container",
-              input: "textarea",
-              inputClass: "error-textarea",
-              width: "40rem",
-              confirmButtonText: "Send"
-            }).then(result => {
-              if (result.dismiss === Swal.DismissReason.cancel) {
-              } else {
-                description = "";
-                if (result.value) {
-                  description = result.value;
-                }
-
-                self.sendErrorReport(message.data, description);
-              }
-            });
-            // (async function getDescription() {
-            // const { value: description } = await Swal.fire({
-            //   title: "Please provide additional details (OPTIONAL)",
-            //   text:
-            //     "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occured, etc)",
-            //   customClass: "error-container",
-            //   input: "textarea",
-            //   inputClass: "error-textarea",
-            //   width: "40rem",
-            //   confirmButtonText: "Send"
-            // });
-            // if (description) {
-            //   console.log(description);
-            // }
-            // })();
-          }
-          // if user clicks no
-          else if (result.dismiss === Swal.DismissReason.cancel) {
-          }
-        });
+        self.showAlert("error", message.data);
       } else if (message.command === "printHeartbeatCheck") {
         if (message.data === "P2NotConnected") {
           let base_url = window.location.origin;
           window.location.href = `${base_url}/#tab_plugin_palette2`;
         }
-        omegaApp.displayHeartbeatAlert(message.data);
-        self.findCurrentFilename();
-        self.applyPaletteDisabling();
+        self.showAlert("heartbeat", message.data);
       } else if (message.command === "pings") {
         if (message.data.length) {
           self.pings(message.data.reverse());
@@ -879,139 +765,71 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "ports") {
         allPorts = message.data;
         if (allPorts.length === 0) {
-          omegaApp.noSerialPortsAlert();
+          self.showAlert("noSerialPorts");
           $(".serial-ports-list").hide(125);
         } else {
           self.ports(allPorts);
           $(".serial-ports-list").toggle(125);
         }
-      } else if (message.includes("UI:currentSplice")) {
-        var num = message.substring(17);
-        self.currentSplice(num);
-      } else if (message.includes("UI:DisplayAlerts")) {
-        if (message.includes("True")) {
-          self.displayAlerts = true;
-        } else if (message.includes("False")) {
-          self.displayAlerts = false;
-        }
-      } else if (message.includes("UI:FINISHED LOADING")) {
-        $("#loading-span").addClass("hide");
-      } else if (message.includes("UI:nSplices")) {
-        var ns = message.substring(12);
-        self.nSplices(ns);
-      } else if (message.includes("UI:Ponging")) {
-        self.updatePongMsg(true);
-      } else if (message.includes("UI:Finished Pong")) {
-        self.updatePongMsg(false);
-      } else if (message.includes("UI:Con=")) {
+      } else if (message.command === "currentSplice") {
+        self.currentSplice(message.data);
+      } else if (message.command === "displaySetupAlerts") {
+        self.displaySetupAlerts = message.data;
+      } else if (message.command === "totalSplices") {
+        self.nSplices(message.data);
+      } else if (message.command === "p2Connection") {
         if (self.tryingToConnect) {
           omegaApp.loadingOverlay(false);
         }
-        if (message.includes("True")) {
+        self.connected(message.data);
+        if (self.connected()) {
           self.tryingToConnect = false;
-          self.connected(true);
-          self.updateConnection();
         } else {
-          self.connected(false);
-          self.updateConnection();
           omegaApp.loadingOverlay(false);
           if (self.tryingToConnect) {
             self.tryingToConnect = false;
-            omegaApp.cannotConnectAlert();
+            self.showAlert("cannotConnect");
           }
         }
-      } else if (message.includes("UI:Refresh Demo List")) {
-        self.refreshDemoList();
-      } else if (message.includes("UI:FilamentLength")) {
-        self.filaLength(message.substring(18));
-      } else if (message.includes("UI:currentStatus")) {
-        if (message.substring(17) && message.substring(17) !== self.currentStatus()) {
-          self.currentStatus(message.substring(17));
-          self.updateCurrentStatus();
-        } else if (!message.substring(17)) {
+      }
+      // else if (message.includes("UI:Refresh Demo List")) {
+      //   self.refreshDemoList();
+      // }
+      else if (message.command === "filamentLength") {
+        self.filaLength(message.data);
+      } else if (message.command === "currentStatus") {
+        if (message.data && message.data !== self.currentStatus()) {
+          self.currentStatus(message.data);
+          if (self.currentStatus() === "Loading filament into extruder") {
+            self.displayFilamentCountdown();
+          }
+        } else if (!message.data) {
           self.currentStatus("No ongoing Palette 2 print");
         }
-      } else if (message.includes("UI:AmountLeftToExtrude")) {
-        self.amountLeftToExtrude = message.substring(23);
-        if (self.amountLeftToExtrude === "0") {
-          self.removeNotification();
-          if (self.displayAlerts) {
-            $("body").on("click", ".setup-checkbox input", event => {
-              self.changeAlertSettings(event.target.checked);
-            });
-            self.readyToStartAlert().then(result => {
-              if (result.hasOwnProperty("value")) {
-                var payload = {
-                  command: "startPrint"
-                };
-                $.ajax({
-                  url: API_BASEURL + "plugin/palette2",
-                  type: "POST",
-                  dataType: "json",
-                  data: JSON.stringify(payload),
-                  contentType: "application/json; charset=UTF-8"
-                });
-              }
-            });
-          }
-        } else if (self.amountLeftToExtrude.length && !$("#jog-filament-notification").is(":visible")) {
-          self.updateFilamentCountdown(true);
-        } else if (self.amountLeftToExtrude.length && $("#jog-filament-notification").is(":visible")) {
-          self.updateFilamentCountdown(false);
-        }
-      } else if (message.includes("UI:PalettePausedPrint")) {
-        self.printPaused = message.substring(22);
-        if (self.printPaused === "True") {
-          self.printPaused = true;
-        } else {
-          self.printPaused = false;
-        }
-      } else if (message.includes("UI:PrinterCon")) {
-        let printerState = message.substring(14);
-        if (printerState) {
-          if (printerState === "Closed") {
-            self.printerConnected = false;
-          } else {
-            self.printerConnected = true;
+      } else if (message.command === "amountLeftToExtrude") {
+        self.amountLeftToExtrude = message.data;
+        if (!self.actualPrintStarted && self.amountLeftToExtrude) {
+          if (!$("#jog-filament-notification").is(":visible")) {
+            self.updateFilamentCountdown(true);
+            // self.control.extrusionAmount(self.amountLeftToExtrude);
+          } else if ($("#jog-filament-notification").is(":visible")) {
+            self.updateFilamentCountdown(false);
           }
         }
-      } else if (message.includes("UI:FirstTime")) {
-        let firstTime = message.substring(13);
-        if (firstTime === "True") {
-          self.firstTime = true;
-        } else {
-          self.firstTime = false;
-        }
-      } else if (message.includes("UI:AutoConnect=")) {
-        if (message.substring(15) === "True") {
-          self.autoconnect = true;
-        } else {
-          self.autoconnect = false;
-        }
-      } else if (message.includes("UI:Palette2SetupStarted=")) {
-        self.palette2SetupStarted = message.substring(24);
-        if (self.palette2SetupStarted === "True") {
-          self.palette2SetupStarted = true;
-        } else {
-          self.palette2SetupStarted = false;
-        }
-      } else if (message.includes("UI:ActualPrintStarted")) {
-        self.actualPrintStarted = message.substring(22);
-        if (self.actualPrintStarted === "True") {
-          self.actualPrintStarted = true;
-        } else {
-          self.actualPrintStarted = false;
-        }
+      } else if (message.command === "printPaused") {
+        self.printPaused = message.data;
+      } else if (message.command === "firstTime") {
+        self.firstTime = message.data;
+      } else if (message.command === "autoConnect") {
+        self.autoconnect = message.data;
+      } else if (message.command === "palette2SetupStarted") {
+        self.palette2SetupStarted(message.data);
+      } else if (message.command === "actualPrintStarted") {
+        self.actualPrintStarted = message.data;
+      } else if (message.command === "alert") {
+        self.showAlert(message.data);
       }
     }
-
-    self.updatePongMsg = function(isPonging) {
-      if (isPonging) {
-        $("#ponging-span").removeClass("hide");
-      } else {
-        $("#ponging-span").addClass("hide");
-      }
-    };
   };
 }
 
@@ -1020,11 +838,10 @@ function OmegaViewModel(parameters) {
   ======================= */
 
 $(function() {
-  OmegaViewModel();
   OCTOPRINT_VIEWMODELS.push({
     // This is the constructor to call for instantiating the plugin
     construct: OmegaViewModel,
-    dependencies: ["settingsViewModel"],
+    dependencies: ["settingsViewModel", "controlViewModel", "printerStateViewModel", "filesViewModel"],
     elements: ["#tab_plugin_palette2"]
   }); // This is a list of dependencies to inject into the plugin. The order will correspond to the "parameters" arguments above // Finally, this is the list of selectors for all elements we want this view model to be bound to.
 });
