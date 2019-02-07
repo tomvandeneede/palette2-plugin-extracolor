@@ -832,14 +832,14 @@ class Omega():
             try:
                 command["command"] = int(command["command"][1:])
             except:
-                self._logger.debug("%s is not a valid command: %s" % (command["command"], line))
+                self._logger.info("%s is not a valid command: %s" % (command["command"], line))
                 return None
 
             # verify tokens' validity
             if command["total_params"] > 0:
                 for param in command["params"]:
                     if param[0] != "D" and param[0] != "U":
-                        self._logger.debug("%s is not a valid parameter: %s" % (param, line))
+                        self._logger.info("%s is not a valid parameter: %s" % (param, line))
                         return None
 
             return command
@@ -848,5 +848,5 @@ class Omega():
             self.heartbeat = True
             return None
         else:
-            self._logger.debug("Invalid first character: %s" % line)
+            self._logger.info("Invalid first character: %s" % line)
             return None
