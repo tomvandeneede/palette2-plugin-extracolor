@@ -122,7 +122,6 @@ class Omega():
                             if not self.tryHeartbeat(port, second_baudrate):
                                 self._logger.info("Not the %s baudrate" % second_baudrate)
                                 self.updateUIAll()
-
                     except:
                         self._logger.info("Another resource is connected to port")
                         self.updateUIAll()
@@ -177,8 +176,7 @@ class Omega():
 
     def connectWifi(self, wifiSSID, wifiPASS):
         lines = open('/etc/wpa_supplicant/wpa_supplicant.conf').readlines()
-        open('/etc/wpa_supplicant/wpa_supplicant.conf',
-             'w').writelines(lines[0:-5])
+        open('/etc/wpa_supplicant/wpa_supplicant.conf', 'w').writelines(lines[0:-5])
 
         with open("/etc/wpa_supplicant/wpa_supplicant.conf", "a") as myfile:
             myfile.write('network={\n        ssid="' + wifiSSID +
@@ -762,8 +760,7 @@ class Omega():
             self._logger.info(e)
 
     def prepareErroReport(self, error_number, description):
-        error_report_path = os.path.expanduser(
-            '~') + "/.mosaicdata/error_report.log"
+        error_report_path = os.path.expanduser('~') + "/.mosaicdata/error_report.log"
 
         # error number
         error_report_log = open(error_report_path, "w")
@@ -773,8 +770,7 @@ class Omega():
         error_report_log.write("=== PLUGINS ===\n")
         plugins = self._plugin_manager.plugins.keys()
         for plugin in plugins:
-            error_report_log.write("%s: %s\n" % (
-                plugin, self._plugin_manager.get_plugin_info(plugin).version))
+            error_report_log.write("%s: %s\n" % (plugin, self._plugin_manager.get_plugin_info(plugin).version))
 
         # Hub or DIY
         error_report_log.write("\n=== TYPE ===\n")
@@ -792,10 +788,8 @@ class Omega():
         error_report_log.close()
 
         # OctoPrint log
-        octoprint_log_path = os.path.expanduser(
-            '~') + "/.octoprint/logs/octoprint.log"
-        linux_command = "tail -n 1000 %s >> %s" % (
-            octoprint_log_path, error_report_path)
+        octoprint_log_path = os.path.expanduser('~') + "/.octoprint/logs/octoprint.log"
+        linux_command = "tail -n 1000 %s >> %s" % (octoprint_log_path, error_report_path)
         call([linux_command], shell=True)
 
         data = ""
@@ -809,8 +803,7 @@ class Omega():
         self.enqueueCmd("O39 D1")
 
     def getHubData(self):
-        hub_file_path = os.path.expanduser(
-            '~') + "/.mosaicdata/canvas-hub-data.yml"
+        hub_file_path = os.path.expanduser('~') + "/.mosaicdata/canvas-hub-data.yml"
 
         hub_data = open(hub_file_path, "r")
         hub_yaml = yaml.load(hub_data)
