@@ -145,9 +145,9 @@ class Omega():
         self.enqueueCmd("\n")
         self.enqueueCmd("O99")
 
-        timeout = 5
+        timeout = 4
         timeout_start = time.time()
-        # Wait for Palette to respond with a handshake within 5 seconds
+        # Wait for Palette to respond with a handshake within 4 seconds
         while time.time() < timeout_start + timeout:
             if self.heartbeat:
                 self.connected = True
@@ -669,7 +669,7 @@ class Omega():
                 self.algorithms.append(cmd)
                 self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
         elif "O1" in cmd:
-            timeout = 5
+            timeout = 4
             timeout_start = time.time()
             # Wait for Palette to respond with a handshake within 5 seconds
             while not self.heartbeat and time.time() < timeout_start + timeout:
