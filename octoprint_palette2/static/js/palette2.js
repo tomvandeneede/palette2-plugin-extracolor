@@ -678,6 +678,7 @@ function OmegaViewModel(parameters) {
     self.files.enableSelect = function(data, printAfterSelect) {
       if (
         data.name.includes(".mcf.gcode") &&
+        self.files.isOperational() &&
         !(self.files.isPrinting() || self.files.isPaused() || self.files.isLoading())
       ) {
         return true && !self.files.listHelper.isSelected(data);
