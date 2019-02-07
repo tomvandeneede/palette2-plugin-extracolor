@@ -32,7 +32,17 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=False, palette2Alerts=True, baudrate=115200)
+        return dict(autoconnect=False,
+                    palette2Alerts=True,
+                    baudrate=115200,
+                    # SKELLATORE
+                    AdvancedOptions=False,
+                    FeedrateControl=False,
+                    FeedrateNormalPct=100,
+                    FeedrateSlowPct=50,
+                    ShowPingPongOnPrinter=False
+                    # SKELLATORE
+                    )
 
     def get_template_configs(self):
         return [
@@ -59,7 +69,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             changeAlertSettings=["condition"],
             displayPorts=["condition"],
             sendErrorReport=["errorNumber", "description"],
-            startPrint=[]
+            startPrint=[],
+            # SKELLATORE
+            changeShowPingPongOnPrinter=["condition"],
+            changeFeedrateControl=["condition"],
+            changeFeedrateSlowed=["condition"],
+            changeFeedrateNormalPct=["value"],
+            changeFeedrateSlowPct=["value"]
+            # /SKELLATORE
         )
 
     def on_api_command(self, command, data):
@@ -87,6 +104,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.startPrintFromHub()
         elif command == "connectWifi":
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
+        # SKELLATORE
+        self.palette.advanced_api_command(command, data)
+        # /SKELLATORE
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -94,6 +114,12 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         return flask.jsonify(foo="bar")
 
     def on_event(self, event, payload):
+        # SKELLATORE
+        try:
+            self.palette.advanced_on_event(event, payload)
+        except Exception as e:
+            self._logger.info("Error whilst trying to call advanced_on_event %s" % str(e))
+        # /SKELLATORE
         if "ClientOpened" in event:
             self.palette.updateUIAll()
         elif "PrintStarted" in event:
@@ -152,6 +178,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "SettingsUpdated" in event:
             self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
             self._logger.info("Display alerts: %s" % str(self._settings.get(["palette2Alerts"])))
+            self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["AdvancedOptions"])))
             self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
             self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
             if self._settings.get(["autoconnect"]):

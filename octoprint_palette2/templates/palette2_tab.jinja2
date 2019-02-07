@@ -75,6 +75,43 @@
 				</ul>
 			</div>
 			<hr>
+<!-- SKELLATORE -->
+    			<div class="row advanced_options" style="display: none; margin-bottom: 20px;">
+    				<h4>Advanced Options</h4>
+                        <label>
+                          <span>Enable Ping/Pong display on Printer:</span>
+                          <input class="showpingpongonprinter-input" type="checkbox" data-bind="checked: ShowPingPongOnPrinter">
+                        </label>
+                        <label>
+                          <span>Enable Feed-rate control during Splice:</span>
+                          <input class="feedratecontrol-input" type="checkbox" data-bind="checked: FeedrateControl">
+                        </label>
+                        <label class="form-inline">
+                          <span>Normal Feed-rate speed:</span>
+                          <div class="input-append">
+                            <input class="feedratenormalpct-input input-mini" type="number" min="1" max="999" data-bind="value: FeedrateNormalPct">
+                            <span class="add-on">%</span>
+                          </div>
+                        </label>
+                        <label class="form-inline">
+                            <span>Splicing Feed-rate speed:</span>
+                            <div class="input-append">
+                               <input class="feedrateslowpct-input input-mini" type="number" min="1" max="999" data-bind="value: FeedrateSlowPct">
+                               <span class="add-on">%</span>
+                            </div>
+                        </label>
+                        <label>
+                            <span><b>Advanced Status:</b></span><br/>
+                            <p class="advanced_status" data-bind="text: Advanced_Status">Awaiting Update..</p>
+                            <p class="switch_status" data-bind="text: Advanced_Switches">Awaiting Update..</p>
+                        </label>
+                        <label class="form-inline">
+                            <span><b>Feedrate Currently Slowed?</b>
+                            <p class="FeedrateSlowed-input" data-bind="text: FeedrateSlowed"></p></span>
+                        </label>
+    			</div>
+			<hr>
+<!-- / SKELLATORE -->
 			<div class="row" style="margin-bottom: 10px">
 				<h4 class="manual-controls">Manual Controls</h4>
 				<button type="button" class="btn btn-primary" data-bind="click: sendCutCmd, enable: connected">Cut</button>
