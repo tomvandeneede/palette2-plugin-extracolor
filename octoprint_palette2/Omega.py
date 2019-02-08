@@ -81,6 +81,8 @@ class Omega():
         # only change settings if user is opening the list of ports
         if "opening" in condition:
             self._settings.set(["autoconnect"], False, force=True)
+            self._settings.save(force=True)
+            self.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
         self.ports = self.getAllPorts()
         self._logger.info(self.ports)
         if self.ports and not self.selectedPort:
@@ -162,9 +164,9 @@ class Omega():
         self.enqueueCmd("\n")
         self.enqueueCmd("O99")
 
-        timeout = 4
+        timeout = 3
         timeout_start = time.time()
-        # Wait for Palette to respond with a handshake within 4 seconds
+        # Wait for Palette to respond with a handshake within 3 seconds
         while time.time() < timeout_start + timeout:
             if self.heartbeat:
                 self.connected = True
@@ -386,7 +388,7 @@ class Omega():
                                         self.amountLeftToExtrude = 0
                                         self._logger.info("0" + "mm left to extrude.")
                                         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
-                                        if not self.cancelFromHub or not self.cancelFromP2:
+                                        if not self.cancelFromHub and not self.cancelFromP2:
                                             self.updateUI({"command": "alert", "data": "startPrint"})
                                         self.amountLeftToExtrude = ""
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[0]:
@@ -708,7 +710,7 @@ class Omega():
         elif "O1" in cmd:
             timeout = 4
             timeout_start = time.time()
-            # Wait for Palette to respond with a handshake within 5 seconds
+            # Wait for Palette to respond with a handshake within 4 seconds
             while not self.heartbeat and time.time() < timeout_start + timeout:
                 time.sleep(0.01)
             if self.heartbeat:
@@ -741,6 +743,8 @@ class Omega():
 
     def changeAlertSettings(self, condition):
         self._settings.set(["palette2Alerts"], condition, force=True)
+        self._settings.save(force=True)
+        self.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
 
     def sendAllMCFFilenamesToOmega(self):
         self.getAllMCFFilenames()
@@ -869,12 +873,14 @@ class Omega():
             try:
                 command["command"] = int(command["command"][1:])
             except:
+                # command should be a number, otherwise invalid command
                 self._logger.info("%s is not a valid command: %s" % (command["command"], line))
                 return None
 
             # verify tokens' validity
             if command["total_params"] > 0:
                 for param in command["params"]:
+                    # params should start with D or U, otherwise invalid param
                     if param[0] != "D" and param[0] != "U":
                         self._logger.info("%s is not a valid parameter: %s" % (param, line))
                         return None
@@ -885,7 +891,8 @@ class Omega():
             self.heartbeat = True
             return None
         else:
-            self._logger.info("Invalid first character: %s" % line)
+            # Invalid first character (IFC). Don't need to do anything, but log out for potential troubleshooting.
+            self._logger.info("IFC: %s" % line)
             return None
 
     # SKELLATORE

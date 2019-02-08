@@ -107,10 +107,18 @@ omegaApp.extrusionAlert = firstTime => {
   }
 };
 
-omegaApp.printCancelAlert = () => {
+omegaApp.printCancellingAlert = () => {
   return swal({
-    title: "Print cancelling ",
+    title: "Palette 2: Print cancelling",
     text: `Please remove filament from the extruder and from Palette 2.`,
+    type: "info"
+  });
+};
+
+omegaApp.printCancelledAlert = () => {
+  return swal({
+    title: "Palette 2: Print cancelled",
+    text: `Palette 2 print successfully cancelled. Please make sure you have pressed "Finished" on Palette 2's screen before starting a new print.`,
     type: "info"
   });
 };
@@ -322,7 +330,7 @@ function OmegaViewModel(parameters) {
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
     }).then(() => {
-      self.settings.saveData();
+      self.settings.requestData();
     });
   };
 
@@ -414,7 +422,7 @@ function OmegaViewModel(parameters) {
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
     }).then(() => {
-      self.settings.saveData();
+      self.settings.requestData();
     });
   };
 
@@ -663,14 +671,15 @@ function OmegaViewModel(parameters) {
         }
       }
     } else if (command === "cancelling") {
-      omegaApp.printCancelAlert();
       self.removeNotification();
+      omegaApp.printCancellingAlert();
     } else if (command === "printStarted") {
       // if user presses start from P2
       omegaApp.closeAlert();
     } else if (command === "cancelled") {
       self.removeNotification();
-      omegaApp.closeAlert();
+      // omegaApp.closeAlert();
+      omegaApp.printCancelledAlert();
     } else if (command === "startPrint") {
       self.removeNotification();
       if (self.displaySetupAlerts) {
