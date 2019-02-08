@@ -64,6 +64,8 @@ class Omega():
         # only change settings if user is opening the list of ports
         if "opening" in condition:
             self._settings.set(["autoconnect"], False, force=True)
+            self._settings.save(force=True)
+            self.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
         self.ports = self.getAllPorts()
         self._logger.info(self.ports)
         if self.ports and not self.selectedPort:
@@ -704,6 +706,8 @@ class Omega():
 
     def changeAlertSettings(self, condition):
         self._settings.set(["palette2Alerts"], condition, force=True)
+        self._settings.save(force=True)
+        self.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
 
     def sendAllMCFFilenamesToOmega(self):
         self.getAllMCFFilenames()

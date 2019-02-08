@@ -318,7 +318,7 @@ function OmegaViewModel(parameters) {
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
     }).then(() => {
-      self.settings.saveData();
+      self.settings.requestData();
     });
   };
 
@@ -410,7 +410,7 @@ function OmegaViewModel(parameters) {
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
     }).then(() => {
-      self.settings.saveData();
+      self.settings.requestData();
     });
   };
 
