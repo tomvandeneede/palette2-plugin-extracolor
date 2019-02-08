@@ -67,26 +67,24 @@ class Omega():
             self._settings.save(force=True)
             self.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
         self.ports = self.getAllPorts()
-        self._logger.info(self.ports)
+        self._logger.info("All ports: %s" % self.ports)
         if self.ports and not self.selectedPort:
             self.selectedPort = self.ports[0]
-        self._logger.info(self.selectedPort)
+        self._logger.info("Selected port: %s" % self.selectedPort)
         self.updateUI({"command": "ports", "data": self.ports})
         self.updateUI({"command": "selectedPort", "data": self.selectedPort})
 
     def getRealPaths(self, ports):
-        self._logger.info(ports)
         for index, port in enumerate(ports):
             port = os.path.realpath(port)
             ports[index] = port
-        self._logger.info(ports)
         return ports
 
     def isPrinterPort(self, selected_port):
         selected_port = os.path.realpath(selected_port)
         printer_port = self._printer.get_current_connection()[1]
-        self._logger.info("Trying %s" % selected_port)
-        self._logger.info(printer_port)
+        self._logger.info("Trying port: %s" % selected_port)
+        self._logger.info("Printer port: %s" % printer_port)
         # because ports usually have a second available one (.tty or .cu)
         printer_port_alt = ""
         if printer_port == None:
@@ -96,7 +94,7 @@ class Omega():
                 printer_port_alt = printer_port.replace("tty.", "cu.", 1)
             elif "cu." in printer_port:
                 printer_port_alt = printer_port.replace("cu.", "tty.", 1)
-            self._logger.info(printer_port_alt)
+            self._logger.info("Printer port alt: %s" % printer_port_alt)
             if selected_port == printer_port or selected_port == printer_port_alt:
                 return True
             else:
@@ -115,7 +113,6 @@ class Omega():
                 else:
                     default_baudrate = self._settings.get(["baudrate"])
                     second_baudrate = self.getSecondBaudrate(default_baudrate)
-                    self._logger.info("Trying: %s" % default_baudrate)
                     try:
                         self.omegaSerial = serial.Serial(port, default_baudrate, timeout=0.5)
                         if not self.tryHeartbeat(port, default_baudrate):
@@ -141,7 +138,7 @@ class Omega():
             return 115200
 
     def tryHeartbeat(self, port, baudrate):
-        self._logger.info(self.omegaSerial)
+        self._logger.info("Trying baudrate: %s" % baudrate)
         self.startReadThread()
         self.startWriteThread()
         self.enqueueCmd("\n")
