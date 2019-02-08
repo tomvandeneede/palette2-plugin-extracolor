@@ -684,7 +684,6 @@ function OmegaViewModel(parameters) {
       omegaApp.closeAlert();
     } else if (command === "cancelled") {
       self.removeNotification();
-      // omegaApp.closeAlert();
       omegaApp.printCancelledAlert();
     } else if (command === "startPrint") {
       self.removeNotification();
