@@ -362,7 +362,7 @@ class Omega():
                                         self.amountLeftToExtrude = 0
                                         self._logger.info("0" + "mm left to extrude.")
                                         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
-                                        if not self.cancelFromHub or not self.cancelFromP2:
+                                        if not self.cancelFromHub and not self.cancelFromP2:
                                             self.updateUI({"command": "alert", "data": "startPrint"})
                                         self.amountLeftToExtrude = ""
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[0]:
@@ -832,12 +832,14 @@ class Omega():
             try:
                 command["command"] = int(command["command"][1:])
             except:
+                # command should be a number, otherwise invalid command
                 self._logger.info("%s is not a valid command: %s" % (command["command"], line))
                 return None
 
             # verify tokens' validity
             if command["total_params"] > 0:
                 for param in command["params"]:
+                    # params should start with D or U, otherwise invalid param
                     if param[0] != "D" and param[0] != "U":
                         self._logger.info("%s is not a valid parameter: %s" % (param, line))
                         return None
@@ -848,5 +850,6 @@ class Omega():
             self.heartbeat = True
             return None
         else:
-            self._logger.info("Invalid first character: %s" % line)
+            # Invalid first character (IFC). Don't need to do anything, but log out for potential troubleshooting.
+            self._logger.info("IFC: %s" % line)
             return None

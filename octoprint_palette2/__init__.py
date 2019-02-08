@@ -123,18 +123,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             if ".mcf.gcode" in payload["name"]:
                 self.palette.actualPrintStarted = False
                 self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
-        elif "PrintCancelling" in event:
-            if ".mcf.gcode" in payload["name"] and self.palette.connected:
-                self.palette.currentStatus = "Cancelling print"
-                self.palette.updateUI({"command": "currentStatus", "data": self.palette.currentStatus})
-                self.palette.updateUI({"command": "alert", "data": "cancelling"})
         elif "PrintCancelled" in event:
             if ".mcf.gcode" in payload["name"] and self.palette.connected:
                 self.palette.actualPrintStarted = False
-                self.palette.currentStatus = "Print cancelled"
                 self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
-                self.palette.updateUI({"command": "currentStatus", "data": self.palette.currentStatus})
-                self.palette.updateUI({"command": "alert", "data": "cancelled"})
                 if not self.palette.cancelFromP2:
                     self._logger.info("Cancelling print from Hub")
                     self.palette.cancelFromHub = True

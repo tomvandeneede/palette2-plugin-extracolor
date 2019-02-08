@@ -118,7 +118,7 @@ omegaApp.printCancellingAlert = () => {
 omegaApp.printCancelledAlert = () => {
   return swal({
     title: "Palette 2: Print cancelled",
-    text: `Palette 2 print successfully cancelled. Please press "Finished" on Palette 2 before starting any new print.`,
+    text: `Palette 2 print successfully cancelled. Please make sure you have pressed "Finished" on Palette 2's screen before starting a new print.`,
     type: "info"
   });
 };
