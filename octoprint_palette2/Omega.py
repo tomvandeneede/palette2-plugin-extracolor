@@ -43,18 +43,15 @@ class Omega():
 
     def getAllPorts(self):
         baselist = []
-
         if 'win32' in sys.platform:
             # use windows com stuff
             self._logger.info("Using a windows machine")
             for port in serial.tools.list_ports.grep('.*0403:6015.*'):
                 self._logger.info("got port %s" % port.device)
                 baselist.append(port.device)
-
         baselist = baselist \
             + glob.glob('/dev/serial/by-id/*FTDI*') \
             + glob.glob('/dev/*usbserial*') \
-
         baselist = self.getRealPaths(baselist)
         # get unique values only
         baselist = list(set(baselist))
@@ -818,17 +815,15 @@ class Omega():
     def parseLine(self, line):
         line = line.strip()
 
-        # is the first character O
+        # is the first character O?
         if line[0] == "O":
             tokens = [token.strip() for token in line.split(" ")]
-
             # make command object
             command = {
                 "command": tokens[0],
                 "total_params": len(tokens) - 1,
                 "params": tokens[1:]
             }
-
             # verify command validity
             try:
                 command["command"] = int(command["command"][1:])
@@ -836,7 +831,6 @@ class Omega():
                 # command should be a number, otherwise invalid command
                 self._logger.info("%s is not a valid command: %s" % (command["command"], line))
                 return None
-
             # verify tokens' validity
             if command["total_params"] > 0:
                 for param in command["params"]:
@@ -844,7 +838,6 @@ class Omega():
                     if param[0] != "D" and param[0] != "U":
                         self._logger.info("%s is not a valid parameter: %s" % (param, line))
                         return None
-
             return command
         # otherwise, is this line the heartbeat response?
         elif line == "Connection Okay":
