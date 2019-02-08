@@ -60,15 +60,18 @@ class Omega():
 
     def getAllPorts(self):
         baselist = []
+
         if 'win32' in sys.platform:
             # use windows com stuff
             self._logger.info("Using a windows machine")
             for port in serial.tools.list_ports.grep('.*0403:6015.*'):
                 self._logger.info("got port %s" % port.device)
                 baselist.append(port.device)
+
         baselist = baselist \
             + glob.glob('/dev/serial/by-id/*FTDI*') \
             + glob.glob('/dev/*usbserial*') \
+
         baselist = self.getRealPaths(baselist)
         # get unique values only
         baselist = list(set(baselist))
@@ -89,6 +92,7 @@ class Omega():
         self.updateUI({"command": "selectedPort", "data": self.selectedPort})
 
     def getRealPaths(self, ports):
+        self._logger.info("Paths: %s" % ports)
         for index, port in enumerate(ports):
             port = os.path.realpath(port)
             ports[index] = port
