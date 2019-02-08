@@ -75,6 +75,7 @@ class Omega():
         self.updateUI({"command": "selectedPort", "data": self.selectedPort})
 
     def getRealPaths(self, ports):
+        self._logger.info("Paths: %s" % ports)
         for index, port in enumerate(ports):
             port = os.path.realpath(port)
             ports[index] = port
