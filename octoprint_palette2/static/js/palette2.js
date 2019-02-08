@@ -273,17 +273,15 @@ function OmegaViewModel(parameters) {
   self.pings = ko.observableArray([]);
   self.pongs = ko.observableArray([]);
 
-
   // SKELLATORE
   self.ShowPingPongOnPrinter = ko.observable(true);
   self.FeedrateControl = ko.observable(true);
   self.FeedrateSlowed = ko.observable(false);
   self.FeedrateNormalPct = ko.observable(100);
   self.FeedrateSlowPct = ko.observable(80);
-  self.Advanced_Status = ko.observable('Awaiting Update...');
-  self.Advanced_Switches = ko.observable('Awaiting Update...');
+  self.Advanced_Status = ko.observable("Awaiting Update...");
+  self.Advanced_Switches = ko.observable("Awaiting Update...");
   // /SKELLATORE
-
 
   /* COMMUNICATION TO BACK-END FUNCTIONS */
 
@@ -527,21 +525,22 @@ function OmegaViewModel(parameters) {
     });
   };
 
+  // SKELLATORE
 
-  self.FeedrateControl.subscribe( function() {
-    self.ajax_payload({command: "changeFeedrateControl", condition: self.FeedrateControl()})
+  self.FeedrateControl.subscribe(function() {
+    self.ajax_payload({ command: "changeFeedrateControl", condition: self.FeedrateControl() });
   });
-  self.ShowPingPongOnPrinter.subscribe( function() {
-    self.ajax_payload({command: "changeShowPingPongOnPrinter", condition: self.ShowPingPongOnPrinter()})
+  self.ShowPingPongOnPrinter.subscribe(function() {
+    self.ajax_payload({ command: "changeShowPingPongOnPrinter", condition: self.ShowPingPongOnPrinter() });
   });
-  self.FeedrateNormalPct.subscribe( function() {
-    self.ajax_payload({command: "changeFeedrateNormalPct", value: self.FeedrateNormalPct()})
+  self.FeedrateNormalPct.subscribe(function() {
+    self.ajax_payload({ command: "changeFeedrateNormalPct", value: self.FeedrateNormalPct() });
   });
   self.FeedrateSlowPct.subscribe(function() {
-    self.ajax_payload({command: "changeFeedrateSlowPct", value: self.FeedrateSlowPct()})
+    self.ajax_payload({ command: "changeFeedrateSlowPct", value: self.FeedrateSlowPct() });
   });
 
-  self.ajax_payload = (payload) => {
+  self.ajax_payload = payload => {
     $.ajax({
       url: API_BASEURL + "plugin/palette2",
       type: "POST",
@@ -551,72 +550,79 @@ function OmegaViewModel(parameters) {
     });
   };
 
-  self.update_from_plugin_message = (message) => {
-    if (!message.command){
-      if (message.includes('ADVANCED:')){
-        value_ary = message.split('=');
+  self.update_from_plugin_message = message => {
+    if (!message.command) {
+      if (message.includes("ADVANCED:")) {
+        value_ary = message.split("=");
         switch (value_ary[0]) {
-            case 'ADVANCED:DisplayAdvancedOptions':
-                if (value_ary[1].includes("True")) {
-                    $('.advanced_options').show();
-                } else {
-                    $('.advanced_options').hide();
-                }
-                break;
-            case 'ADVANCED:FEEDRATECONTROL':
-                if (value_ary[1].includes('True')) {
-                    self.FeedrateControl(true);
-                } else {
-                    self.FeedrateControl(false);
-                }
-                break;
-            case 'ADVANCED:FEEDRATESLOWED=':
-                if (value_ary[1].includes('True')) {
-                    self.FeedrateSlowed(true);
-                } else {
-                    self.FeedrateSlowed(false);
-                }
-                break;
-            case 'ADVANCED:SHOWPINGPONGONPRINTER':
-                if (value_ary[1].includes('True')) {
-                    self.ShowPingPongOnPrinter(true);
-                } else {
-                    self.ShowPingPongOnPrinter(false);
-                }
-                break;
-            case 'ADVANCED:FEEDRATENORMALPCT':
-                self.FeedrateNormalPct(value_ary[1]);
-                break;
-            case 'ADVANCED:FEEDRATESLOWPCT':
-                self.FeedrateSlowPct(value_ary[1]);
-                break;
-            case 'ADVANCED:UIMESSAGE':
-                self.Advanced_Status(value_ary[1]);
-                break;
-            case 'ADVANCED:UISWITCHES':
-                self.update_switches(value_ary[1]);
-                break;
-            default:
-                //Do Nothing
+          case "ADVANCED:DisplayAdvancedOptions":
+            if (value_ary[1].includes("True")) {
+              $(".advanced_options").show();
+            } else {
+              $(".advanced_options").hide();
+            }
+            break;
+          case "ADVANCED:FEEDRATECONTROL":
+            if (value_ary[1].includes("True")) {
+              self.FeedrateControl(true);
+            } else {
+              self.FeedrateControl(false);
+            }
+            break;
+          case "ADVANCED:FEEDRATESLOWED=":
+            if (value_ary[1].includes("True")) {
+              self.FeedrateSlowed(true);
+            } else {
+              self.FeedrateSlowed(false);
+            }
+            break;
+          case "ADVANCED:SHOWPINGPONGONPRINTER":
+            if (value_ary[1].includes("True")) {
+              self.ShowPingPongOnPrinter(true);
+            } else {
+              self.ShowPingPongOnPrinter(false);
+            }
+            break;
+          case "ADVANCED:FEEDRATENORMALPCT":
+            self.FeedrateNormalPct(value_ary[1]);
+            break;
+          case "ADVANCED:FEEDRATESLOWPCT":
+            self.FeedrateSlowPct(value_ary[1]);
+            break;
+          case "ADVANCED:UIMESSAGE":
+            self.Advanced_Status(value_ary[1]);
+            break;
+          case "ADVANCED:UISWITCHES":
+            self.update_switches(value_ary[1]);
+            break;
+          default:
+          //Do Nothing
         }
       }
     }
   };
 
-  self.update_switches = (values) => {
-    switch_values = values.split(',');
-    switch_string = "<b>Switch Status:</b><br/><b>Splice Core: </b>" + switch_values[0].toString()
-             + "<br/><b>Buffer: </b>" + switch_values[1]
-             + "<br/><b>Filament 1: </b>" + switch_values[2]
-             + "<br/><b>Filament 2: </b>" + switch_values[3]
-             + "<br/><b>Filament 3: </b>" + switch_values[4]
-             + "<br/><b>Filament 4: </b>" + switch_values[5]
-             + "<br/><b>Cutting Wheel: </b>" + switch_values[6];
+  self.update_switches = values => {
+    switch_values = values.split(",");
+    switch_string =
+      "<b>Switch Status:</b><br/><b>Splice Core: </b>" +
+      switch_values[0].toString() +
+      "<br/><b>Buffer: </b>" +
+      switch_values[1] +
+      "<br/><b>Filament 1: </b>" +
+      switch_values[2] +
+      "<br/><b>Filament 2: </b>" +
+      switch_values[3] +
+      "<br/><b>Filament 3: </b>" +
+      switch_values[4] +
+      "<br/><b>Filament 4: </b>" +
+      switch_values[5] +
+      "<br/><b>Cutting Wheel: </b>" +
+      switch_values[6];
     $(".switch_status").html(switch_string);
     self.Advanced_Switches = switch_string;
   };
   // /SKELLATORE
-
 
   self.fromResponse = () => {};
 

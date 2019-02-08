@@ -471,7 +471,7 @@ class Omega():
         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
         self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
         # SKELLATORE
-        self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:DisplayAdvancedOptions=%s" % self._settings.get(["AdvancedOptions"]))
+        self.updateUI("ADVANCED:DisplayAdvancedOptions=%s" % self._settings.get(["AdvancedOptions"]), True)
         self.advanced_updateUI()
         # /SKELLATORE
 
@@ -933,7 +933,7 @@ class Omega():
                             self.FeedrateSlowed = True
                         except ValueError:
                             self._logger.info('ADVANCED: Unable to Update Feed-Rate -> SLOW :: ' + str(ValueError))
-                    self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATESLOWED=True")
+                    self.updateUI("ADVANCED:FEEDRATESLOWED=True")
                     self.advanced_updateUI()
                 else:
                     self._logger.info('ADVANCED: Feed-rate Control: INACTIVE')
@@ -949,7 +949,7 @@ class Omega():
                         self.FeedrateSlowed = False
                     except ValueError:
                         self._logger.info('ADVANCED: Unable to Update Feed-Rate -> NORMAL :: ' + str(ValueError))
-                    self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATESLOWED=False")
+                    self.updateUI("ADVANCED:FEEDRATESLOWED=False")
                     self.advanced_updateUI()
                 else:
                     self._logger.info('ADVANCED: Feed-Rate Control: INACTIVE')
@@ -1011,10 +1011,9 @@ class Omega():
                                  + str(self.cutter_switch))
                 if last_status_received:
                     self._logger.info("ADVANCED: SWITCHES: %s" % switch_status)
-                    self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:UISWITCHES=%s" % switch_status)
+                    self.updateUI("ADVANCED:UISWITCHES=%s" % switch_status)
             if advanced_status != '':
-                self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:UIMESSAGE=%s" % advanced_status)
-
+                self.updateUI("ADVANCED:UIMESSAGE=%s" % advanced_status)
         except Exception as e:
             # Something went wrong with the connection to Palette2
             print(e)
@@ -1022,16 +1021,11 @@ class Omega():
     def advanced_updateUI(self):
         self._logger.info("SKELLATORE UPDATE UI")
         try:
-            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:SHOWPINGPONGONPRINTER=%s" %
-                                                     self._settings.get(["ShowPingPongOnPrinter"]))
-            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATECONTROL=%s" %
-                                                     self._settings.get(["FeedrateControl"]))
-            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATESLOWED=%s" %
-                                                     self._settings.get(["FeedrateSlowed"]))
-            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATENORMALPCT=%s" %
-                                                     self._settings.get(["FeedrateNormalPct"]))
-            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATESLOWPCT=%s" %
-                                                     self._settings.get(["FeedrateSlowPct"]))
+            self.updateUI("ADVANCED:SHOWPINGPONGONPRINTER=%s" % self._settings.get(["ShowPingPongOnPrinter"]))
+            self.updateUI("ADVANCED:FEEDRATECONTROL=%s" % self._settings.get(["FeedrateControl"]))
+            self.updateUI("ADVANCED:FEEDRATESLOWED=%s" % self._settings.get(["FeedrateSlowed"]))
+            self.updateUI("ADVANCED:FEEDRATENORMALPCT=%s" % self._settings.get(["FeedrateNormalPct"]))
+            self.updateUI("ADVANCED:FEEDRATESLOWPCT=%s" % self._settings.get(["FeedrateSlowPct"]))
         except Exception as e:
             print(e)
 
