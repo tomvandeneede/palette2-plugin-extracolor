@@ -170,9 +170,12 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif "SettingsUpdated" in event:
             self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
             self._logger.info("Display alerts: %s" % str(self._settings.get(["palette2Alerts"])))
-            self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["AdvancedOptions"])))
             self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
             self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
+            # SKELLATORE
+            self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["AdvancedOptions"])))
+            self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:DisplayAdvancedOptions=%s" % self._settings.get(["AdvancedOptions"]))
+            # SKELLATORE
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
             else:

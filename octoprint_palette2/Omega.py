@@ -934,10 +934,10 @@ class Omega():
                         except ValueError:
                             self._logger.info('ADVANCED: Unable to Update Feed-Rate -> SLOW :: ' + str(ValueError))
                     self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATESLOWED=True")
-                    self.updateUI()
+                    self.advanced_updateUI()
                 else:
                     self._logger.info('ADVANCED: Feed-rate Control: INACTIVE')
-                    self.updateUI()
+                    self.advanced_updateUI()
             if 'O97 U25 D1' in line:
                 self._logger.info('ADVANCED: SPLICE END')
                 self.advanced_queue_switch_status()
@@ -950,10 +950,10 @@ class Omega():
                     except ValueError:
                         self._logger.info('ADVANCED: Unable to Update Feed-Rate -> NORMAL :: ' + str(ValueError))
                     self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:FEEDRATESLOWED=False")
-                    self.updateUI()
+                    self.advanced_updateUI()
                 else:
                     self._logger.info('ADVANCED: Feed-Rate Control: INACTIVE')
-                    self.updateUI()
+                    self.advanced_updateUI()
             if 'O34 D1' in line:
                 self._logger.info("ADVANCED: Ping! Pong!")
                 self._logger.info("ADVANCED: Show on Printer: %s" % self.ShowPingPongOnPrinter)
@@ -963,10 +963,10 @@ class Omega():
                     parms = line[idx+7:].split(" ")
                     try:
                         self._printer.commands("M117 Ping {} {}pct".format(str(int(parms[1][1:], 16)), parms[0][1:]))
-                        self.updateUI()
+                        self.advanced_updateUI()
                     except ValueError:
                         self._printer.commands("M117 {}".format(line[idx+7:]))
-                        self.updateUI()
+                        self.advanced_updateUI()
             if 'O68 D2' in line:
                 # Switch Status
                 if 'O68 D2 D0' in line:
@@ -1020,6 +1020,7 @@ class Omega():
             print(e)
 
     def advanced_updateUI(self):
+        self._logger.info("SKELLATORE UPDATE UI")
         try:
             self._plugin_manager.send_plugin_message(self._identifier, "ADVANCED:SHOWPINGPONGONPRINTER=%s" %
                                                      self._settings.get(["ShowPingPongOnPrinter"]))
@@ -1099,7 +1100,7 @@ class Omega():
                 self.changeFeedrateNormalPct(data["value"])
             if command == "changeFeedrateSlowPct":
                 self.changeFeedrateSlowPct(data["value"])
-            self.updateUI()
+            self.advanced_updateUI()
         except Exception as e:
             print(e)
     # /SKELLATORE
