@@ -696,6 +696,7 @@ class Omega():
                 self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
                 self.updateUI({"command": "printPaused", "data": self.printPaused})
                 self.printHeartbeatCheck = ""
+                self.resetFinished = False
             else:
                 self._logger.info("Palette did not respond to O99")
                 self.printHeartbeatCheck = "P2NotConnected"
