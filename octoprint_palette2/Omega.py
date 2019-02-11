@@ -1034,7 +1034,7 @@ class Omega():
                 self.updateUI("ADVANCED:UIMESSAGE=%s" % advanced_status)
         except Exception as e:
             # Something went wrong with the connection to Palette2
-            print(e)
+            self._logger.info(e)
 
     def advanced_updateUI(self):
         self._logger.info("SKELLATORE UPDATE UI")
@@ -1045,7 +1045,7 @@ class Omega():
             self.updateUI("ADVANCED:FEEDRATENORMALPCT=%s" % self._settings.get(["FeedrateNormalPct"]))
             self.updateUI("ADVANCED:FEEDRATESLOWPCT=%s" % self._settings.get(["FeedrateSlowPct"]))
         except Exception as e:
-            print(e)
+            self._logger.info(e)
 
     def changeShowPingPongOnPrinter(self, condition):
         try:
@@ -1053,7 +1053,7 @@ class Omega():
             self._settings.save(force=True)
             self._logger.info("ADVANCED: ShowPingPongOnPrinter -> '%s' '%s'" % (condition, self._settings.get(["ShowPingPongOnPrinter"])))
         except Exception as e:
-            print(e)
+            self._logger.info(e)
 
     def changeFeedrateControl(self, condition):
         try:
@@ -1061,7 +1061,7 @@ class Omega():
             self._settings.save(force=True)
             self._logger.info("ADVANCED: FeedrateControl -> '%s' '%s'" % (condition, self._settings.get(["FeedrateControl"])))
         except Exception as e:
-            print(e)
+            self._logger.info(e)
 
     def changeFeedrateSlowed(self, condition):
         try:
@@ -1069,7 +1069,7 @@ class Omega():
             self._settings.save(force=True)
             self._logger.info("ADVANCED: FeedrateSlowed -> '%s' '%s'" % (condition, self._settings.get(["FeedrateSlowed"])))
         except Exception as e:
-            print(e)
+            self._logger.info(e)
 
     def changeFeedrateNormalPct(self, value):
         try:
@@ -1079,7 +1079,7 @@ class Omega():
             if not self._settings.get(["FeedrateSlowed"]):
                 self._printer.commands('M220 S%s' % value)
         except Exception as e:
-            print(e)
+            self._logger.info(e)
 
     def changeFeedrateSlowPct(self, value):
         try:
@@ -1089,7 +1089,7 @@ class Omega():
             if self._settings.get(["FeedrateSlowed"]):
                 self._printer.commands('M220 S%s' % value)
         except Exception as e:
-            print(e)
+            self._logger.info(e)
 
     def advanced_on_event(self, event, payload):
         try:
@@ -1100,7 +1100,7 @@ class Omega():
                 self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
                 self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
         except Exception as e:
-            print(e)
+            self._logger.info(e)
 
     def advanced_api_command(self, command, data):
         try:
@@ -1114,5 +1114,5 @@ class Omega():
                 self.changeFeedrateSlowPct(data["value"])
             self.advanced_updateUI()
         except Exception as e:
-            print(e)
+            self._logger.info(e)
     # /SKELLATORE
