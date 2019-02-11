@@ -625,9 +625,9 @@ class Omega():
         self.filename = ""
 
         self.resetFinished = False
-        # SKELLATORE
-        self.advanced_reset_print_values()
-        # /SKELLATORE
+        # # SKELLATORE
+        # self.advanced_reset_print_values()
+        # # /SKELLATORE
         self._logger.info("Omega: Resetting print values - FINISHED")
 
     def resetOmega(self):
@@ -904,7 +904,7 @@ class Omega():
         self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
         self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
         self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
-        self.advanced_queue_switch_status()
+        # self.advanced_queue_switch_status()
 
     def advanced_reset_print_values(self):
         self.advanced_queue_switch_status()

@@ -128,6 +128,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.resetPrintValues()
                 self.palette.resetFinished = True
                 self.palette.tryHeartbeatBeforePrint()
+                # SKELLATORE
+                self.palette.advanced_reset_print_values()
+                # /SKELLATORE
                 self._logger.info("Filename: %s" % payload["name"].split('.')[0])
                 self.palette.setFilename(payload["name"].split(".")[0])
                 self.palette.updateUIAll()
