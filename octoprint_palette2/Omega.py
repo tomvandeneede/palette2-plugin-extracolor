@@ -608,11 +608,23 @@ class Omega():
         self.resetOmega()
         self.updateUIAll()
 
+    def initializePrintVariables(self):
+        self._logger.info("PRINT STARTED P2")
+        self.resetPrintValues()
+        # self.resetFinished = True
+        self.tryHeartbeatBeforePrint()
+        # SKELLATORE
+        self.advanced_reset_print_values()
+        # /SKELLATORE
+        self.updateUIAll()
+        self.printHeartbeatCheck = ""
+
     def gotOmegaCmd(self, cmd):
         if "O1" not in cmd:
             if "O21" in cmd:
-                while not self.resetFinished:
-                    time.sleep(0.01)
+                # while not self.resetFinished:
+                #     time.sleep(0.01)
+                self.initializePrintVariables()
                 self._logger.info("Starting Header Sequence")
                 self.header[0] = cmd
                 self._logger.info("Omega: Got Version: %s" % self.header[0])
@@ -696,7 +708,7 @@ class Omega():
                 self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
                 self.updateUI({"command": "printPaused", "data": self.printPaused})
                 self.printHeartbeatCheck = ""
-                self.resetFinished = False
+                # self.resetFinished = False
             else:
                 self._logger.info("Palette did not respond to O99")
                 self.printHeartbeatCheck = "P2NotConnected"

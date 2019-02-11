@@ -98,14 +98,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.updateUIAll()
         elif "PrintStarted" in event:
             if ".mcf.gcode" in payload["name"]:
-                self._logger.info("PRINT STARTED P2")
-                self.palette.resetPrintValues()
-                self.palette.resetFinished = True
-                self.palette.tryHeartbeatBeforePrint()
+                # self._logger.info("PRINT STARTED P2")
+                # self.palette.resetPrintValues()
+                # self.palette.resetFinished = True
+                # self.palette.tryHeartbeatBeforePrint()
                 self._logger.info("Filename: %s" % payload["name"].split('.')[0])
                 self.palette.setFilename(payload["name"].split(".")[0])
-                self.palette.updateUIAll()
-                self.palette.printHeartbeatCheck = ""
+                # self.palette.updateUIAll()
+                # self.palette.printHeartbeatCheck = ""
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True
