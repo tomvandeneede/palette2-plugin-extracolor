@@ -613,9 +613,6 @@ class Omega():
         self.resetPrintValues()
         # self.resetFinished = True
         self.tryHeartbeatBeforePrint()
-        # SKELLATORE
-        self.advanced_reset_print_values()
-        # /SKELLATORE
         self.updateUIAll()
         self.printHeartbeatCheck = ""
 
