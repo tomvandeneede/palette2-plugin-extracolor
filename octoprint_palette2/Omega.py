@@ -419,9 +419,9 @@ class Omega():
                     self._logger.info(line.encode())
                     if "O99" in line:
                         self._logger.info("O99 sent to P2")
-                        while self.printHeartbeatCheck == "Checking":
-                            self._logger.info("WAITING FOR HEARTBEAT...")
-                            time.sleep(1)
+                        # while self.printHeartbeatCheck == "Checking":
+                        #     self._logger.info("WAITING FOR HEARTBEAT...")
+                        #     time.sleep(1)
                 else:
                     self._logger.info("Line is NONE")
             except Empty:
