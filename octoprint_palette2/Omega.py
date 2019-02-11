@@ -540,7 +540,7 @@ class Omega():
             self.writeQueue.get()
 
     def resetVariables(self):
-        self._logger.info("Omega: Resetting print values")
+        self._logger.info("Omega: Resetting all values - STARTED")
         self.activeDrive = "1"
         self.currentFilepath = "/home/s1/mcor.msf"
 
@@ -584,11 +584,14 @@ class Omega():
         self.connectionStop = False
         self.heartbeat = False
 
+        self.resetFinished = False
         # SKELLATORE
         self.advanced_reset_values()
         # /SKELLATORE
+        self._logger.info("Omega: Resetting all values - FINISHED")
 
     def resetPrintValues(self):
+        self._logger.info("Omega: Resetting print values - STARTED")
         self.sentCounter = 0
         self.algoCounter = 0
         self.spliceCounter = 0
@@ -621,9 +624,11 @@ class Omega():
 
         self.filename = ""
 
+        self.resetFinished = False
         # SKELLATORE
         self.advanced_reset_print_values()
         # /SKELLATORE
+        self._logger.info("Omega: Resetting print values - FINISHED")
 
     def resetOmega(self):
         self.resetConnection()
@@ -641,6 +646,9 @@ class Omega():
     def gotOmegaCmd(self, cmd):
         if "O1" not in cmd:
             if "O21" in cmd:
+                while not self.resetFinished:
+                    time.sleep(0.01)
+                self._logger.info("Starting Header Sequence")
                 self.header[0] = cmd
                 self._logger.info("Omega: Got Version: %s" % self.header[0])
             elif "O22" in cmd:
