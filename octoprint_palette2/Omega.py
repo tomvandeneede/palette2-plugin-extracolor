@@ -649,7 +649,7 @@ class Omega():
         # self.resetFinished = True
         self.tryHeartbeatBeforePrint()
         # SKELLATORE
-        self.advanced_reset_values()
+        self.advanced_queue_switch_status()
         # /SKELLATORE
         self.updateUIAll()
         self.printHeartbeatCheck = ""
@@ -1036,14 +1036,125 @@ class Omega():
             # Something went wrong with the connection to Palette2
             self._logger.info(e)
 
+     def advanced_parse_line2(self, line):
+        # self._logger.info('ADVANCED:' + line)
+        last_status_received = False
+        try:
+            advanced_status = ''
+            if 'O97 U25 D0' in line:
+                self._logger.info('ADVANCED: SPLICE START')
+                self.advanced_queue_switch_status()
+                if self.FeedrateControl:
+                    self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
+                    advanced_status = 'Slice Starting: Speed -> SLOW(%s)' % self.FeedrateSlowPct
+                    # Splice Start
+                    if self.FeedrateSlowed:
+                        # Feedrate already slowed, set it again to be safe.
+                        try:
+                            self._logger.info("ADVANCED: Feed-rate SLOW - ACTIVE* (%s)" % self.FeedrateSlowPct)
+                            self._printer.commands('M220 S%s' % self.FeedrateSlowPct)
+                        except ValueError:
+                            self._logger.info('ADVANCED: Unable to Update Feed-Rate -> SLOW :: ' + str(ValueError))
+                    else:
+                        self._logger.info('ADVANCED: Feed-rate SLOW - ACTIVE (%s)' % self.FeedrateSlowPct)
+                        try:
+                            self._printer.commands('M220 S%s B' % self.FeedrateSlowPct)
+                            self.FeedrateSlowed = True
+                        except ValueError:
+                            self._logger.info('ADVANCED: Unable to Update Feed-Rate -> SLOW :: ' + str(ValueError))
+                    self.updateUI("ADVANCED:FEEDRATESLOWED=True")
+                    self.advanced_updateUI()
+                else:
+                    self._logger.info('ADVANCED: Feed-rate Control: INACTIVE')
+                    self.advanced_updateUI()
+            if 'O97 U25 D1' in line:
+                self._logger.info('ADVANCED: SPLICE END')
+                self.advanced_queue_switch_status()
+                if self.FeedrateControl:
+                    self._logger.info('ADVANCED: Feed-rate NORMAL - ACTIVE (%s)' % self.FeedrateNormalPct)
+                    advanced_status = 'Slice Finished: Speed -> NORMAL(%s) ' % self.FeedrateNormalPct
+                    try:
+                        self._printer.commands('M220 S%s' % self.FeedrateNormalPct)
+                        self.FeedrateSlowed = False
+                    except ValueError:
+                        self._logger.info('ADVANCED: Unable to Update Feed-Rate -> NORMAL :: ' + str(ValueError))
+                    self.updateUI("ADVANCED:FEEDRATESLOWED=False")
+                    self.advanced_updateUI()
+                else:
+                    self._logger.info('ADVANCED: Feed-Rate Control: INACTIVE')
+                    self.advanced_updateUI()
+            if 'O34 D1' in line:
+                self._logger.info("ADVANCED: Ping! Pong!")
+                self._logger.info("ADVANCED: Show on Printer: %s" % self.ShowPingPongOnPrinter)
+                # filter out ping offset information
+                if self.ShowPingPongOnPrinter:
+                    idx = line.find("O34")
+                    parms = line[idx+7:].split(" ")
+                    try:
+                        self._printer.commands("M117 Ping {} {}pct".format(str(int(parms[1][1:], 16)), parms[0][1:]))
+                        self.advanced_updateUI()
+                    except ValueError:
+                        self._printer.commands("M117 {}".format(line[idx+7:]))
+                        self.advanced_updateUI()
+            if 'O68 D2' in line:
+                # Switch Status
+                if 'O68 D2 D0' in line:
+                    if 'D2 D0 D1' in line:
+                        self.splicecore_switch = True
+                    else:
+                        self.splicecore_switch = False
+                if 'O68 D2 D1' in line:
+                    if 'D2 D1 D1' in line:
+                        self.buffer_switch = True
+                    else:
+                        self.buffer_switch = False
+                if 'O68 D2 D2' in line:
+                    if 'D2 D2 D1' in line:
+                        self.filament_input_1_switch = True
+                    else:
+                        self.filament_input_1_switch = False
+                if 'O68 D2 D3' in line:
+                    if 'D2 D3 D1' in line:
+                        self.filament_input_2_switch = True
+                    else:
+                        self.filament_input_2_switch = False
+                if 'O68 D2 D4' in line:
+                    if 'D2 D4 D1' in line:
+                        self.filament_input_3_switch = True
+                    else:
+                        self.filament_input_3_switch = False
+                if 'O68 D2 D5' in line:
+                    if 'D2 D5 D1' in line:
+                        self.filament_input_4_switch = True
+                    else:
+                        self.filament_input_4_switch = False
+                if 'O68 D2 D6' in line:
+                    if 'D2 D6 D1' in line:
+                        self.cutter_switch = True
+                    else:
+                        self.cutter_switch = False
+                    last_status_received = True
+                switch_status = (str(self.splicecore_switch) + ',' + str(self.buffer_switch) + ','
+                                 + str(self.filament_input_1_switch) + ',' + str(self.filament_input_2_switch) + ','
+                                 + str(self.filament_input_3_switch) + ',' + str(self.filament_input_4_switch) + ','
+                                 + str(self.cutter_switch))
+                if last_status_received:
+                    self._logger.info("ADVANCED: SWITCHES: %s" % switch_status)
+                    self.updateUI("ADVANCED:UISWITCHES=%s" % switch_status)
+            if advanced_status != '':
+                self.updateUI("ADVANCED:UIMESSAGE=%s" % advanced_status)
+        except Exception as e:
+            # Something went wrong with the connection to Palette2
+            self._logger.info(e)
+
     def advanced_updateUI(self):
         self._logger.info("SKELLATORE UPDATE UI")
         try:
-            self.updateUI("ADVANCED:SHOWPINGPONGONPRINTER=%s" % self._settings.get(["ShowPingPongOnPrinter"]))
-            self.updateUI("ADVANCED:FEEDRATECONTROL=%s" % self._settings.get(["FeedrateControl"]))
-            self.updateUI("ADVANCED:FEEDRATESLOWED=%s" % self._settings.get(["FeedrateSlowed"]))
-            self.updateUI("ADVANCED:FEEDRATENORMALPCT=%s" % self._settings.get(["FeedrateNormalPct"]))
-            self.updateUI("ADVANCED:FEEDRATESLOWPCT=%s" % self._settings.get(["FeedrateSlowPct"]))
+            self.updateUI("ADVANCED:SHOWPINGPONGONPRINTER=%s" % self._settings.get(["ShowPingPongOnPrinter"]), True)
+            self.updateUI("ADVANCED:FEEDRATECONTROL=%s" % self._settings.get(["FeedrateControl"]), True)
+            self.updateUI("ADVANCED:FEEDRATESLOWED=%s" % self._settings.get(["FeedrateSlowed"]), True)
+            self.updateUI("ADVANCED:FEEDRATENORMALPCT=%s" % self._settings.get(["FeedrateNormalPct"]), True)
+            self.updateUI("ADVANCED:FEEDRATESLOWPCT=%s" % self._settings.get(["FeedrateSlowPct"]), True)
         except Exception as e:
             self._logger.info(e)
 
