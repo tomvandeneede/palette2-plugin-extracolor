@@ -395,9 +395,6 @@ class Omega():
                     self._logger.info(line.encode())
                     if "O99" in line:
                         self._logger.info("O99 sent to P2")
-                        # while self.printHeartbeatCheck == "Checking":
-                        #     self._logger.info("WAITING FOR HEARTBEAT...")
-                        #     time.sleep(1)
                 else:
                     self._logger.info("Line is NONE")
             except Empty:
@@ -611,7 +608,6 @@ class Omega():
     def initializePrintVariables(self):
         self._logger.info("PRINT STARTED P2")
         self.resetPrintValues()
-        # self.resetFinished = True
         self.tryHeartbeatBeforePrint()
         self.updateUIAll()
         self.printHeartbeatCheck = ""
@@ -619,8 +615,6 @@ class Omega():
     def gotOmegaCmd(self, cmd):
         if "O1" not in cmd:
             if "O21" in cmd:
-                # while not self.resetFinished:
-                #     time.sleep(0.01)
                 self.initializePrintVariables()
                 self._logger.info("Starting Header Sequence")
                 self.header[0] = cmd
@@ -705,7 +699,6 @@ class Omega():
                 self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
                 self.updateUI({"command": "printPaused", "data": self.printPaused})
                 self.printHeartbeatCheck = ""
-                # self.resetFinished = False
             else:
                 self._logger.info("Palette did not respond to O99")
                 self.printHeartbeatCheck = "P2NotConnected"
