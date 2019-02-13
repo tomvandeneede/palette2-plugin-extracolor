@@ -315,6 +315,7 @@ class Omega():
                                 if command["params"][0] == "D1":
                                     try:
                                         index_to_print = int(command["params"][1][1:], 16)
+                                        self.allMCFFiles.reverse()
                                         file = self.allMCFFiles[index_to_print]
                                         self.startPrintFromP2(file)
                                     except:
