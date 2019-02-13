@@ -575,10 +575,6 @@ class Omega():
         self.drivesInUse = []
         self.amountLeftToExtrude = ""
         self.printPaused = ""
-        self.firstTime = False
-        self.lastCommandSent = ""
-        self.currentPingCmd = ""
-        self.palette2SetupStarted = False
         self.allMCFFiles = []
         self.actualPrintStarted = False
         self.totalPings = 0
