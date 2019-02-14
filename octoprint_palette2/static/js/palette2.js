@@ -843,31 +843,6 @@ function OmegaViewModel(parameters) {
     self.removeNotification();
   };
 
-  self.sendErrorReport = send => {
-    var payload = {
-      command: "sendErrorReport",
-      send: send
-    };
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
-  };
-
-  self.readyToStartAlert = () => {
-    return swal({
-      title: "Filament in place and ready to go",
-      text: `Please go back to your Palette 2 and press "Finished". On the next screen, press "Start Print". Your print will begin automatically.`,
-      type: "info",
-      input: "checkbox",
-      inputPlaceholder: "Don't show me these setup alerts anymore",
-      confirmButtonText: "START PRINT"
-    });
-  };
-
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
       // SKELLATORE
