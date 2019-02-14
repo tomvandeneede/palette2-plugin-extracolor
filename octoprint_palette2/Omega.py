@@ -256,9 +256,6 @@ class Omega():
                     command = self.parseLine(line)
                     if command != None:
                         self._logger.info("Omega: read in line: %s" % command)
-                        # SKELLATORE
-                        self.advanced_parse_line(line.strip())
-                        # /SKELLATORE
                         if command["command"] == 20:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D5":
