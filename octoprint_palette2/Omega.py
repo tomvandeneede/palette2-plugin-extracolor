@@ -44,7 +44,7 @@ class Omega():
         # SKELLATORE
         self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"]) or True
         self.FeedrateControl = self._settings.get(["FeedrateControl"]) or True
-        self.FeedrateSlowed = self._settings.get(["FeedrateSlowed"]) or False
+        self.FeedrateSlowed = False
         self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"]) or 100
         self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"]) or 80
 
@@ -945,7 +945,7 @@ class Omega():
                             self.FeedrateSlowed = True
                         except ValueError:
                             self._logger.info('ADVANCED: Unable to Update Feed-Rate -> SLOW :: ' + str(ValueError))
-                    self.updateUI("ADVANCED:FEEDRATESLOWED=True")
+                    # self.updateUI("ADVANCED:FEEDRATESLOWED=%s" %self.FeedrateSlowed)
                     self.advanced_updateUI()
                 else:
                     self._logger.info('ADVANCED: Feed-rate Control: INACTIVE')
@@ -961,7 +961,7 @@ class Omega():
                         self.FeedrateSlowed = False
                     except ValueError:
                         self._logger.info('ADVANCED: Unable to Update Feed-Rate -> NORMAL :: ' + str(ValueError))
-                    self.updateUI("ADVANCED:FEEDRATESLOWED=False")
+                    # self.updateUI("ADVANCED:FEEDRATESLOWED=%s" % self.FeedrateSlowed)
                     self.advanced_updateUI()
                 else:
                     self._logger.info('ADVANCED: Feed-Rate Control: INACTIVE')
@@ -1035,7 +1035,7 @@ class Omega():
         try:
             self.updateUI("ADVANCED:SHOWPINGPONGONPRINTER=%s" % self._settings.get(["ShowPingPongOnPrinter"]), True)
             self.updateUI("ADVANCED:FEEDRATECONTROL=%s" % self._settings.get(["FeedrateControl"]), True)
-            self.updateUI("ADVANCED:FEEDRATESLOWED=%s" % self._settings.get(["FeedrateSlowed"]), True)
+            self.updateUI("ADVANCED:FEEDRATESLOWED=%s" % self.FeedrateSlowed, True)
             self.updateUI("ADVANCED:FEEDRATENORMALPCT=%s" % self._settings.get(["FeedrateNormalPct"]), True)
             self.updateUI("ADVANCED:FEEDRATESLOWPCT=%s" % self._settings.get(["FeedrateSlowPct"]), True)
         except Exception as e:
@@ -1090,7 +1090,7 @@ class Omega():
             if "ClientOpened" or "SettingsUpdated" in event:
                 self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
                 self.FeedrateControl = self._settings.get(["FeedrateControl"])
-                self.FeedrateSlowed = self._settings.get(["FeedrateSlowed"])
+                # self.FeedrateSlowed = self._settings.get(["FeedrateSlowed"])
                 self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
                 self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
         except Exception as e:
