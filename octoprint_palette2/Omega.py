@@ -1070,7 +1070,8 @@ class Omega():
             self._settings.set(["FeedrateNormalPct"], value)
             self._settings.save(force=True)
             self._logger.info("ADVANCED: FeedrateNormalPct -> '%s' '%s'" % (value, self._settings.get(["FeedrateNormalPct"])))
-            if not self._settings.get(["FeedrateSlowed"]):
+            self.FeedrateNormalPct = value
+            if not self.FeedrateSlowed:
                 self._printer.commands('M220 S%s' % value)
         except Exception as e:
             self._logger.info(e)
@@ -1080,7 +1081,8 @@ class Omega():
             self._settings.set(["FeedrateSlowPct"], value)
             self._settings.save(force=True)
             self._logger.info("ADVANCED: FeedrateSlowPct -> '%s' '%s'" % (value, self._settings.get(["FeedrateSlowPct"])))
-            if self._settings.get(["FeedrateSlowed"]):
+            self.FeedrateSlowPct = value
+            if self.FeedrateSlowed:
                 self._printer.commands('M220 S%s' % value)
         except Exception as e:
             self._logger.info(e)
