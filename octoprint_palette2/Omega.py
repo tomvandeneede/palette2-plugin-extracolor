@@ -255,7 +255,7 @@ class Omega():
                 if line:
                     command = self.parseLine(line)
                     if command != None:
-                        self._logger.info("Omega: read in line: %s" % command)
+                        self._logger.info("Omega: read in line: %s" % line.strip())
                         # SKELLATORE
                         self.advanced_parse_line(line.strip())
                         # /SKELLATORE
