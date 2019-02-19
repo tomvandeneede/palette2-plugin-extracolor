@@ -76,11 +76,11 @@
 			</div>
 			<hr>
 <!-- SKELLATORE -->
-			<div class="row advanced_options" style="display: none; margin-bottom: 20px;">
+			<div class="row advanced_options" style="display: none; margin-bottom: 20px;" data-bind="visible: connected() && Advanced_Options()">
 				<h4>Advanced Options</h4>
 					<label>
-						<span>Enable Ping/Pong display on Printer:</span>
-						<input class="showpingpongonprinter-input" type="checkbox" data-bind="checked: ShowPingPongOnPrinter">
+						<span>Enable Ping Display on Printer:</span>
+						<input class="showpingonprinter-input" type="checkbox" data-bind="checked: ShowPingOnPrinter">
 					</label>
 					<label>
 						<span>Enable Feed-rate control during Splice:</span>
@@ -103,11 +103,21 @@
 					<label>
 							<span><b>Advanced Status:</b></span><br/>
 							<p class="advanced_status" data-bind="text: Advanced_Status">Awaiting Update..</p>
-							<p class="switch_status" data-bind="text: Advanced_Switches">Awaiting Update..</p>
+
+							<span><b>Advanced Switches:</b> <span class="switch_status" data-bind="visible: !Advanced_Switches">Awaiting Update..</span></span><br/>
+							<ul class="list-of-switches">
+								<li class="switch_part">Splice Core: <span class="switch_part_status" data-bind="text: Advanced_Switches().spliceCore"></span></li>
+								<li class="switch_part">Buffer: <span class="switch_part_status" data-bind="text: Advanced_Switches().buffer"></span></li>
+								<li class="switch_part">Filament 1: <span class="switch_part_status" data-bind="text: Advanced_Switches().filament1"></span></li>
+								<li class="switch_part">Filament 2: <span class="switch_part_status" data-bind="text: Advanced_Switches().filament2"></span></li>
+								<li class="switch_part">Filament 3: <span class="switch_part_status" data-bind="text: Advanced_Switches().filament3"></span></li>
+								<li class="switch_part">Filament 4: <span class="switch_part_status" data-bind="text: Advanced_Switches().filament4"></span></li>
+								<li class="switch_part">Cutting Wheel: <span class="switch_part_status" data-bind="text: Advanced_Switches().cutter"></span></li>
+							</ul>
 					</label>
 					<label class="form-inline">
 							<span><b>Feedrate Currently Slowed?</b>
-							<p class="FeedrateSlowed-input" data-bind="text: FeedrateSlowed"></p></span>
+							<p class="FeedrateSlowed-input" data-bind="text: FeedrateSlowedText"></p></span>
 					</label>
 				<hr>
 			</div>

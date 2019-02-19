@@ -42,20 +42,11 @@ class Omega():
             self.startConnectionThread()
 
         # SKELLATORE
-        self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"]) or True
-        self.FeedrateControl = self._settings.get(["FeedrateControl"]) or True
-        self.FeedrateSlowed = False
-        self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"]) or 100
-        self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"]) or 80
-
-        self.splicecore_switch = False
-        self.buffer_switch = False
-        self.filament_input_1_switch = False
-        self.filament_input_2_switch = False
-        self.filament_input_3_switch = False
-        self.filament_input_4_switch = False
-        self.cutter_switch = False
-
+        # self.ShowPingOnPrinter = self._settings.get(["ShowPingOnPrinter"]) or False
+        # self.FeedrateControl = self._settings.get(["FeedrateControl"]) or False
+        # self.FeedrateSlowed = False
+        # self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"]) or 100
+        # self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"]) or 80
         # /SKELLATORE
 
     def getAllPorts(self):
@@ -175,8 +166,8 @@ class Omega():
                 self.updateUI({"command": "selectedPort", "data": self.selectedPort})
                 self.updateUIAll()
                  # SKELLATORE
-                if self._settings.get(["AdvancedOptions"]):
-                    self.enqueueCmd("O68 D2")
+                # if self._settings.get(["AdvancedOptions"]):
+                #     self.enqueueCmd("O68 D2")
                 # /SKELLATORE
                 return True
             else:
@@ -477,7 +468,8 @@ class Omega():
         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
         self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
         # SKELLATORE
-        self.updateUI("ADVANCED:DisplayAdvancedOptions=%s" % self._settings.get(["AdvancedOptions"]), True)
+        self.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["AdvancedOptions"])}, True)
+        self.advanced_update_switches()
         self.advanced_updateUI()
         # /SKELLATORE
 
@@ -630,9 +622,9 @@ class Omega():
         self.filename = ""
 
         self.resetFinished = False
-        # # SKELLATORE
-        # self.advanced_reset_print_values()
-        # # /SKELLATORE
+        # SKELLATORE
+        self.advanced_reset_print_values()
+        # /SKELLATORE
         self._logger.info("Omega: Resetting print values - FINISHED")
 
     def resetOmega(self):
@@ -653,7 +645,8 @@ class Omega():
         self.resetPrintValues()
         self.tryHeartbeatBeforePrint()
         # SKELLATORE
-        self.advanced_queue_switch_status()
+        if self._settings.get(["AdvancedOptions"]):
+            self.advanced_queue_switch_status()
         # /SKELLATORE
         self.updateUIAll()
         self.printHeartbeatCheck = ""
@@ -917,7 +910,7 @@ class Omega():
         if self.FeedrateControl:
             self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
             advanced_status = 'Slice Starting: Speed -> SLOW(%s)' % self.FeedrateSlowPct
-            self.updateUI("ADVANCED:UIMESSAGE=%s" % advanced_status)
+            self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
             # Splice Start
             if self.FeedrateSlowed:
                 # Feedrate already slowed, set it again to be safe.
@@ -933,7 +926,6 @@ class Omega():
                     self.FeedrateSlowed = True
                 except ValueError:
                     self._logger.info('ADVANCED: Unable to Update Feed-Rate -> SLOW :: ' + str(ValueError))
-            self.updateUI("ADVANCED:FEEDRATESLOWED=True")
             self.advanced_updateUI()
         else:
             self._logger.info('ADVANCED: Feed-rate Control: INACTIVE')
@@ -945,13 +937,12 @@ class Omega():
         if self.FeedrateControl:
             self._logger.info('ADVANCED: Feed-rate NORMAL - ACTIVE (%s)' % self.FeedrateNormalPct)
             advanced_status = 'Slice Finished: Speed -> NORMAL(%s) ' % self.FeedrateNormalPct
-            self.updateUI("ADVANCED:UIMESSAGE=%s" % advanced_status)
+            self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
             try:
                 self._printer.commands('M220 S%s' % self.FeedrateNormalPct)
                 self.FeedrateSlowed = False
             except ValueError:
                 self._logger.info('ADVANCED: Unable to Update Feed-Rate -> NORMAL :: ' + str(ValueError))
-            self.updateUI("ADVANCED:FEEDRATESLOWED=False")
             self.advanced_updateUI()
         else:
             self._logger.info('ADVANCED: Feed-Rate Control: INACTIVE')
@@ -959,9 +950,9 @@ class Omega():
 
     def showPingOnPrinter(self, ping_number, ping_percent):
         self._logger.info("ADVANCED: Ping! Pong!")
-        self._logger.info("ADVANCED: Show on Printer: %s" % self.ShowPingPongOnPrinter)
+        self._logger.info("ADVANCED: Show on Printer: %s" % self.ShowPingOnPrinter)
         # filter out ping offset information
-        if self.ShowPingPongOnPrinter:
+        if self.ShowPingOnPrinter:
             try:
                 self._printer.commands("M117 Ping %s %spct" % (ping_number, ping_percent))
                 self.advanced_updateUI()
@@ -1006,12 +997,22 @@ class Omega():
                 self.cutter_switch = True
             else:
                 self.cutter_switch = False
-        switch_status = (str(self.splicecore_switch) + ',' + str(self.buffer_switch) + ','
-                            + str(self.filament_input_1_switch) + ',' + str(self.filament_input_2_switch) + ','
-                            + str(self.filament_input_3_switch) + ',' + str(self.filament_input_4_switch) + ','
-                            + str(self.cutter_switch))
-        self._logger.info("ADVANCED: SWITCHES: %s" % switch_status)
-        self.updateUI("ADVANCED:UISWITCHES=%s" % switch_status)
+        self.advanced_update_switches()
+        # switch_status = {
+        #     "spliceCore": str(self.splicecore_switch),
+        #     "buffer": str(self.buffer_switch),
+        #     "filament1": str(self.filament_input_1_switch),
+        #     "filament2": str(self.filament_input_2_switch),
+        #     "filament3": str(self.filament_input_3_switch),
+        #     "filament4": str(self.filament_input_4_switch),
+        #     "cutter": str(self.cutter_switch)
+        # }
+        # # switch_status = (str(self.splicecore_switch) + ',' + str(self.buffer_switch) + ','
+        # #                     + str(self.filament_input_1_switch) + ',' + str(self.filament_input_2_switch) + ','
+        # #                     + str(self.filament_input_3_switch) + ',' + str(self.filament_input_4_switch) + ','
+        # #                     + str(self.cutter_switch))
+        # self._logger.info("ADVANCED: SWITCHES: %s" % switch_status)
+        # self.updateUI({"command": "advanced", "subCommand": "switches", "data": switch_status})
 
     # SKELLATORE
     def advanced_reset_values(self):
@@ -1019,11 +1020,41 @@ class Omega():
         self.FeedrateControl = self._settings.get(["FeedrateControl"])
         self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
         self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
-        self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
-        # self.advanced_queue_switch_status()
+        self.ShowPingOnPrinter = self._settings.get(["ShowPingOnPrinter"])
+
+        # self.ShowPingOnPrinter = self._settings.get(["ShowPingOnPrinter"]) or False
+        # self.FeedrateControl = self._settings.get(["FeedrateControl"]) or False
+        # self.FeedrateSlowed = False
+        # self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"]) or 100
+        # self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"]) or 80
+
+        self.advanced_reset_print_values()
 
     def advanced_reset_print_values(self):
-        self.advanced_queue_switch_status()
+        self.splicecore_switch = False
+        self.buffer_switch = False
+        self.filament_input_1_switch = False
+        self.filament_input_2_switch = False
+        self.filament_input_3_switch = False
+        self.filament_input_4_switch = False
+        self.cutter_switch = False
+
+        self.advanced_update_switches()
+        # switch_status = {
+        #     "spliceCore": str(self.splicecore_switch),
+        #     "buffer": str(self.buffer_switch),
+        #     "filament1": str(self.filament_input_1_switch),
+        #     "filament2": str(self.filament_input_2_switch),
+        #     "filament3": str(self.filament_input_3_switch),
+        #     "filament4": str(self.filament_input_4_switch),
+        #     "cutter": str(self.cutter_switch)
+        # }
+        # # switch_status = (str(self.splicecore_switch) + ',' + str(self.buffer_switch) + ','
+        # #                     + str(self.filament_input_1_switch) + ',' + str(self.filament_input_2_switch) + ','
+        # #                     + str(self.filament_input_3_switch) + ',' + str(self.filament_input_4_switch) + ','
+        # #                     + str(self.cutter_switch))
+        # self._logger.info("ADVANCED: SWITCHES: %s" % switch_status)
+        # self.updateUI({"command": "advanced", "subCommand": "switches", "data": switch_status})
 
     def advanced_queue_switch_status(self):
         self.enqueueCmd("O68 D2")
@@ -1077,9 +1108,9 @@ class Omega():
                     self.advanced_updateUI()
             if 'O34 D1' in line:
                 self._logger.info("ADVANCED: Ping! Pong!")
-                self._logger.info("ADVANCED: Show on Printer: %s" % self.ShowPingPongOnPrinter)
+                self._logger.info("ADVANCED: Show on Printer: %s" % self.ShowPingOnPrinter)
                 # filter out ping offset information
-                if self.ShowPingPongOnPrinter:
+                if self.ShowPingOnPrinter:
                     idx = line.find("O34")
                     parms = line[idx+7:].split(" ")
                     try:
@@ -1131,29 +1162,35 @@ class Omega():
                                  + str(self.cutter_switch))
                 if last_status_received:
                     self._logger.info("ADVANCED: SWITCHES: %s" % switch_status)
-                    self.updateUI("ADVANCED:UISWITCHES=%s" % switch_status)
+                    self.updateUI({"command": "advanced", "subCommand": "switches", "data": switch_status})
             if advanced_status != '':
-                self.updateUI("ADVANCED:UIMESSAGE=%s" % advanced_status)
+                self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
         except Exception as e:
             # Something went wrong with the connection to Palette2
             self._logger.info(e)
 
     def advanced_updateUI(self):
-        self._logger.info("SKELLATORE UPDATE UI")
+        self._logger.info("ADVANCED UPDATE UI")
         try:
-            self.updateUI("ADVANCED:SHOWPINGPONGONPRINTER=%s" % self._settings.get(["ShowPingPongOnPrinter"]), True)
-            self.updateUI("ADVANCED:FEEDRATECONTROL=%s" % self._settings.get(["FeedrateControl"]), True)
-            self.updateUI("ADVANCED:FEEDRATESLOWED=%s" % self.FeedrateSlowed, True)
-            self.updateUI("ADVANCED:FEEDRATENORMALPCT=%s" % self._settings.get(["FeedrateNormalPct"]), True)
-            self.updateUI("ADVANCED:FEEDRATESLOWPCT=%s" % self._settings.get(["FeedrateSlowPct"]), True)
+            # self.updateUI("ADVANCED:SHOWPingONPRINTER=%s" % self._settings.get(["ShowPingOnPrinter"]), True)
+            # self.updateUI("ADVANCED:FEEDRATECONTROL=%s" % self._settings.get(["FeedrateControl"]), True)
+            # self.updateUI("ADVANCED:FEEDRATESLOWED=%s" % self.FeedrateSlowed, True)
+            # self.updateUI("ADVANCED:FEEDRATENORMALPCT=%s" % self._settings.get(["FeedrateNormalPct"]), True)
+            # self.updateUI("ADVANCED:FEEDRATESLOWPCT=%s" % self._settings.get(["FeedrateSlowPct"]), True)
+
+            self.updateUI({"command": "advanced", "subCommand": "showPingOnPrinter", "data": self._settings.get(["ShowPingOnPrinter"])}, True)
+            self.updateUI({"command": "advanced", "subCommand": "feedrateControl", "data": self._settings.get(["FeedrateControl"])}, True)
+            self.updateUI({"command": "advanced", "subCommand": "feedrateSlowed", "data": self.FeedrateSlowed}, True)
+            self.updateUI({"command": "advanced", "subCommand": "feedrateNormalPct", "data": self._settings.get(["FeedrateNormalPct"])}, True)
+            self.updateUI({"command": "advanced", "subCommand": "feedrateSlowPct", "data": self._settings.get(["FeedrateSlowPct"])}, True)
         except Exception as e:
             self._logger.info(e)
 
-    def changeShowPingPongOnPrinter(self, condition):
+    def changeShowPingOnPrinter(self, condition):
         try:
-            self._settings.set(["ShowPingPongOnPrinter"], condition, force=True)
+            self._settings.set(["ShowPingOnPrinter"], condition, force=True)
             self._settings.save(force=True)
-            self._logger.info("ADVANCED: ShowPingPongOnPrinter -> '%s' '%s'" % (condition, self._settings.get(["ShowPingPongOnPrinter"])))
+            self._logger.info("ADVANCED: ShowPingOnPrinter -> '%s' '%s'" % (condition, self._settings.get(["ShowPingOnPrinter"])))
         except Exception as e:
             self._logger.info(e)
 
@@ -1181,8 +1218,8 @@ class Omega():
             self.FeedrateNormalPct = value
             if not self.FeedrateSlowed:
                 self._printer.commands('M220 S%s' % self.FeedrateNormalPct)
-                advanced_status = 'Slice Finished: Speed -> NORMAL(%s) ' % self.FeedrateNormalPct
-                self.updateUI("ADVANCED:UIMESSAGE=%s" % advanced_status)
+                advanced_status = 'Not Currently Slicing: Speed -> NORMAL(%s) ' % self.FeedrateNormalPct
+                self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
         except Exception as e:
             self._logger.info(e)
 
@@ -1194,33 +1231,57 @@ class Omega():
             self.FeedrateSlowPct = value
             if self.FeedrateSlowed:
                 self._printer.commands('M220 S%s' % self.FeedrateSlowPct)
-                advanced_status = 'Slice Starting: Speed -> SLOW(%s)' % self.FeedrateSlowPct
-                self.updateUI("ADVANCED:UIMESSAGE=%s" % advanced_status)
+                advanced_status = 'Current Slice: Speed -> SLOW(%s)' % self.FeedrateSlowPct
+                self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
         except Exception as e:
             self._logger.info(e)
 
+    #not needed?
     def advanced_on_event(self, event, payload):
         try:
             if "ClientOpened" or "SettingsUpdated" in event:
-                self.ShowPingPongOnPrinter = self._settings.get(["ShowPingPongOnPrinter"])
+                self.ShowPingOnPrinter = self._settings.get(["ShowPingOnPrinter"])
                 self.FeedrateControl = self._settings.get(["FeedrateControl"])
-                # self.FeedrateSlowed = self._settings.get(["FeedrateSlowed"])
                 self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
                 self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
+                # switch_status = {
+                #     "spliceCore": str(self.splicecore_switch),
+                #     "buffer": str(self.buffer_switch),
+                #     "filament1": str(self.filament_input_1_switch),
+                #     "filament2": str(self.filament_input_2_switch),
+                #     "filament3": str(self.filament_input_3_switch),
+                #     "filament4": str(self.filament_input_4_switch),
+                #     "cutter": str(self.cutter_switch)
+                # }
+                # self._logger.info("ADVANCED: SWITCHES: %s" % switch_status)
+                # self.updateUI({"command": "advanced", "subCommand": "switches", "data": switch_status})
         except Exception as e:
             self._logger.info(e)
 
     def advanced_api_command(self, command, data):
         try:
-            if command == "changeShowPingPongOnPrinter":
-                self.changeShowPingPongOnPrinter(data["condition"])
-            if command == "changeFeedrateControl":
+            if command == "changeShowPingOnPrinter":
+                self.changeShowPingOnPrinter(data["condition"])
+            elif command == "changeFeedrateControl":
                 self.changeFeedrateControl(data["condition"])
-            if command == "changeFeedrateNormalPct":
+            elif command == "changeFeedrateNormalPct":
                 self.changeFeedrateNormalPct(data["value"])
-            if command == "changeFeedrateSlowPct":
+            elif command == "changeFeedrateSlowPct":
                 self.changeFeedrateSlowPct(data["value"])
             self.advanced_updateUI()
         except Exception as e:
             self._logger.info(e)
+
+    def advanced_update_switches(self):
+        switch_status = {
+            "spliceCore": str(self.splicecore_switch),
+            "buffer": str(self.buffer_switch),
+            "filament1": str(self.filament_input_1_switch),
+            "filament2": str(self.filament_input_2_switch),
+            "filament3": str(self.filament_input_3_switch),
+            "filament4": str(self.filament_input_4_switch),
+            "cutter": str(self.cutter_switch)
+        }
+        self._logger.info("ADVANCED: SWITCHES: %s" % switch_status)
+        self.updateUI({"command": "advanced", "subCommand": "switches", "data": switch_status})
     # /SKELLATORE

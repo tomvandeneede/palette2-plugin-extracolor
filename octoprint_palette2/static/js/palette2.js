@@ -274,13 +274,17 @@ function OmegaViewModel(parameters) {
   self.pongs = ko.observableArray([]);
 
   // SKELLATORE
-  self.ShowPingPongOnPrinter = ko.observable(true);
+  self.ShowPingOnPrinter = ko.observable(true);
   self.FeedrateControl = ko.observable(true);
   self.FeedrateSlowed = ko.observable(false);
+  self.FeedrateSlowedText = ko.computed(function() {
+    return self.FeedrateSlowed() ? "True" : "False";
+  });
   self.FeedrateNormalPct = ko.observable(100);
-  self.FeedrateSlowPct = ko.observable(80);
+  self.FeedrateSlowPct = ko.observable(50);
   self.Advanced_Status = ko.observable("Awaiting Update...");
-  self.Advanced_Switches = ko.observable("Awaiting Update...");
+  self.Advanced_Switches = ko.observableArray([]);
+  self.Advanced_Options = ko.observable();
   // /SKELLATORE
 
   /* COMMUNICATION TO BACK-END FUNCTIONS */
@@ -530,8 +534,8 @@ function OmegaViewModel(parameters) {
   self.FeedrateControl.subscribe(function() {
     self.ajax_payload({ command: "changeFeedrateControl", condition: self.FeedrateControl() });
   });
-  self.ShowPingPongOnPrinter.subscribe(function() {
-    self.ajax_payload({ command: "changeShowPingPongOnPrinter", condition: self.ShowPingPongOnPrinter() });
+  self.ShowPingOnPrinter.subscribe(function() {
+    self.ajax_payload({ command: "changeShowPingOnPrinter", condition: self.ShowPingOnPrinter() });
   });
   self.FeedrateNormalPct.subscribe(function() {
     self.ajax_payload({ command: "changeFeedrateNormalPct", value: self.FeedrateNormalPct() });
@@ -576,11 +580,11 @@ function OmegaViewModel(parameters) {
               self.FeedrateSlowed(false);
             }
             break;
-          case "ADVANCED:SHOWPINGPONGONPRINTER":
+          case "ADVANCED:SHOWPingONPRINTER":
             if (value_ary[1].includes("True")) {
-              self.ShowPingPongOnPrinter(true);
+              self.ShowPingOnPrinter(true);
             } else {
-              self.ShowPingPongOnPrinter(false);
+              self.ShowPingOnPrinter(false);
             }
             break;
           case "ADVANCED:FEEDRATENORMALPCT":
@@ -600,6 +604,41 @@ function OmegaViewModel(parameters) {
         }
       }
     }
+  };
+
+  self.handleAdvancedOptions = (subCommand, data) => {
+    switch (subCommand) {
+      case "displayAdvancedOptions":
+        self.Advanced_Options(data);
+        break;
+      case "feedrateControl":
+        self.FeedrateControl(data);
+        break;
+      case "feedrateSlowed":
+        self.FeedrateSlowed(data);
+        break;
+      case "showPingOnPrinter":
+        self.ShowPingOnPrinter(data);
+        break;
+      case "feedrateNormalPct":
+        self.FeedrateNormalPct(data);
+        break;
+      case "feedrateSlowPct":
+        self.FeedrateSlowPct(data);
+        break;
+      case "advancedStatus":
+        self.Advanced_Status(data);
+        break;
+      case "switches":
+        self.update_switches2(data);
+        break;
+      default:
+      //Do Nothing
+    }
+  };
+
+  self.update_switches2 = values => {
+    self.Advanced_Switches(values);
   };
 
   self.update_switches = values => {
@@ -845,9 +884,9 @@ function OmegaViewModel(parameters) {
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      // SKELLATORE
-      self.update_from_plugin_message(message);
-      // /SKELLATORE
+      // // SKELLATORE
+      // self.update_from_plugin_message(message);
+      // // /SKELLATORE
       if (message.command === "error") {
         self.showAlert("error", message.data);
       } else if (message.command === "printHeartbeatCheck") {
@@ -949,6 +988,10 @@ function OmegaViewModel(parameters) {
         self.actualPrintStarted = message.data;
       } else if (message.command === "alert") {
         self.showAlert(message.data);
+      } else if (message.command === "advanced") {
+        // SKELLATORE
+        self.handleAdvancedOptions(message.subCommand, message.data);
+        // /SKELLATORE
       }
     }
   };

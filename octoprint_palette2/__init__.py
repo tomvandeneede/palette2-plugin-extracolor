@@ -40,7 +40,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                     FeedrateControl=False,
                     FeedrateNormalPct=100,
                     FeedrateSlowPct=50,
-                    ShowPingPongOnPrinter=False
+                    ShowPingOnPrinter=False
                     # SKELLATORE
                     )
 
@@ -71,7 +71,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             sendErrorReport=["errorNumber", "description"],
             startPrint=[],
             # SKELLATORE
-            changeShowPingPongOnPrinter=["condition"],
+            changeShowPingOnPrinter=["condition"],
             changeFeedrateControl=["condition"],
             changeFeedrateSlowed=["condition"],
             changeFeedrateNormalPct=["value"],
@@ -115,10 +115,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def on_event(self, event, payload):
         # SKELLATORE
-        try:
-            self.palette.advanced_on_event(event, payload)
-        except Exception as e:
-            self._logger.info("Error whilst trying to call advanced_on_event %s" % str(e))
+        # try:
+        #     self.palette.advanced_on_event(event, payload)
+        # except Exception as e:
+        #     self._logger.info("Error whilst trying to call advanced_on_event %s" % str(e))
         # /SKELLATORE
         if "ClientOpened" in event:
             self.palette.updateUIAll()
@@ -169,7 +169,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
             # SKELLATORE
             self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["AdvancedOptions"])))
-            self.palette.updateUI("ADVANCED:DisplayAdvancedOptions=%s" % self._settings.get(["AdvancedOptions"]))
+            self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["AdvancedOptions"])})
             # SKELLATORE
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
