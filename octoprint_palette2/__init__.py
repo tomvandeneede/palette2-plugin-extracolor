@@ -35,13 +35,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         return dict(autoconnect=False,
                     palette2Alerts=True,
                     baudrate=115200,
-                    # SKELLATORE
                     AdvancedOptions=False,
                     FeedrateControl=False,
                     FeedrateNormalPct=100,
                     FeedrateSlowPct=50,
                     ShowPingOnPrinter=False
-                    # SKELLATORE
                     )
 
     def get_template_configs(self):
@@ -70,13 +68,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             displayPorts=["condition"],
             sendErrorReport=["errorNumber", "description"],
             startPrint=[],
-            # SKELLATORE
             changeShowPingOnPrinter=["condition"],
             changeFeedrateControl=["condition"],
             changeFeedrateSlowed=["condition"],
             changeFeedrateNormalPct=["value"],
             changeFeedrateSlowPct=["value"]
-            # /SKELLATORE
         )
 
     def on_api_command(self, command, data):
@@ -104,9 +100,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.startPrintFromHub()
         elif command == "connectWifi":
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
-        # SKELLATORE
-        self.palette.advanced_api_command(command, data)
-        # /SKELLATORE
+        elif command == "changeShowPingOnPrinter":
+            self.palette.changeShowPingOnPrinter(data["condition"])
+        elif command == "changeFeedrateControl":
+            self.palette.changeFeedrateControl(data["condition"])
+        elif command == "changeFeedrateNormalPct":
+            self.palette.changeFeedrateNormalPct(data["value"])
+        elif command == "changeFeedrateSlowPct":
+            self.palette.changeFeedrateSlowPct(data["value"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -161,11 +162,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self._logger.info("Display alerts: %s" % str(self._settings.get(["palette2Alerts"])))
             self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
             self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
-            # SKELLATORE
             self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["AdvancedOptions"])))
             self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["AdvancedOptions"])})
             self.palette.advanced_update_variables()
-            # SKELLATORE
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
             else:

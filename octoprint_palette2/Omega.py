@@ -157,10 +157,6 @@ class Omega():
                 self._settings.save(force=True)
                 self.updateUI({"command": "selectedPort", "data": self.selectedPort})
                 self.updateUIAll()
-                 # SKELLATORE
-                # if self._settings.get(["AdvancedOptions"]):
-                #     self.enqueueCmd("O68 D2")
-                # /SKELLATORE
                 return True
             else:
                 time.sleep(0.01)
@@ -459,11 +455,9 @@ class Omega():
         self.updateUI({"command": "filamentLength", "data": self.filamentLength}, True)
         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
         self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
-        # SKELLATORE
         self.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["AdvancedOptions"])}, True)
         self.advanced_update_switches()
         self.advanced_updateUI()
-        # /SKELLATORE
 
 
     def updateUI(self, data, log=None):
@@ -577,9 +571,7 @@ class Omega():
         self.heartbeat = False
 
         self.resetFinished = False
-        # SKELLATORE
         self.advanced_reset_values()
-        # /SKELLATORE
         self._logger.info("Omega: Resetting all values - FINISHED")
 
     def resetPrintValues(self):
@@ -617,9 +609,7 @@ class Omega():
         self.filename = ""
 
         self.resetFinished = False
-        # SKELLATORE
         self.advanced_reset_print_values()
-        # /SKELLATORE
         self._logger.info("Omega: Resetting print values - FINISHED")
 
     def resetOmega(self):
@@ -639,10 +629,8 @@ class Omega():
         self._logger.info("PRINT STARTED P2")
         self.resetPrintValues()
         self.tryHeartbeatBeforePrint()
-        # SKELLATORE
         if self._settings.get(["AdvancedOptions"]):
             self.advanced_queue_switch_status()
-        # /SKELLATORE
         self.updateUIAll()
         self.printHeartbeatCheck = ""
 
@@ -902,9 +890,9 @@ class Omega():
     def feedRateControlStart(self):
         self._logger.info('ADVANCED: SPLICE START')
         self.advanced_queue_switch_status()
-        if self.FeedrateControl:
+        if self.FeedrateControl and self.actualPrintStarted:
             self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
-            advanced_status = 'Splice (#%s) Starting: Speed -> SLOW (%s)' % (self.currentSplice, self.FeedrateSlowPct)
+            advanced_status = 'Splice (%s) Starting: Speed -> SLOW (%s%%)' % (self.currentSplice, self.FeedrateSlowPct)
             self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
             # Splice Start
             if self.FeedrateSlowed:
@@ -929,9 +917,9 @@ class Omega():
     def feedRateControlEnd(self):
         self._logger.info('ADVANCED: SPLICE END')
         self.advanced_queue_switch_status()
-        if self.FeedrateControl:
+        if self.FeedrateControl and self.actualPrintStarted:
             self._logger.info('ADVANCED: Feed-rate NORMAL - ACTIVE (%s)' % self.FeedrateNormalPct)
-            advanced_status = 'Splice Finished: Speed -> NORMAL (%s) ' % self.FeedrateNormalPct
+            advanced_status = 'Splice (%s) Finished: Speed -> NORMAL (%s%%)' % (self.currentSplice, self.FeedrateNormalPct)
             self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
             try:
                 self._printer.commands('M220 S%s' % self.FeedrateNormalPct)
@@ -1031,6 +1019,7 @@ class Omega():
             self._settings.save(force=True)
             self._logger.info("ADVANCED: ShowPingOnPrinter -> '%s' '%s'" % (condition, self._settings.get(["ShowPingOnPrinter"])))
             self.updateUI({"command": "advanced", "subCommand": "showPingOnPrinter", "data": self._settings.get(["ShowPingOnPrinter"])})
+            self.ShowPingOnPrinter = self._settings.get(["ShowPingOnPrinter"])
         except Exception as e:
             self._logger.info(e)
 
@@ -1040,6 +1029,7 @@ class Omega():
             self._settings.save(force=True)
             self._logger.info("ADVANCED: FeedrateControl -> '%s' '%s'" % (condition, self._settings.get(["FeedrateControl"])))
             self.updateUI({"command": "advanced", "subCommand": "feedrateControl", "data": self._settings.get(["FeedrateControl"])})
+            self.FeedrateControl = self._settings.get(["FeedrateControl"])
         except Exception as e:
             self._logger.info(e)
 
@@ -1098,7 +1088,7 @@ class Omega():
                     else:
                         if self.FeedrateSlowed:
                             self._printer.commands('M220 S%s' % self.FeedrateSlowPct)
-                            advanced_status = 'Currently Splicing (#%s): Speed -> SLOW (%s%%)' % (self.currentSplice, self.FeedrateSlowPct)
+                            advanced_status = 'Currently Splicing (%s): Speed -> SLOW (%s%%)' % (self.currentSplice, self.FeedrateSlowPct)
                         else:
                             advanced_status = 'Splicing Feed-Rate set to %s%%. Awaiting next splice to apply...' % (self.FeedrateSlowPct)
                 except Exception as e:
