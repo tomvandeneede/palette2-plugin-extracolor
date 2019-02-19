@@ -114,12 +114,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         return flask.jsonify(foo="bar")
 
     def on_event(self, event, payload):
-        # SKELLATORE
-        # try:
-        #     self.palette.advanced_on_event(event, payload)
-        # except Exception as e:
-        #     self._logger.info("Error whilst trying to call advanced_on_event %s" % str(e))
-        # /SKELLATORE
         if "ClientOpened" in event:
             self.palette.updateUIAll()
         elif "PrintStarted" in event:
@@ -170,6 +164,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             # SKELLATORE
             self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["AdvancedOptions"])))
             self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["AdvancedOptions"])})
+            self.palette.advanced_update_variables()
             # SKELLATORE
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()

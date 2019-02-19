@@ -76,34 +76,33 @@
 			</div>
 			<hr>
 <!-- SKELLATORE -->
-			<div class="row advanced_options" style="display: none; margin-bottom: 20px;" data-bind="visible: connected() && Advanced_Options()">
+			<div class="row advanced_options" data-bind="visible: connected() && Advanced_Options()">
 				<h4>Advanced Options</h4>
 					<label>
 						<span>Enable Ping Display on Printer:</span>
 						<input class="showpingonprinter-input" type="checkbox" data-bind="checked: ShowPingOnPrinter">
 					</label>
 					<label>
-						<span>Enable Feed-rate control during Splice:</span>
+						<span>Enable Feed-Rate control during Splice:</span>
 						<input class="feedratecontrol-input" type="checkbox" data-bind="checked: FeedrateControl">
 					</label>
 					<label class="form-inline">
-						<span>Normal Feed-rate speed:</span>
+						<span>Normal Feed-Rate speed:</span>
 						<div class="input-append">
-							<input class="feedratenormalpct-input input-mini" type="number" min="1" max="999" data-bind="value: FeedrateNormalPct">
+							<input class="feedratenormalpct-input input-mini" type="number" min="1" max="999" data-bind="value: FeedrateNormalPct, enable: FeedrateControl">
 							<span class="add-on">%</span>
 						</div>
 					</label>
 					<label class="form-inline">
-							<span>Splicing Feed-rate speed:</span>
+							<span>Splicing Feed-Rate speed:</span>
 							<div class="input-append">
-								<input class="feedrateslowpct-input input-mini" type="number" min="1" max="999" data-bind="value: FeedrateSlowPct">
+								<input class="feedrateslowpct-input input-mini" type="number" min="1" max="100" data-bind="value: FeedrateSlowPct, enable: FeedrateControl">
 								<span class="add-on">%</span>
 							</div>
 					</label>
 					<label>
 							<span><b>Advanced Status:</b></span><br/>
 							<p class="advanced_status" data-bind="text: Advanced_Status">Awaiting Update..</p>
-
 							<span><b>Advanced Switches:</b> <span class="switch_status" data-bind="visible: !Advanced_Switches">Awaiting Update..</span></span><br/>
 							<ul class="list-of-switches">
 								<li class="switch_part">Splice Core: <span class="switch_part_status" data-bind="text: Advanced_Switches().spliceCore"></span></li>

@@ -278,7 +278,7 @@ function OmegaViewModel(parameters) {
   self.FeedrateControl = ko.observable(true);
   self.FeedrateSlowed = ko.observable(false);
   self.FeedrateSlowedText = ko.computed(function() {
-    return self.FeedrateSlowed() ? "True" : "False";
+    return self.FeedrateSlowed() && self.printerState.isPrinting() ? "True" : "False";
   });
   self.FeedrateNormalPct = ko.observable(100);
   self.FeedrateSlowPct = ko.observable(50);
@@ -554,58 +554,6 @@ function OmegaViewModel(parameters) {
     });
   };
 
-  self.update_from_plugin_message = message => {
-    if (!message.command) {
-      if (message.includes("ADVANCED:")) {
-        value_ary = message.split("=");
-        switch (value_ary[0]) {
-          case "ADVANCED:DisplayAdvancedOptions":
-            if (value_ary[1].includes("True")) {
-              $(".advanced_options").show();
-            } else {
-              $(".advanced_options").hide();
-            }
-            break;
-          case "ADVANCED:FEEDRATECONTROL":
-            if (value_ary[1].includes("True")) {
-              self.FeedrateControl(true);
-            } else {
-              self.FeedrateControl(false);
-            }
-            break;
-          case "ADVANCED:FEEDRATESLOWED":
-            if (value_ary[1].includes("True")) {
-              self.FeedrateSlowed(true);
-            } else {
-              self.FeedrateSlowed(false);
-            }
-            break;
-          case "ADVANCED:SHOWPingONPRINTER":
-            if (value_ary[1].includes("True")) {
-              self.ShowPingOnPrinter(true);
-            } else {
-              self.ShowPingOnPrinter(false);
-            }
-            break;
-          case "ADVANCED:FEEDRATENORMALPCT":
-            self.FeedrateNormalPct(value_ary[1]);
-            break;
-          case "ADVANCED:FEEDRATESLOWPCT":
-            self.FeedrateSlowPct(value_ary[1]);
-            break;
-          case "ADVANCED:UIMESSAGE":
-            self.Advanced_Status(value_ary[1]);
-            break;
-          case "ADVANCED:UISWITCHES":
-            self.update_switches(value_ary[1]);
-            break;
-          default:
-          //Do Nothing
-        }
-      }
-    }
-  };
-
   self.handleAdvancedOptions = (subCommand, data) => {
     switch (subCommand) {
       case "displayAdvancedOptions":
@@ -630,37 +578,13 @@ function OmegaViewModel(parameters) {
         self.Advanced_Status(data);
         break;
       case "switches":
-        self.update_switches2(data);
+        self.Advanced_Switches(data);
         break;
       default:
       //Do Nothing
     }
   };
 
-  self.update_switches2 = values => {
-    self.Advanced_Switches(values);
-  };
-
-  self.update_switches = values => {
-    switch_values = values.split(",");
-    switch_string =
-      "<b>Switch Status:</b><br/><b>Splice Core: </b>" +
-      switch_values[0].toString() +
-      "<br/><b>Buffer: </b>" +
-      switch_values[1] +
-      "<br/><b>Filament 1: </b>" +
-      switch_values[2] +
-      "<br/><b>Filament 2: </b>" +
-      switch_values[3] +
-      "<br/><b>Filament 3: </b>" +
-      switch_values[4] +
-      "<br/><b>Filament 4: </b>" +
-      switch_values[5] +
-      "<br/><b>Cutting Wheel: </b>" +
-      switch_values[6];
-    $(".switch_status").html(switch_string);
-    self.Advanced_Switches = switch_string;
-  };
   // /SKELLATORE
 
   self.fromResponse = () => {};
@@ -884,9 +808,6 @@ function OmegaViewModel(parameters) {
 
   self.onDataUpdaterPluginMessage = (pluginIdent, message) => {
     if (pluginIdent === "palette2") {
-      // // SKELLATORE
-      // self.update_from_plugin_message(message);
-      // // /SKELLATORE
       if (message.command === "error") {
         self.showAlert("error", message.data);
       } else if (message.command === "printHeartbeatCheck") {
