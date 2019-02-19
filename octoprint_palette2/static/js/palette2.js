@@ -569,7 +569,7 @@ function OmegaViewModel(parameters) {
               self.FeedrateControl(false);
             }
             break;
-          case "ADVANCED:FEEDRATESLOWED=":
+          case "ADVANCED:FEEDRATESLOWED":
             if (value_ary[1].includes("True")) {
               self.FeedrateSlowed(true);
             } else {
