@@ -1180,7 +1180,9 @@ class Omega():
             self._logger.info("ADVANCED: FeedrateNormalPct -> '%s' '%s'" % (value, self._settings.get(["FeedrateNormalPct"])))
             self.FeedrateNormalPct = value
             if not self.FeedrateSlowed:
-                self._printer.commands('M220 S%s' % value)
+                self._printer.commands('M220 S%s' % self.FeedrateNormalPct)
+                advanced_status = 'Slice Finished: Speed -> NORMAL(%s) ' % self.FeedrateNormalPct
+                self.updateUI("ADVANCED:UIMESSAGE=%s" % advanced_status)
         except Exception as e:
             self._logger.info(e)
 
@@ -1191,7 +1193,9 @@ class Omega():
             self._logger.info("ADVANCED: FeedrateSlowPct -> '%s' '%s'" % (value, self._settings.get(["FeedrateSlowPct"])))
             self.FeedrateSlowPct = value
             if self.FeedrateSlowed:
-                self._printer.commands('M220 S%s' % value)
+                self._printer.commands('M220 S%s' % self.FeedrateSlowPct)
+                advanced_status = 'Slice Starting: Speed -> SLOW(%s)' % self.FeedrateSlowPct
+                self.updateUI("ADVANCED:UIMESSAGE=%s" % advanced_status)
         except Exception as e:
             self._logger.info(e)
 
