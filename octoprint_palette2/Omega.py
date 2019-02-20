@@ -1057,7 +1057,7 @@ class Omega():
                     else:
                         if not self.FeedrateSlowed:
                             self._printer.commands('M220 S%s' % self.FeedrateNormalPct)
-                            advanced_status = 'Not currently splicing: Speed -> NORMAL (%s%)' % self.FeedrateNormalPct
+                            advanced_status = 'Not currently splicing: Speed -> NORMAL (%s%%)' % self.FeedrateNormalPct
                         else:
                             advanced_status = 'Normal feed rate set to %s%%. Awaiting end of current splice to apply...' % self.FeedrateNormalPct
                 except Exception as e:
