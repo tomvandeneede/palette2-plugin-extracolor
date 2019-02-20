@@ -1062,7 +1062,7 @@ class Omega():
                             advanced_status = 'Normal feed rate set to %s%%. Awaiting end of current splice to apply...' % self.FeedrateNormalPct
                 except Exception as e:
                     self._logger.info(e)
-                self.updateUI({"command": "advanced", "subCommand": "feedrateNormalPct", "data": self._settings.get(["FeedrateNormalPct"])})
+                # self.updateUI({"command": "advanced", "subCommand": "feedrateNormalPct", "data": self._settings.get(["FeedrateNormalPct"])})
             if advanced_status != "":
                 self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
 
@@ -1093,7 +1093,7 @@ class Omega():
                             advanced_status = 'Splicing feed rate set to %s%%. Awaiting next splice to apply...' % (self.FeedrateSlowPct)
                 except Exception as e:
                     self._logger.info(e)
-                self.updateUI({"command": "advanced", "subCommand": "feedrateSlowPct", "data": self._settings.get(["FeedrateSlowPct"])})
+                # self.updateUI({"command": "advanced", "subCommand": "feedrateSlowPct", "data": self._settings.get(["FeedrateSlowPct"])})
             if advanced_status != "":
                 self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
 
