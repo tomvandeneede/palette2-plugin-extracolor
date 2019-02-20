@@ -96,14 +96,14 @@
 						</li>
 						<li class="single-advanced-option feed-rate-control">
 							<div class="input-container">
-								<label for="feed-rate-control-input"><span>Enable Feed Rate Control during Splice:</span></label>
+								<label for="feed-rate-control-input"><span>Enable Feed Rate Control During Splices:</span></label>
 								<div class="interaction-container">
 									<input class="single-advanced-option-input" id="feed-rate-control-input" type="checkbox" data-bind="checked: FeedrateControl">
 									<div class="advanced-info-container">
 										<i class="material-icons advanced-info-icon" data-bind="click: toggleFeedRateControlDisplayInfo">info_outline</i>
 										<div class="advanced-info-text feed-rate-control-info-text">
 											<h6 class="advanced-info-heading">Control printer FEED RATE</h6>
-											<div class="advanced-info-body"><p>By enabling this option, you may adjust the filament feed rate used by your printer, both DURING and AFTER a splice. This option may help minimize Palette 2 buffer collapses. Your printer MUST support M220 GCODE commands for this feature to work.</p></div>
+											<div class="advanced-info-body"><p>By enabling this option, you may adjust the filament feed rate used by your printer, both when Palette 2 IS and IS NOT splicing. Slowing down the feed rate during splices may help minimize Palette 2 buffer collapses. Your printer MUST support M220 GCODE commands for this feature to work.</p></div>
 										</div>
 									</div>
 								</div>
