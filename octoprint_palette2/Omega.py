@@ -276,7 +276,7 @@ class Omega():
                                     except:
                                         self._logger.info("Pong number invalid: %s" % command)
                         elif command["command"] == 40:
-                            self.currentStatus = "Preparing splices"
+                            self.currentStatus = "Print started: preparing splices"
                             self.actualPrintStarted = True
                             self.printPaused = False
                             self.updateUI({"command": "currentStatus", "data": self.currentStatus})
