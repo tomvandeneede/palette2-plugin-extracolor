@@ -937,7 +937,7 @@ class Omega():
         # filter out ping offset information
         if self.ShowPingOnPrinter:
             try:
-                self._printer.commands("M117 Ping %s %s%" % (ping_number, ping_percent))
+                self._printer.commands("M117 Ping %s %s%%" % (ping_number, ping_percent))
                 # self.advanced_updateUI()
             except ValueError:
                 self._logger.info("Printer cannot handle M117 commands.")
@@ -980,7 +980,6 @@ class Omega():
                 self.cutter_switch = False
         # self.advanced_update_switches()
 
-    # SKELLATORE
     def advanced_reset_values(self):
         self.FeedrateControl = self._settings.get(["FeedrateControl"])
         self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
@@ -1018,7 +1017,7 @@ class Omega():
             self._settings.set(["ShowPingOnPrinter"], condition, force=True)
             self._settings.save(force=True)
             self._logger.info("ADVANCED: ShowPingOnPrinter -> '%s' '%s'" % (condition, self._settings.get(["ShowPingOnPrinter"])))
-            self.updateUI({"command": "advanced", "subCommand": "showPingOnPrinter", "data": self._settings.get(["ShowPingOnPrinter"])})
+            # self.updateUI({"command": "advanced", "subCommand": "showPingOnPrinter", "data": self._settings.get(["ShowPingOnPrinter"])})
             self.ShowPingOnPrinter = self._settings.get(["ShowPingOnPrinter"])
         except Exception as e:
             self._logger.info(e)
@@ -1028,7 +1027,7 @@ class Omega():
             self._settings.set(["FeedrateControl"], condition, force=True)
             self._settings.save(force=True)
             self._logger.info("ADVANCED: FeedrateControl -> '%s' '%s'" % (condition, self._settings.get(["FeedrateControl"])))
-            self.updateUI({"command": "advanced", "subCommand": "feedrateControl", "data": self._settings.get(["FeedrateControl"])})
+            # self.updateUI({"command": "advanced", "subCommand": "feedrateControl", "data": self._settings.get(["FeedrateControl"])})
             self.FeedrateControl = self._settings.get(["FeedrateControl"])
         except Exception as e:
             self._logger.info(e)
@@ -1077,6 +1076,7 @@ class Omega():
             elif int(clean_value) > 100:
                 self._logger.info("Cannot set splicing feed rate above 100%.")
                 advanced_status = 'Cannot set splicing feed rate above 100%%. Keeping speed at (%s%%).' % self.FeedrateSlowPct
+                self.updateUI({"command": "advanced", "subCommand": "feedrateSlowPct", "data": self._settings.get(["FeedrateSlowPct"])})
             else:
                 try:
                     self._settings.set(["FeedrateSlowPct"], clean_value)
@@ -1137,4 +1137,3 @@ class Omega():
             self._logger.info(e)
             return False
 
-    # /SKELLATORE
