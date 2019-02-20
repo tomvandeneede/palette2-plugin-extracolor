@@ -297,12 +297,12 @@ class Omega():
                                         self.startPrintFromP2(file)
                                     except:
                                         self._logger.info("Print from P2 command invalid: %s" % command)
-                        elif command["command"] == 68:
-                            if command["total_params"] > 2:
-                                if command["params"][0] == "D2":
-                                    part = command["params"][1]
-                                    condition = command["params"][2]
-                                    self.handleSwitchStatus(part, condition)
+                        # elif command["command"] == 68:
+                        #     if command["total_params"] > 2:
+                        #         if command["params"][0] == "D2":
+                        #             part = command["params"][1]
+                        #             condition = command["params"][2]
+                        #             self.handleSwitchStatus(part, condition)
                         elif command["command"] == 88:
                             if command["total_params"] > 0:
                                 try:
@@ -456,7 +456,7 @@ class Omega():
         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
         self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
         self.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["AdvancedOptions"])}, True)
-        self.advanced_update_switches()
+        # self.advanced_update_switches()
         self.advanced_updateUI()
 
 
@@ -629,8 +629,8 @@ class Omega():
         self._logger.info("PRINT STARTED P2")
         self.resetPrintValues()
         self.tryHeartbeatBeforePrint()
-        if self._settings.get(["AdvancedOptions"]):
-            self.advanced_queue_switch_status()
+        # if self._settings.get(["AdvancedOptions"]):
+        #     self.advanced_queue_switch_status()
         self.updateUIAll()
         self.printHeartbeatCheck = ""
 
@@ -889,7 +889,7 @@ class Omega():
 
     def feedRateControlStart(self):
         self._logger.info('ADVANCED: SPLICE START')
-        self.advanced_queue_switch_status()
+        # self.advanced_queue_switch_status()
         if self.FeedrateControl and self.actualPrintStarted:
             self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
             advanced_status = 'Splice (%s) Starting: Speed -> SLOW (%s%%)' % (self.currentSplice, self.FeedrateSlowPct)
@@ -916,7 +916,7 @@ class Omega():
 
     def feedRateControlEnd(self):
         self._logger.info('ADVANCED: SPLICE END')
-        self.advanced_queue_switch_status()
+        # self.advanced_queue_switch_status()
         if self.FeedrateControl and self.actualPrintStarted:
             self._logger.info('ADVANCED: Feed-rate NORMAL - ACTIVE (%s)' % self.FeedrateNormalPct)
             advanced_status = 'Splice (%s) Finished: Speed -> NORMAL (%s%%)' % (self.currentSplice, self.FeedrateNormalPct)
@@ -978,7 +978,7 @@ class Omega():
                 self.cutter_switch = True
             else:
                 self.cutter_switch = False
-        self.advanced_update_switches()
+        # self.advanced_update_switches()
 
     # SKELLATORE
     def advanced_reset_values(self):
@@ -997,7 +997,7 @@ class Omega():
         self.filament_input_3_switch = False
         self.filament_input_4_switch = False
         self.cutter_switch = False
-        self.advanced_update_switches()
+        # self.advanced_update_switches()
 
     def advanced_queue_switch_status(self):
         self.enqueueCmd("O68 D2")

@@ -273,7 +273,6 @@ function OmegaViewModel(parameters) {
   self.pings = ko.observableArray([]);
   self.pongs = ko.observableArray([]);
 
-  // SKELLATORE
   self.ShowPingOnPrinter = ko.observable(true);
   self.FeedrateControl = ko.observable(true);
   self.FeedrateSlowed = ko.observable(false);
@@ -282,10 +281,9 @@ function OmegaViewModel(parameters) {
   });
   self.FeedrateNormalPct = ko.observable(100);
   self.FeedrateSlowPct = ko.observable(50);
-  self.Advanced_Status = ko.observable("Awaiting Update...");
-  self.Advanced_Switches = ko.observableArray([]);
+  self.Feedrate_Status = ko.observable("Awaiting Update...");
+  // self.Advanced_Switches = ko.observableArray([]);
   self.Advanced_Options = ko.observable();
-  // /SKELLATORE
 
   /* COMMUNICATION TO BACK-END FUNCTIONS */
 
@@ -529,8 +527,6 @@ function OmegaViewModel(parameters) {
     });
   };
 
-  // SKELLATORE
-
   self.FeedrateControl.subscribe(function() {
     self.ajax_payload({ command: "changeFeedrateControl", condition: self.FeedrateControl() });
   });
@@ -575,17 +571,15 @@ function OmegaViewModel(parameters) {
         self.FeedrateSlowPct(data);
         break;
       case "advancedStatus":
-        self.Advanced_Status(data);
+        self.Feedrate_Status(data);
         break;
-      case "switches":
-        self.Advanced_Switches(data);
-        break;
+      // case "switches":
+      //   self.Advanced_Switches(data);
+      //   break;
       default:
       //Do Nothing
     }
   };
-
-  // /SKELLATORE
 
   self.fromResponse = () => {};
 
@@ -688,6 +682,20 @@ function OmegaViewModel(parameters) {
     } else if (command === "turnOnP2") {
       omegaApp.palette2NotConnectedAlert();
     }
+  };
+
+  self.toggleFeedRateControlDisplayInfo = () => {
+    if ($(".ping-display-info-text").is(":visible")) {
+      $(".ping-display-info-text").toggle(50);
+    }
+    $(".feed-rate-control-info-text").toggle(50);
+  };
+
+  self.togglePingDisplayInfo = () => {
+    if ($(".feed-rate-control-info-text").is(":visible")) {
+      $(".feed-rate-control-info-text").toggle(50);
+    }
+    $(".ping-display-info-text").toggle(50);
   };
 
   /* VIEWMODELS MODIFICATIONS FOR P2 PLUGIN */
@@ -910,9 +918,7 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "alert") {
         self.showAlert(message.data);
       } else if (message.command === "advanced") {
-        // SKELLATORE
         self.handleAdvancedOptions(message.subCommand, message.data);
-        // /SKELLATORE
       }
     }
   };
