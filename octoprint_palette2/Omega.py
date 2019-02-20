@@ -909,6 +909,7 @@ class Omega():
                     self.FeedrateSlowed = True
                 except ValueError:
                     self._logger.info('ADVANCED: Unable to Update Feed-Rate -> SLOW :: ' + str(ValueError))
+            self.updateUI({"command": "advanced", "subCommand": "feedrateSlowed", "data": self.FeedrateSlowed}, True)
             # self.advanced_updateUI()
         else:
             self._logger.info('ADVANCED: Feed-rate Control: INACTIVE')
@@ -926,6 +927,7 @@ class Omega():
                 self.FeedrateSlowed = False
             except ValueError:
                 self._logger.info('ADVANCED: Unable to Update Feed-Rate -> NORMAL :: ' + str(ValueError))
+            self.updateUI({"command": "advanced", "subCommand": "feedrateSlowed", "data": self.FeedrateSlowed}, True)
             # self.advanced_updateUI()
         else:
             self._logger.info('ADVANCED: Feed-Rate Control: INACTIVE')
