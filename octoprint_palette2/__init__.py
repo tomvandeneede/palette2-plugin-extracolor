@@ -164,6 +164,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
             self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
             self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])})
+            if not self._settings.get(["advancedOptions"]):
+                self.palette.changeShowPingOnPrinter(False)
+                self.palette.changeFeedRateControl(False)
             self.palette.advanced_update_variables()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
