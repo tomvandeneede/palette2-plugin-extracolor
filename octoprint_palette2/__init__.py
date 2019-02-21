@@ -35,11 +35,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         return dict(autoconnect=False,
                     palette2Alerts=True,
                     baudrate=115200,
-                    AdvancedOptions=False,
-                    FeedrateControl=False,
-                    FeedrateNormalPct=100,
-                    FeedrateSlowPct=50,
-                    ShowPingOnPrinter=False
+                    advancedOptions=False,
+                    feedRateControl=False,
+                    feedRateNormalPct=100,
+                    feedRateSlowPct=50,
+                    showPingOnPrinter=False
                     )
 
     def get_template_configs(self):
@@ -69,10 +69,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             sendErrorReport=["errorNumber", "description"],
             startPrint=[],
             changeShowPingOnPrinter=["condition"],
-            changeFeedrateControl=["condition"],
-            changeFeedrateSlowed=["condition"],
-            changeFeedrateNormalPct=["value"],
-            changeFeedrateSlowPct=["value"]
+            changeFeedRateControl=["condition"],
+            changeFeedRateSlowed=["condition"],
+            changeFeedRateNormalPct=["value"],
+            changeFeedRateSlowPct=["value"]
         )
 
     def on_api_command(self, command, data):
@@ -102,12 +102,12 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "changeShowPingOnPrinter":
             self.palette.changeShowPingOnPrinter(data["condition"])
-        elif command == "changeFeedrateControl":
-            self.palette.changeFeedrateControl(data["condition"])
-        elif command == "changeFeedrateNormalPct":
-            self.palette.changeFeedrateNormalPct(data["value"])
-        elif command == "changeFeedrateSlowPct":
-            self.palette.changeFeedrateSlowPct(data["value"])
+        elif command == "changeFeedRateControl":
+            self.palette.changeFeedRateControl(data["condition"])
+        elif command == "changeFeedRateNormalPct":
+            self.palette.changeFeedRateNormalPct(data["value"])
+        elif command == "changeFeedRateSlowPct":
+            self.palette.changeFeedRateSlowPct(data["value"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -159,11 +159,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             # self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
             self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
-            self._logger.info("Display alerts: %s" % str(self._settings.get(["palette2Alerts"])))
-            self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["AdvancedOptions"])))
+            self._logger.info("Display Alerts: %s" % str(self._settings.get(["palette2Alerts"])))
+            self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["advancedOptions"])))
             self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
             self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
-            self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["AdvancedOptions"])})
+            self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])})
             self.palette.advanced_update_variables()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()

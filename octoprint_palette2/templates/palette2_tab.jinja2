@@ -75,14 +75,14 @@
 				</ul>
 			</div>
 			<hr>
-			<div class="row advanced_options" data-bind="visible: connected() && Advanced_Options()">
+			<div class="row advanced_options" data-bind="visible: connected() && advancedOptions()">
 				<h4>Advanced Options</h4>
 				<ul class="list-advanced-options">
 						<li class="single-advanced-option ping-printer-display">
 							<div class="input-container">
 								<label for="ping-printer-display-input"><span>Enable Ping Display on Printer:</span></label>
 								<div class="interaction-container">
-									<input class="single-advanced-option-input" id="ping-printer-display-input" type="checkbox" data-bind="checked: ShowPingOnPrinter">
+									<input class="single-advanced-option-input" id="ping-printer-display-input" type="checkbox" data-bind="checked: showPingOnPrinter">
 									<div class="advanced-info-container">
 										<i class="material-icons advanced-info-icon" data-bind="click: togglePingDisplayInfo">info_outline</i>
 										<div class="advanced-info-text ping-display-info-text">
@@ -97,7 +97,7 @@
 							<div class="input-container">
 								<label for="feed-rate-control-input"><span>Enable Feed Rate Control During Splices:</span></label>
 								<div class="interaction-container">
-									<input class="single-advanced-option-input" id="feed-rate-control-input" type="checkbox" data-bind="checked: FeedrateControl">
+									<input class="single-advanced-option-input" id="feed-rate-control-input" type="checkbox" data-bind="checked: feedRateControl">
 									<div class="advanced-info-container">
 										<i class="material-icons advanced-info-icon" data-bind="click: toggleFeedRateControlDisplayInfo">info_outline</i>
 										<div class="advanced-info-text feed-rate-control-info-text">
@@ -107,12 +107,12 @@
 									</div>
 								</div>
 							</div>
-							<div class="feed-rate-control-options" data-bind="visible: FeedrateControl">
+							<div class="feed-rate-control-options" data-bind="visible: feedRateControl">
 								<div class="feed-rate-speeds">
 									<div class="input-container">
 											<label for="normal-feedrate-input"><span>Normal Feed Rate Speed:</span></label>
 											<div class="input-append feedrate-advanced-option-input-container">
-												<input id="normal-feedrate-input" class="input-mini" type="number" min="1" max="999" data-bind="value: FeedrateNormalPct, enable: FeedrateControl">
+												<input id="normal-feedrate-input" class="input-mini" type="number" min="1" max="999" data-bind="value: feedRateNormalPct, enable: feedRateControl">
 												<span class="add-on">%</span>
 											</div>
 									</div>
@@ -120,7 +120,7 @@
 										<label for="splicing-feedrate-input"><span>Splicing Feed Rate Speed:</span></label>
 										<label>
 												<div class="input-append feedrate-advanced-option-input-container">
-													<input id="splicing-feedrate-input" class="input-mini" type="number" min="1" max="100" data-bind="value: FeedrateSlowPct, enable: FeedrateControl">
+													<input id="splicing-feedrate-input" class="input-mini" type="number" min="1" max="100" data-bind="value: feedRateSlowPct, enable: feedRateControl">
 													<span class="add-on">%</span>
 												</div>
 										</label>
@@ -128,11 +128,11 @@
 								</div>
 								<div class="advanced-single-status feed-rate-status-container">
 									<h5 class="advanced-single-status-title">Feed Rate Status:</h5>
-									<span class="advanced-single-status-value" data-bind="text: Feedrate_Status">Awaiting Update..</span>
+									<span class="advanced-single-status-value" data-bind="text: feedRateStatus">Awaiting Update..</span>
 								</div>
 								<div class="advanced-single-status feed-rate-slowed-container">
 									<h5 class="advanced-single-status-title">Feed Rate Currently Slowed?</h5>
-									<span class="advanced-single-status-value" data-bind="text: FeedrateSlowedText"></span>
+									<span class="advanced-single-status-value" data-bind="text: feedRateSlowedText"></span>
 								</div>
 							</div>
 						</li>
