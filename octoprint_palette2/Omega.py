@@ -456,8 +456,8 @@ class Omega():
         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
         self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
         self.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["AdvancedOptions"])}, True)
-        # self.advanced_update_switches()
         self.advanced_updateUI()
+        # self.advanced_update_switches()
 
 
     def updateUI(self, data, log=None):
@@ -1026,14 +1026,6 @@ class Omega():
         except Exception as e:
             self._logger.info(e)
 
-    def changeFeedrateSlowed(self, condition):
-        try:
-            self._settings.set(["FeedrateSlowed"], condition, force=True)
-            self._settings.save(force=True)
-            self._logger.info("ADVANCED: FeedrateSlowed -> '%s' '%s'" % (condition, self._settings.get(["FeedrateSlowed"])))
-        except Exception as e:
-            self._logger.info(e)
-
     def changeFeedrateNormalPct(self, value):
         if self.isPositiveInteger(value):
             clean_value = value.lstrip("0")
@@ -1095,19 +1087,6 @@ class Omega():
         self.FeedrateNormalPct = self._settings.get(["FeedrateNormalPct"])
         self.FeedrateSlowPct = self._settings.get(["FeedrateSlowPct"])
         self.advanced_updateUI()
-
-    def advanced_api_command(self, command, data):
-        try:
-            if command == "changeShowPingOnPrinter":
-                self.changeShowPingOnPrinter(data["condition"])
-            elif command == "changeFeedrateControl":
-                self.changeFeedrateControl(data["condition"])
-            elif command == "changeFeedrateNormalPct":
-                self.changeFeedrateNormalPct(data["value"])
-            elif command == "changeFeedrateSlowPct":
-                self.changeFeedrateSlowPct(data["value"])
-        except Exception as e:
-            self._logger.info(e)
 
     def advanced_update_switches(self):
         switch_status = {
