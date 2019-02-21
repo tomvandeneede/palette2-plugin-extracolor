@@ -730,7 +730,6 @@ class Omega():
                 self._printer.cancel_print()
         elif cmd == "O9":
             # reset values
-            # self.resetOmega()
             self._logger.info("Omega: Soft resetting P2: %s" % cmd)
             self.enqueueCmd(cmd)
         else:
@@ -910,10 +909,8 @@ class Omega():
                 except ValueError:
                     self._logger.info('ADVANCED: Unable to Update Feed-Rate -> SLOW :: ' + str(ValueError))
             self.updateUI({"command": "advanced", "subCommand": "feedrateSlowed", "data": self.FeedrateSlowed}, True)
-            # self.advanced_updateUI()
         else:
             self._logger.info('ADVANCED: Feed-rate Control: INACTIVE')
-            # self.advanced_updateUI()
 
     def feedRateControlEnd(self):
         self._logger.info('ADVANCED: SPLICE END')
@@ -928,10 +925,8 @@ class Omega():
             except ValueError:
                 self._logger.info('ADVANCED: Unable to Update Feed-Rate -> NORMAL :: ' + str(ValueError))
             self.updateUI({"command": "advanced", "subCommand": "feedrateSlowed", "data": self.FeedrateSlowed}, True)
-            # self.advanced_updateUI()
         else:
             self._logger.info('ADVANCED: Feed-Rate Control: INACTIVE')
-            # self.advanced_updateUI()
 
     def showPingOnPrinter(self, ping_number, ping_percent):
         self._logger.info("ADVANCED: Ping!")
@@ -940,7 +935,6 @@ class Omega():
         if self.ShowPingOnPrinter:
             try:
                 self._printer.commands("M117 Ping %s %s%%" % (ping_number, ping_percent))
-                # self.advanced_updateUI()
             except ValueError:
                 self._logger.info("Printer cannot handle M117 commands.")
 
@@ -1019,7 +1013,6 @@ class Omega():
             self._settings.set(["ShowPingOnPrinter"], condition, force=True)
             self._settings.save(force=True)
             self._logger.info("ADVANCED: ShowPingOnPrinter -> '%s' '%s'" % (condition, self._settings.get(["ShowPingOnPrinter"])))
-            # self.updateUI({"command": "advanced", "subCommand": "showPingOnPrinter", "data": self._settings.get(["ShowPingOnPrinter"])})
             self.ShowPingOnPrinter = self._settings.get(["ShowPingOnPrinter"])
         except Exception as e:
             self._logger.info(e)
@@ -1029,7 +1022,6 @@ class Omega():
             self._settings.set(["FeedrateControl"], condition, force=True)
             self._settings.save(force=True)
             self._logger.info("ADVANCED: FeedrateControl -> '%s' '%s'" % (condition, self._settings.get(["FeedrateControl"])))
-            # self.updateUI({"command": "advanced", "subCommand": "feedrateControl", "data": self._settings.get(["FeedrateControl"])})
             self.FeedrateControl = self._settings.get(["FeedrateControl"])
         except Exception as e:
             self._logger.info(e)
@@ -1064,7 +1056,6 @@ class Omega():
                             advanced_status = 'Normal feed rate set to %s%%. Awaiting end of current splice to apply...' % self.FeedrateNormalPct
                 except Exception as e:
                     self._logger.info(e)
-                # self.updateUI({"command": "advanced", "subCommand": "feedrateNormalPct", "data": self._settings.get(["FeedrateNormalPct"])})
             if advanced_status != "":
                 self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
 
@@ -1095,7 +1086,6 @@ class Omega():
                             advanced_status = 'Splicing feed rate set to %s%%. Awaiting next splice to apply...' % (self.FeedrateSlowPct)
                 except Exception as e:
                     self._logger.info(e)
-                # self.updateUI({"command": "advanced", "subCommand": "feedrateSlowPct", "data": self._settings.get(["FeedrateSlowPct"])})
             if advanced_status != "":
                 self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
 
@@ -1116,7 +1106,6 @@ class Omega():
                 self.changeFeedrateNormalPct(data["value"])
             elif command == "changeFeedrateSlowPct":
                 self.changeFeedrateSlowPct(data["value"])
-            # self.advanced_updateUI()
         except Exception as e:
             self._logger.info(e)
 

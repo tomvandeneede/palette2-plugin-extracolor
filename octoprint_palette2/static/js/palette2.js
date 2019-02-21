@@ -277,7 +277,7 @@ function OmegaViewModel(parameters) {
   self.FeedrateControl = ko.observable(true);
   self.FeedrateSlowed = ko.observable(false);
   self.FeedrateSlowedText = ko.computed(function() {
-    return self.FeedrateSlowed() && self.printerState.isPrinting() ? "True" : "False";
+    return self.FeedrateSlowed() && self.printerState.isPrinting() ? "Yes" : "No";
   });
   self.FeedrateNormalPct = ko.observable(100);
   self.FeedrateSlowPct = ko.observable(50);
