@@ -282,7 +282,6 @@ function OmegaViewModel(parameters) {
   self.feedRateNormalPct = ko.observable(100);
   self.feedRateSlowPct = ko.observable(50);
   self.feedRateStatus = ko.observable("Awaiting Update...");
-  // self.Advanced_Switches = ko.observableArray([]);
   self.advancedOptions = ko.observable();
 
   /* COMMUNICATION TO BACK-END FUNCTIONS */
@@ -573,9 +572,6 @@ function OmegaViewModel(parameters) {
       case "advancedStatus":
         self.feedRateStatus(data);
         break;
-      // case "switches":
-      //   self.Advanced_Switches(data);
-      //   break;
       default:
       //Do Nothing
     }

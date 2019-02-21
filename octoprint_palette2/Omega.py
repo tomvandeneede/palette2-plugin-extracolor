@@ -297,12 +297,6 @@ class Omega():
                                         self.startPrintFromP2(file)
                                     except:
                                         self._logger.info("Print from P2 command invalid: %s" % command)
-                        # elif command["command"] == 68:
-                        #     if command["total_params"] > 2:
-                        #         if command["params"][0] == "D2":
-                        #             part = command["params"][1]
-                        #             condition = command["params"][2]
-                        #             self.handleSwitchStatus(part, condition)
                         elif command["command"] == 88:
                             if command["total_params"] > 0:
                                 try:
@@ -457,7 +451,6 @@ class Omega():
         self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
         self.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])}, True)
         self.advanced_updateUI()
-        # self.advanced_update_switches()
 
 
     def updateUI(self, data, log=None):
@@ -629,8 +622,6 @@ class Omega():
         self._logger.info("PRINT STARTED P2")
         self.resetPrintValues()
         self.tryHeartbeatBeforePrint()
-        # if self._settings.get(["advancedOptions"]):
-        #     self.advanced_queue_switch_status()
         self.updateUIAll()
         self.printHeartbeatCheck = ""
 
@@ -888,7 +879,6 @@ class Omega():
 
     def feedRateControlStart(self):
         self._logger.info('ADVANCED: SPLICE START')
-        # self.advanced_queue_switch_status()
         if self.feedRateControl and self.actualPrintStarted:
             self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
             advanced_status = 'Splice (%s) starting: speed -> SLOW (%s%%)' % (self.currentSplice, self.feedRateSlowPct)
@@ -914,7 +904,6 @@ class Omega():
 
     def feedRateControlEnd(self):
         self._logger.info('ADVANCED: SPLICE END')
-        # self.advanced_queue_switch_status()
         if self.feedRateControl and self.actualPrintStarted:
             self._logger.info('ADVANCED: Feed-rate NORMAL - ACTIVE (%s)' % self.feedRateNormalPct)
             advanced_status = 'Splice (%s) finished: speed -> NORMAL (%s%%)' % (self.currentSplice, self.feedRateNormalPct)
@@ -938,44 +927,6 @@ class Omega():
             except ValueError:
                 self._logger.info("Printer cannot handle M117 commands.")
 
-    def handleSwitchStatus(self, part, condition):
-        if part == "D0":
-            if condition == "D1":
-                self.splicecore_switch = True
-            else:
-                self.splicecore_switch = False
-        elif part == "D1":
-            if condition == "D1":
-                self.buffer_switch = True
-            else:
-                self.buffer_switch = False
-        elif part == "D2":
-            if condition == "D1":
-                self.filament_input_1_switch = True
-            else:
-                self.filament_input_1_switch = False
-        elif part == "D3":
-            if condition == "D1":
-                self.filament_input_2_switch = True
-            else:
-                self.filament_input_2_switch = False
-        elif part == "D4":
-            if condition == "D1":
-                self.filament_input_3_switch = True
-            else:
-                self.filament_input_3_switch = False
-        elif part == "D5":
-            if condition == "D1":
-                self.filament_input_4_switch = True
-            else:
-                self.filament_input_4_switch = False
-        elif part == "D6":
-            if condition == "D1":
-                self.cutter_switch = True
-            else:
-                self.cutter_switch = False
-        # self.advanced_update_switches()
-
     def advanced_reset_values(self):
         self.feedRateControl = self._settings.get(["feedRateControl"])
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
@@ -985,17 +936,6 @@ class Omega():
 
     def advanced_reset_print_values(self):
         self.feedRateSlowed = False
-        self.splicecore_switch = False
-        self.buffer_switch = False
-        self.filament_input_1_switch = False
-        self.filament_input_2_switch = False
-        self.filament_input_3_switch = False
-        self.filament_input_4_switch = False
-        self.cutter_switch = False
-        # self.advanced_update_switches()
-
-    def advanced_queue_switch_status(self):
-        self.enqueueCmd("O68 D2")
 
     def advanced_updateUI(self):
         self._logger.info("ADVANCED UPDATE UI")
@@ -1087,18 +1027,6 @@ class Omega():
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
         self.advanced_updateUI()
-
-    def advanced_update_switches(self):
-        switch_status = {
-            "spliceCore": str(self.splicecore_switch),
-            "buffer": str(self.buffer_switch),
-            "filament1": str(self.filament_input_1_switch),
-            "filament2": str(self.filament_input_2_switch),
-            "filament3": str(self.filament_input_3_switch),
-            "filament4": str(self.filament_input_4_switch),
-            "cutter": str(self.cutter_switch)
-        }
-        self.updateUI({"command": "advanced", "subCommand": "switches", "data": switch_status})
 
     def isPositiveInteger(self, value):
         try:
