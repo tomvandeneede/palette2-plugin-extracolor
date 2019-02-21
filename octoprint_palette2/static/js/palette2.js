@@ -788,6 +788,9 @@ function OmegaViewModel(parameters) {
   self.onAfterBinding = () => {
     // self.refreshDemoList();
     self.uiUpdate();
+    $(".palette-status-title").on("click", () => {
+      self.ajax_payload({ command: "autoload" });
+    });
   };
 
   self.onEventFileSelected = payload => {

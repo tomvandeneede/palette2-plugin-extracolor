@@ -25,6 +25,7 @@ class Omega():
     def __init__(self, plugin):
         self._logger = plugin._logger
         self._printer = plugin._printer
+        self._printer_profile_manager = plugin._printer_profile_manager
         self._plugin_manager = plugin._plugin_manager
         self._identifier = plugin._identifier
         self._settings = plugin._settings
@@ -369,7 +370,7 @@ class Omega():
                                         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
                                         if not self.cancelFromHub and not self.cancelFromP2:
                                             self.updateUI({"command": "alert", "data": "startPrint"})
-                                        self.amountLeftToExtrude = ""
+                                        # self.amountLeftToExtrude = ""
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[0]:
                                     if command["total_params"] > 1 and command["params"][1] == "D0":
                                         self.currentStatus = "Loading ingoing drives"
@@ -1034,4 +1035,45 @@ class Omega():
         except Exception as e:
             self._logger.info(e)
             return False
+
+    def autoload(self):
+        self._logger.info("Starting autoload")
+        self.autoloadThread = threading.Thread(target=self.actual_autoload, args=(self.amountLeftToExtrude,))
+        self.autoloadThread.daemon = True
+        self.autoloadThread.start()
+        # self.actual_autoload(self.amountLeftToExtrude)
+        self._logger.info("We're done")
+
+    def stopAutoloadThread(self):
+        if self.autoloadThread and threading.current_thread() != self.autoloadThread:
+            self.autoloadThread.join()
+            self._logger.info("Joined")
+        self.autoloadThread = None
+
+    def actual_autoload(self, amount_to_extrude):
+        self._logger.info("Amount to extrude: %s" % amount_to_extrude)
+        if amount_to_extrude == 0:
+            self.stopAutoloadThread()
+
+        old_value = amount_to_extrude
+        change_detected = False
+
+        self._printer.extrude(amount_to_extrude)
+        timeout = 5
+        timeout_start = time.time()
+        while time.time() < timeout_start + timeout:
+            if self.amountLeftToExtrude != old_value:
+                change_detected = True
+                old_value = self.amountLeftToExtrude
+                timeout_start = time.time()
+            time.sleep(0.01)
+
+        if change_detected:
+            self.actual_autoload(self.amountLeftToExtrude)
+        else:
+            self._logger.info("Old: %s" % old_value)
+            self._logger.info("Amount left per P2: %s" % self.amountLeftToExtrude)
+            self._logger.info("Filament did not move. Place filament again")
+            self.stopAutoloadThread()
+            self._logger.info("Joined")
 

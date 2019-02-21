@@ -72,7 +72,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             changeFeedRateControl=["condition"],
             changeFeedRateSlowed=["condition"],
             changeFeedRateNormalPct=["value"],
-            changeFeedRateSlowPct=["value"]
+            changeFeedRateSlowPct=["value"],
+            autoload=[]
         )
 
     def on_api_command(self, command, data):
@@ -100,6 +101,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.startPrintFromHub()
         elif command == "connectWifi":
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
+        elif command == "autoload":
+            self.palette.autoload()
         elif command == "changeShowPingOnPrinter":
             self.palette.changeShowPingOnPrinter(data["condition"])
         elif command == "changeFeedRateControl":
