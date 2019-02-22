@@ -91,19 +91,34 @@ omegaApp.preheatAlert = () => {
   });
 };
 
-omegaApp.extrusionAlert = firstTime => {
+omegaApp.extrusionAlert = (firstTime, autoLoad) => {
+  let text = `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number.`;
   if (firstTime) {
+    text = `Use the "Extrude" button in the Controls tab to drive filament into the extruder until you see the desired color. To accurately load, we recommend setting the extrusion amount to a low number.`;
     return swal({
       title: "Follow instructions on Palette 2 ",
-      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder until you see the desired color. To accurately load, we recommend setting the extrusion amount to a low number.`,
+      text: text,
       type: "info"
     });
   } else {
-    return swal({
-      title: "Follow instructions on Palette 2 ",
-      text: `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number.`,
-      type: "info"
-    });
+    if (autoLoad) {
+      text = `Use the "Extrude" button in the Controls tab or the "Auto Load" button in the Palette 2 tab to drive filament into the extruder. If using "Auto Load", please place the filament at a proper angle to be inserted into the extruder before loading.`;
+      return swal({
+        title: "Follow instructions on Palette 2 ",
+        text: text,
+        type: "info",
+        showConfirmButton: true,
+        showCancelButton: true,
+        confirmButtonText: "Go to Auto Load",
+        cancelButtonText: "OK"
+      });
+    } else {
+      return swal({
+        title: "Follow instructions on Palette 2 ",
+        text: text,
+        type: "info"
+      });
+    }
   }
 };
 
@@ -199,10 +214,27 @@ omegaApp.readyToStartAlert = setupAlertSetting => {
   }
 };
 
+omegaApp.autoLoadFailAlert = () => {
+  return swal({
+    title: "Auto load not completed",
+    text: `Filament stopped moving. Please make sure the filament is properly placed in the extruder and then continue extruding, either with "Auto Load" again or with manual controls.`,
+    type: "info"
+  });
+};
+
 /* 3.1 CLOSE ALERT */
 omegaApp.closeAlert = () => {
   if (Swal.isVisible()) {
     Swal.close();
+  }
+};
+
+/* 4. Append Notification List to DOM */
+omegaApp.addNotificationList = () => {
+  if ($("body").find(".side-notifications-list").length === 0) {
+    $("body")
+      .css("position", "relative")
+      .append(`<ul class="side-notifications-list"></ul>`);
   }
 };
 
@@ -239,7 +271,7 @@ function OmegaViewModel(parameters) {
   self.demoWithPrinter = ko.observable(false);
 
   self.currentStatus = ko.observable();
-  self.amountLeftToExtrude = "";
+  self.amountLeftToExtrude = ko.observable();
   self.jogId = "";
   self.displaySetupAlerts = true;
   self.tryingToConnect = false;
@@ -283,6 +315,21 @@ function OmegaViewModel(parameters) {
   self.feedRateSlowPct = ko.observable(50);
   self.feedRateStatus = ko.observable("Awaiting Update...");
   self.advancedOptions = ko.observable();
+
+  self.autoLoad = ko.observable(false);
+  self.isAutoLoading = ko.observable(false);
+  self.autoLoadButtonText = ko.computed(function() {
+    return self.isAutoLoading() ? "Auto Loading..." : "Auto Load";
+  });
+  self.amountLeftToExtrudeText = ko.computed(function() {
+    if (self.amountLeftToExtrude() > 0 || self.amountLeftToExtrude() < 0) {
+      return `${self.amountLeftToExtrude()}mm`;
+    } else if (self.amountLeftToExtrude() === 0) {
+      return "Loading offset completed";
+    } else {
+      return "No loading offset detected";
+    }
+  });
 
   /* COMMUNICATION TO BACK-END FUNCTIONS */
 
@@ -538,6 +585,9 @@ function OmegaViewModel(parameters) {
   self.feedRateSlowPct.subscribe(function() {
     self.ajax_payload({ command: "changeFeedRateSlowPct", value: self.feedRateSlowPct() });
   });
+  self.autoLoad.subscribe(function() {
+    self.ajax_payload({ command: "changeAutoLoad", condition: self.autoLoad() });
+  });
 
   self.ajax_payload = payload => {
     $.ajax({
@@ -572,6 +622,12 @@ function OmegaViewModel(parameters) {
       case "advancedStatus":
         self.feedRateStatus(data);
         break;
+      case "autoLoad":
+        self.autoLoad(data);
+        break;
+      case "isAutoLoading":
+        self.isAutoLoading(data);
+        break;
       default:
       //Do Nothing
     }
@@ -581,26 +637,42 @@ function OmegaViewModel(parameters) {
 
   /* UI FUNCTIONS */
 
+  self.checkIfCountdownExists = () => {
+    if ($("body").find("#jog-filament-notification").length === 0) {
+      self.displayFilamentCountdown();
+    }
+  };
+
   self.displayFilamentCountdown = () => {
     let notification = $(`<li id="jog-filament-notification" class="popup-notification">
               <i class="material-icons remove-popup">clear</i>
               <h6>Remaining Length To Extrude:</h6>
-              <p class="jog-filament-value">${self.amountLeftToExtrude}mm</p>
+              <p class="jog-filament-value">${self.amountLeftToExtrude()}mm</p>
               </li>`).hide();
     self.jogId = "#jog-filament-notification";
     $(".side-notifications-list").append(notification);
   };
 
   self.updateFilamentCountdown = firstValue => {
+    if (self.amountLeftToExtrude() < 0) {
+      omegaApp.closeAlert();
+      $(self.jogId)
+        .find(".jog-filament-value")
+        .addClass("negative-number");
+    } else {
+      $(self.jogId)
+        .find(".jog-filament-value")
+        .removeClass("negative-number");
+    }
     if (firstValue) {
       $(self.jogId)
         .fadeIn(200)
         .find(".jog-filament-value")
-        .text(`${self.amountLeftToExtrude}mm`);
+        .text(`${self.amountLeftToExtrude()}mm`);
     } else {
       $(self.jogId)
         .find(".jog-filament-value")
-        .text(`${self.amountLeftToExtrude}mm`);
+        .text(`${self.amountLeftToExtrude()}mm`);
     }
   };
 
@@ -623,11 +695,12 @@ function OmegaViewModel(parameters) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#control`;
         omegaApp.extrusionHighlight();
-        if (self.firstTime) {
-          omegaApp.extrusionAlert(true);
-        } else {
-          omegaApp.extrusionAlert(false);
-        }
+        omegaApp.extrusionAlert(self.firstTime, self.autoLoad()).then(result => {
+          if (result.value && !self.firstTime && self.autoLoad()) {
+            let base_url = window.location.origin;
+            window.location.href = `${base_url}/#tab_plugin_palette2`;
+          }
+        });
       }
     } else if (command === "cancelling") {
       self.removeNotification();
@@ -639,7 +712,6 @@ function OmegaViewModel(parameters) {
       self.removeNotification();
       omegaApp.printCancelledAlert();
     } else if (command === "startPrint") {
-      self.removeNotification();
       if (self.displaySetupAlerts) {
         $("body").on("click", ".setup-checkbox input", event => {
           self.changeAlertSettings(event.target.checked);
@@ -677,21 +749,17 @@ function OmegaViewModel(parameters) {
       omegaApp.noSerialPortsAlert();
     } else if (command === "turnOnP2") {
       omegaApp.palette2NotConnectedAlert();
+    } else if (command === "autoLoadIncomplete") {
+      omegaApp.autoLoadFailAlert();
     }
   };
 
-  self.toggleFeedRateControlDisplayInfo = () => {
-    if ($(".ping-display-info-text").is(":visible")) {
-      $(".ping-display-info-text").toggle(50);
+  self.toggleAdvancedOptionInfo = (data, event) => {
+    let targetClass = `#${event.target.nextElementSibling.id}`;
+    if ($(`.advanced-info-text:not(${targetClass})`).is(":visible")) {
+      $(".advanced-info-text").hide(50);
     }
-    $(".feed-rate-control-info-text").toggle(50);
-  };
-
-  self.togglePingDisplayInfo = () => {
-    if ($(".feed-rate-control-info-text").is(":visible")) {
-      $(".feed-rate-control-info-text").toggle(50);
-    }
-    $(".ping-display-info-text").toggle(50);
+    $(targetClass).toggle(50);
   };
 
   /* VIEWMODELS MODIFICATIONS FOR P2 PLUGIN */
@@ -788,9 +856,12 @@ function OmegaViewModel(parameters) {
   self.onAfterBinding = () => {
     // self.refreshDemoList();
     self.uiUpdate();
-    $(".palette-status-title").on("click", () => {
-      self.ajax_payload({ command: "autoload" });
-    });
+    omegaApp.addNotificationList();
+  };
+
+  self.startAutoLoad = () => {
+    self.isAutoLoading(true);
+    self.ajax_payload({ command: "startAutoLoad" });
   };
 
   self.onEventFileSelected = payload => {
@@ -889,17 +960,18 @@ function OmegaViewModel(parameters) {
         if (message.data && message.data !== self.currentStatus()) {
           self.currentStatus(message.data);
           if (self.currentStatus() === "Loading filament into extruder") {
-            self.displayFilamentCountdown();
+            self.checkIfCountdownExists();
+          } else if (self.currentStatus() === "Print started: preparing splices") {
+            self.removeNotification();
           }
         } else if (!message.data) {
           self.currentStatus("No ongoing Palette 2 print");
         }
       } else if (message.command === "amountLeftToExtrude") {
-        self.amountLeftToExtrude = message.data;
-        if (!self.actualPrintStarted && self.amountLeftToExtrude) {
+        if (!self.actualPrintStarted) {
+          self.amountLeftToExtrude(message.data);
           if (!$("#jog-filament-notification").is(":visible")) {
             self.updateFilamentCountdown(true);
-            // self.control.extrusionAmount(self.amountLeftToExtrude);
           } else if ($("#jog-filament-notification").is(":visible")) {
             self.updateFilamentCountdown(false);
           }

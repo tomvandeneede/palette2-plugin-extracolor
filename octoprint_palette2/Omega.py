@@ -357,20 +357,25 @@ class Omega():
                                         self.updateUI({"command": "alert", "data": "extruder"})
                                         self.updateUI({"command": "currentStatus", "data": self.currentStatus})
                                         self._logger.info("Filament must be loaded into extruder by user")
-                                    elif command["params"][1][0:2] == "D-":
+                                    # positive integer
+                                    elif "-" in command["params"][1]:
                                         try:
                                             self.amountLeftToExtrude = int(command["params"][1][2:])
                                             self._logger.info("%s mm left to extrude." % self.amountLeftToExtrude)
                                             self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
                                         except:
                                             self._logger.info("Filament extrusion update invalid: %s" % command)
-                                    elif command["params"][1][0:2] == "D0":
-                                        self.amountLeftToExtrude = 0
-                                        self._logger.info("0" + "mm left to extrude.")
-                                        self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
-                                        if not self.cancelFromHub and not self.cancelFromP2:
-                                            self.updateUI({"command": "alert", "data": "startPrint"})
-                                        # self.amountLeftToExtrude = ""
+                                    # negative integer or 0
+                                    elif "-" not in command["params"][1]:
+                                        try:
+                                            self.amountLeftToExtrude = int(command["params"][1][1:]) * -1
+                                            self._logger.info("%s mm left to extrude." % self.amountLeftToExtrude)
+                                            self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
+                                        except:
+                                            self._logger.info("Filament extrusion update invalid: %s" % command)
+                                        if self.amountLeftToExtrude == 0:
+                                            if not self.cancelFromHub and not self.cancelFromP2:
+                                                self.updateUI({"command": "alert", "data": "startPrint"})
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[0]:
                                     if command["total_params"] > 1 and command["params"][1] == "D0":
                                         self.currentStatus = "Loading ingoing drives"
@@ -408,6 +413,7 @@ class Omega():
             except Exception as e:
                 self._logger.info("Palette 2 Write Thread Error")
                 self._logger.info(e)
+                time.sleep(0.01)
 
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
@@ -507,6 +513,7 @@ class Omega():
 
         self.stopReadThread()
         self.stopWriteThread()
+        self.stopAutoLoadThread()
         if not self._settings.get(["autoconnect"]):
             self.stopConnectionThread()
 
@@ -566,6 +573,8 @@ class Omega():
 
         self.resetFinished = False
         self.advanced_reset_values()
+
+        self.autoLoadThread = None
         self._logger.info("Omega: Resetting all values - FINISHED")
 
     def resetPrintValues(self):
@@ -933,10 +942,13 @@ class Omega():
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
         self.showPingOnPrinter = self._settings.get(["showPingOnPrinter"])
+        self.autoLoad = self._settings.get(["autoLoad"])
         self.advanced_reset_print_values()
 
     def advanced_reset_print_values(self):
+        self.autoLoadThread = None
         self.feedRateSlowed = False
+        self.isAutoLoading = False
 
     def advanced_updateUI(self):
         self._logger.info("ADVANCED UPDATE UI")
@@ -946,6 +958,8 @@ class Omega():
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowed", "data": self.feedRateSlowed}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateNormalPct", "data": self._settings.get(["feedRateNormalPct"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowPct", "data": self._settings.get(["feedRateSlowPct"])}, True)
+            self.updateUI({"command": "advanced", "subCommand": "autoLoad", "data": self._settings.get(["autoLoad"])}, True)
+            self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading}, True)
         except Exception as e:
             self._logger.info(e)
 
@@ -1027,6 +1041,7 @@ class Omega():
         self.feedRateControl = self._settings.get(["feedRateControl"])
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
+        self.autoLoad = self._settings.get(["autoLoad"])
         self.advanced_updateUI()
 
     def isPositiveInteger(self, value):
@@ -1036,44 +1051,65 @@ class Omega():
             self._logger.info(e)
             return False
 
-    def autoload(self):
-        self._logger.info("Starting autoload")
-        self.autoloadThread = threading.Thread(target=self.actual_autoload, args=(self.amountLeftToExtrude,))
-        self.autoloadThread.daemon = True
-        self.autoloadThread.start()
-        # self.actual_autoload(self.amountLeftToExtrude)
-        self._logger.info("We're done")
+    def startAutoLoadThread(self):
+        if self.autoLoadThread is not None:
+            self.stopAutoLoadThread()
 
-    def stopAutoloadThread(self):
-        if self.autoloadThread and threading.current_thread() != self.autoloadThread:
-            self.autoloadThread.join()
-            self._logger.info("Joined")
-        self.autoloadThread = None
+        self._logger.info("Starting AutoLoad Thread")
+        self.isAutoLoading = True
+        self.autoLoadThreadStop = False
+        self.autoLoadThread = threading.Thread(target=self.omegaAutoLoadThread)
+        self.autoLoadThread.daemon = True
+        self.autoLoadThread.start()
 
-    def actual_autoload(self, amount_to_extrude):
-        self._logger.info("Amount to extrude: %s" % amount_to_extrude)
-        if amount_to_extrude == 0:
-            self.stopAutoloadThread()
+    def stopAutoLoadThread(self):
+        self.autoLoadThreadStop = True
+        if self.autoLoadThread and threading.current_thread() != self.autoLoadThread:
+            self.autoLoadThread.join()
+        self.autoLoadThread = None
 
-        old_value = amount_to_extrude
-        change_detected = False
+    def omegaAutoLoadThread(self):
+        self.autoLoadFilament(self.amountLeftToExtrude)
 
-        self._printer.extrude(amount_to_extrude)
-        timeout = 5
-        timeout_start = time.time()
-        while time.time() < timeout_start + timeout:
-            if self.amountLeftToExtrude != old_value:
-                change_detected = True
-                old_value = self.amountLeftToExtrude
-                timeout_start = time.time()
-            time.sleep(0.01)
+    def autoLoadFilament(self, amount_to_extrude):
+        if not self.autoLoadThreadStop:
+            self._logger.info("Amount to extrude: %s" % amount_to_extrude)
+            if amount_to_extrude == 0:
+                self.isAutoLoading = False
+                self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading})
+                return 0
 
-        if change_detected:
-            self.actual_autoload(self.amountLeftToExtrude)
+            old_value = amount_to_extrude
+            change_detected = False
+            self._printer.extrude(amount_to_extrude)
+            timeout = 6
+            timeout_start = time.time()
+            while time.time() < timeout_start + timeout:
+                if self.amountLeftToExtrude != old_value:
+                    old_value = self.amountLeftToExtrude
+                    change_detected = True
+                    # reset timeout
+                    timeout = 3
+                    timeout_start = time.time()
+                time.sleep(0.01)
+
+            if change_detected:
+                self.autoLoadFilament(self.amountLeftToExtrude)
+            else:
+                self._logger.info("Loading offset at %smm did not change within %s seconds. Filament did not move. Must place filament again" % (self.amountLeftToExtrude, timeout))
+                self.isAutoLoading = False
+                self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading})
+                self.updateUI({"command": "alert", "data": "autoLoadIncomplete"})
+                return None
         else:
-            self._logger.info("Old: %s" % old_value)
-            self._logger.info("Amount left per P2: %s" % self.amountLeftToExtrude)
-            self._logger.info("Filament did not move. Place filament again")
-            self.stopAutoloadThread()
-            self._logger.info("Joined")
+            return None
+
+    def changeAutoLoad(self, condition):
+        try:
+            self._settings.set(["autoLoad"], condition, force=True)
+            self._settings.save(force=True)
+            self._logger.info("ADVANCED: autoLoad -> '%s' '%s'" % (condition, self._settings.get(["autoLoad"])))
+            self.autoLoad = self._settings.get(["autoLoad"])
+        except Exception as e:
+            self._logger.info(e)
 

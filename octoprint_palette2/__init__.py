@@ -39,7 +39,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                     feedRateControl=False,
                     feedRateNormalPct=100,
                     feedRateSlowPct=50,
-                    showPingOnPrinter=False
+                    showPingOnPrinter=False,
+                    autoLoad=False
                     )
 
     def get_template_configs(self):
@@ -73,7 +74,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             changeFeedRateSlowed=["condition"],
             changeFeedRateNormalPct=["value"],
             changeFeedRateSlowPct=["value"],
-            autoload=[]
+            changeAutoLoad=["condition"],
+            startAutoLoad=[]
         )
 
     def on_api_command(self, command, data):
@@ -101,8 +103,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.startPrintFromHub()
         elif command == "connectWifi":
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
-        elif command == "autoload":
-            self.palette.autoload()
+        elif command == "startAutoLoad":
+            self.palette.startAutoLoadThread()
         elif command == "changeShowPingOnPrinter":
             self.palette.changeShowPingOnPrinter(data["condition"])
         elif command == "changeFeedRateControl":
@@ -111,6 +113,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.changeFeedRateNormalPct(data["value"])
         elif command == "changeFeedRateSlowPct":
             self.palette.changeFeedRateSlowPct(data["value"])
+        elif command == "changeAutoLoad":
+            self.palette.changeAutoLoad(data["condition"])
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -170,6 +174,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             if not self._settings.get(["advancedOptions"]):
                 self.palette.changeShowPingOnPrinter(False)
                 self.palette.changeFeedRateControl(False)
+                self.palette.changeAutoLoad(False)
             self.palette.advanced_update_variables()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
