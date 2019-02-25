@@ -127,10 +127,10 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def on_event(self, event, payload):
         if "ClientOpened" in event:
             self.palette.updateUIAll()
-        elif "PrintStarted" in event:
-            if ".mcf.gcode" in payload["name"]:
-                self._logger.info("Filename: %s" % payload["name"].split('.')[0])
-                self.palette.setFilename(payload["name"].split(".")[0])
+        # elif "PrintStarted" in event:
+        #     if ".mcf.gcode" in payload["name"]:
+        #         self._logger.info("Filename: %s" % payload["name"].split('.')[0])
+        #         self.palette.setFilename(payload["name"].split(".")[0])
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True

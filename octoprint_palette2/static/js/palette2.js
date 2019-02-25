@@ -946,23 +946,13 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "pings") {
         if (message.data.length) {
           self.pings(message.data.reverse());
-          // self.latestPing(self.pings()[0].number);
-          // self.latestPingPercent(self.pings()[0].percent);
         } else {
-          // self.latestPing(0);
-          // self.latestPingPercent("");
-          // self.pings([]);
           $(".ping-history").hide();
         }
       } else if (message.command === "pongs") {
         if (message.data.length) {
           self.pongs(message.data.reverse());
-          // self.latestPong(self.pongs()[0].number);
-          // self.latestPongPercent(self.pongs()[0].percent);
         } else {
-          // self.latestPong(0);
-          // self.latestPongPercent("");
-          // self.pongs([]);
           $(".pong-history").hide();
         }
       } else if (message.command === "selectedPort") {
