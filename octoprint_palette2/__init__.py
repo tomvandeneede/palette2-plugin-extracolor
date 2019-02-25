@@ -75,7 +75,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             changeFeedRateNormalPct=["value"],
             changeFeedRateSlowPct=["value"],
             changeAutoLoad=["condition"],
-            startAutoLoad=[]
+            startAutoLoad=[],
+            downloadPingHistory=[]
         )
 
     def on_api_command(self, command, data):
@@ -115,6 +116,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.changeFeedRateSlowPct(data["value"])
         elif command == "changeAutoLoad":
             self.palette.changeAutoLoad(data["condition"])
+        elif command == "downloadPingHistory":
+            return flask.jsonify(response=self.palette.downloadPingHistory())
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):

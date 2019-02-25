@@ -297,14 +297,42 @@ function OmegaViewModel(parameters) {
 
   self.ports = ko.observableArray([]);
   self.selectedPort = ko.observable();
-
-  self.latestPing = ko.observable(0);
-  self.latestPingPercent = ko.observable();
-  self.latestPong = ko.observable(0);
-  self.latestPongPercent = ko.observable();
   self.pings = ko.observableArray([]);
+  self.pingsDisplay = ko.computed(function() {
+    if (self.pings()) {
+      return self.pings().map(ping => {
+        if (ping.percent !== "MISSED") {
+          ping.percent = ping.percent + "%";
+        }
+        return ping;
+      });
+    } else {
+      return [];
+    }
+  });
+  self.latestPing = ko.computed(function() {
+    return self.pingsDisplay()[0] ? self.pingsDisplay()[0].number : 0;
+  });
+  self.latestPingPercent = ko.computed(function() {
+    return self.pingsDisplay()[0] ? self.pingsDisplay()[0].percent : "%";
+  });
   self.pongs = ko.observableArray([]);
-
+  self.pongsDisplay = ko.computed(function() {
+    if (self.pongs()) {
+      return self.pongs().map(pong => {
+        pong.percent = pong.percent + "%";
+        return pong;
+      });
+    } else {
+      return [];
+    }
+  });
+  self.latestPong = ko.computed(function() {
+    return self.pongsDisplay()[0] ? self.pongsDisplay()[0].number : 0;
+  });
+  self.latestPongPercent = ko.computed(function() {
+    return self.pongsDisplay()[0] ? self.pongsDisplay()[0].percent : "%";
+  });
   self.showPingOnPrinter = ko.observable(true);
   self.feedRateControl = ko.observable(true);
   self.feedRateSlowed = ko.observable(false);
@@ -333,14 +361,14 @@ function OmegaViewModel(parameters) {
 
   /* COMMUNICATION TO BACK-END FUNCTIONS */
 
-  self.togglePingHistory = () => {
-    if (self.pings().length) {
+  self.togglePingHistory = (data, event) => {
+    if (self.pingsDisplay().length) {
       $(".ping-history").slideToggle();
     }
   };
 
   self.togglePongHistory = () => {
-    if (self.pongs().length) {
+    if (self.pongsDisplay().length) {
       $(".pong-history").slideToggle();
     }
   };
@@ -590,7 +618,7 @@ function OmegaViewModel(parameters) {
   });
 
   self.ajax_payload = payload => {
-    $.ajax({
+    return $.ajax({
       url: API_BASEURL + "plugin/palette2",
       type: "POST",
       dataType: "json",
@@ -859,6 +887,27 @@ function OmegaViewModel(parameters) {
     omegaApp.addNotificationList();
   };
 
+  self.downloadPingHistory = (data, event) => {
+    event.stopPropagation();
+    self.ajax_payload({ command: "downloadPingHistory" }).then(result => {
+      let filename = result.response.filename;
+      let data = result.response.data;
+
+      let blob = new Blob([data], { type: "text/plain" });
+      if (window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveBlob(blob, filename);
+      } else {
+        let elem = window.document.createElement("a");
+        elem.href = window.URL.createObjectURL(blob);
+        elem.download = filename;
+        document.body.appendChild(elem);
+        elem.click();
+        elem.href = window.URL.revokeObjectURL(blob);
+        document.body.removeChild(elem);
+      }
+    });
+  };
+
   self.startAutoLoad = () => {
     self.isAutoLoading(true);
     self.ajax_payload({ command: "startAutoLoad" });
@@ -897,23 +946,23 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "pings") {
         if (message.data.length) {
           self.pings(message.data.reverse());
-          self.latestPing(self.pings()[0].number);
-          self.latestPingPercent(self.pings()[0].percent);
+          // self.latestPing(self.pings()[0].number);
+          // self.latestPingPercent(self.pings()[0].percent);
         } else {
-          self.latestPing(0);
-          self.latestPingPercent("");
-          self.pings([]);
+          // self.latestPing(0);
+          // self.latestPingPercent("");
+          // self.pings([]);
           $(".ping-history").hide();
         }
       } else if (message.command === "pongs") {
         if (message.data.length) {
           self.pongs(message.data.reverse());
-          self.latestPong(self.pongs()[0].number);
-          self.latestPongPercent(self.pongs()[0].percent);
+          // self.latestPong(self.pongs()[0].number);
+          // self.latestPongPercent(self.pongs()[0].percent);
         } else {
-          self.latestPong(0);
-          self.latestPongPercent("");
-          self.pongs([]);
+          // self.latestPong(0);
+          // self.latestPongPercent("");
+          // self.pongs([]);
           $(".pong-history").hide();
         }
       } else if (message.command === "selectedPort") {
