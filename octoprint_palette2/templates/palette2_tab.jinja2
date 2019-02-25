@@ -37,16 +37,19 @@
 							</p>
 							<span class="separator">---</span>
 							<p class="current-ping-percentage">
-								<span class="single-status-value" data-bind="text: latestPingPercent"></span>%
+								<span class="single-status-value" data-bind="text: latestPingPercent"></span>
 							</p>
+							<div class="icon-download-container" data-bind="visible: pingsDisplay().length > 0">
+								<i class="icon-download" data-bind="click: downloadPingHistory"></i>
+							</div>
 						</div>
-						<ul class="ping-history" data-bind="foreach: pings">
+						<ul class="ping-history" data-bind="foreach: pingsDisplay">
 							<li class="single-ping">
 								<p class="ping-number">
 									Ping
 									<span data-bind="text: number"></span>
 								</p>
-								<p class="ping-percent"><span class="ping-percent" data-bind="text: percent"></span>%</p>
+								<p class="ping-percent"><span class="ping-percent" data-bind="text: percent"></span></p>
 							</li>
 						</ul>
 					</li>
@@ -59,16 +62,16 @@
 							</p>
 							<span class="separator">---</span>
 							<p class="current-pong-percentage">
-								<span class="single-status-value" data-bind="text: latestPongPercent"></span>%
+								<span class="single-status-value" data-bind="text: latestPongPercent"></span>
 							</p>
 						</div>
-						<ul class="pong-history" data-bind="foreach: pongs">
+						<ul class="pong-history" data-bind="foreach: pongsDisplay">
 							<li class="single-pong">
 								<p class="ping-number">
 									Pong
 									<span data-bind="text: number"></span>
 								</p>
-								<p class="ping-percent"><span class="pong-percent" data-bind="text: percent"></span>%</p>
+								<p class="ping-percent"><span class="pong-percent" data-bind="text: percent"></span></p>
 							</li>
 						</ul>
 					</li>

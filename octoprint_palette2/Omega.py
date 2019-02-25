@@ -254,12 +254,17 @@ class Omega():
                                 # if reject ping
                                 if command["params"][0] == "D0":
                                     self._logger.info("REJECTING PING")
+                                    self.missedPings = self.missedPings + 1
+                                    current = {"number": len(self.pings) + 1, "percent": "MISSED"}
+                                    self.pings.append(current)
+                                    self.updateUI({"command": "pings", "data": self.pings})
+                                    self.showPingOnPrinter(number, percent)
                             elif command["total_params"] > 2:
                                 # if ping
                                 if command["params"][0] == "D1":
                                     percent = command["params"][1][1:]
                                     try:
-                                        number = int(command["params"][2][1:], 16)
+                                        number = int(command["params"][2][1:], 16) + self.missedPings
                                         current = {"number": number, "percent": percent}
                                         self.pings.append(current)
                                         self.updateUI({"command": "pings", "data": self.pings})
@@ -571,7 +576,7 @@ class Omega():
         self.connectionStop = False
         self.heartbeat = False
 
-        self.resetFinished = False
+        self.missedPings = 0
         self.advanced_reset_values()
 
         self.autoLoadThread = None
@@ -611,7 +616,7 @@ class Omega():
 
         self.filename = ""
 
-        self.resetFinished = False
+        self.missedPings = 0
         self.advanced_reset_print_values()
         self._logger.info("Omega: Resetting print values - FINISHED")
 
@@ -933,7 +938,10 @@ class Omega():
         # filter out ping offset information
         if self.showPingOnPrinter:
             try:
-                self._printer.commands("M117 Ping %s %s%%" % (ping_number, ping_percent))
+                if ping_percent == "MISSED":
+                    self._printer.commands("M117 Ping %s %s" % (ping_number, ping_percent))
+                else:
+                    self._printer.commands("M117 Ping %s %s%%" % (ping_number, ping_percent))
             except ValueError:
                 self._logger.info("Printer cannot handle M117 commands.")
 
@@ -1112,4 +1120,24 @@ class Omega():
             self.autoLoad = self._settings.get(["autoLoad"])
         except Exception as e:
             self._logger.info(e)
+
+    def downloadPingHistory(self):
+        self._logger.info("DOWNLOADING PING HISTORY")
+        return self.getPingHistory(self.pings, self.filename)
+
+    def getPingHistory(self, pings, filename):
+        data = ""
+        data = data + "%s\n\nPING            (%%)\n===================\n" % filename
+
+        # write out each ping
+        for ping in pings:
+            ping_number = "Ping %s" % ping["number"]
+            ping_percent = "%s%%" % ping["percent"]
+            if ping["percent"] == "MISSED":
+                ping_percent = ping["percent"]
+            space_length = (len("===================") - len(ping_number) - len(ping_percent)) * " "
+            data = data + "%s%s%s\n" % (ping_number, space_length, ping_percent)
+
+        download_filename = filename + ".txt"
+        return {"filename": download_filename, "data": data}
 
