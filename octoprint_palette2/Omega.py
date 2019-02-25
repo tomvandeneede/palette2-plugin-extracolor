@@ -117,10 +117,10 @@ class Omega():
                     second_baudrate = self.getSecondBaudrate(default_baudrate)
                     try:
                         self.omegaSerial = serial.Serial(port, default_baudrate, timeout=0.5)
-                        if not self.tryHeartbeat(port, default_baudrate):
+                        if not self.tryHeartbeatBeforeConnect(port, default_baudrate):
                             self._logger.info("Not the %s baudrate" % default_baudrate)
                             self.omegaSerial = serial.Serial(port, second_baudrate, timeout=0.5)
-                            if not self.tryHeartbeat(port, second_baudrate):
+                            if not self.tryHeartbeatBeforeConnect(port, second_baudrate):
                                 self._logger.info("Not the %s baudrate" % second_baudrate)
                                 self.updateUIAll()
                     except:
@@ -139,7 +139,7 @@ class Omega():
         elif default_baudrate == 250000:
             return 115200
 
-    def tryHeartbeat(self, port, baudrate):
+    def tryHeartbeatBeforeConnect(self, port, baudrate):
         self._logger.info("Trying baudrate: %s" % baudrate)
         self.startReadThread()
         self.startWriteThread()
@@ -239,159 +239,67 @@ class Omega():
                         if command["command"] == 20:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D5":
-                                    self._logger.info("FIRST TIME USE WITH PALETTE")
-                                    self.firstTime = True
-                                    self.updateUI({"command": "firstTime", "data": self.firstTime})
+                                    self.handleFirstTimePrint()
                                 else:
-                                    try:
-                                        param_1 = int(command["params"][0][1:])
-                                        # send next line of data
-                                        self.sendNextData(param_1)
-                                    except:
-                                        self._logger.info("Error occured with: %s" % command)
+                                    self.handleP2RequestForMoreInfo(command)
                         elif command["command"] == 34:
                             if command["total_params"] == 1:
                                 # if reject ping
                                 if command["params"][0] == "D0":
-                                    self._logger.info("REJECTING PING")
-                                    self.missedPings = self.missedPings + 1
-                                    current = {"number": len(self.pings) + 1, "percent": "MISSED"}
-                                    self.pings.append(current)
-                                    self.updateUI({"command": "pings", "data": self.pings})
-                                    self.showPingOnPrinter(number, percent)
+                                    self.handleRejectedPing()
                             elif command["total_params"] > 2:
                                 # if ping
                                 if command["params"][0] == "D1":
-                                    percent = command["params"][1][1:]
-                                    try:
-                                        number = int(command["params"][2][1:], 16) + self.missedPings
-                                        current = {"number": number, "percent": percent}
-                                        self.pings.append(current)
-                                        self.updateUI({"command": "pings", "data": self.pings})
-                                        self.showPingOnPrinter(number, percent)
-                                    except:
-                                        self._logger.info("Ping number invalid: %s" % command)
+                                    self.handlePing(command)
                                 # else pong
                                 elif command["params"][0] == "D2":
-                                    percent = command["params"][1][1:]
-                                    try:
-                                        number = int(command["params"][2][1:], 16)
-                                        current = {"number": number, "percent": percent}
-                                        self.pongs.append(current)
-                                        self.updateUI({"command": "pongs", "data": self.pongs})
-                                    except:
-                                        self._logger.info("Pong number invalid: %s" % command)
+                                    self.handlePong(command)
                         elif command["command"] == 40:
-                            self.currentStatus = "Print started: preparing splices"
-                            self.actualPrintStarted = True
-                            self.printPaused = False
-                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-                            self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
-                            self.updateUI({"command": "alert", "data": "printStarted"})
-                            self._printer.toggle_pause_print()
-                            self.updateUI({"command": "printPaused", "data": self.printPaused})
-                            self._logger.info("Splices being prepared.")
+                            self.handlePrintStart()
                         elif command["command"] == 50:
                             self.sendAllMCFFilenamesToOmega()
                         elif command["command"] == 53:
                             if command["total_params"] > 1:
                                 if command["params"][0] == "D1":
-                                    try:
-                                        index_to_print = int(command["params"][1][1:], 16)
-                                        self.allMCFFiles.reverse()
-                                        file = self.allMCFFiles[index_to_print]
-                                        self.startPrintFromP2(file)
-                                    except:
-                                        self._logger.info("Print from P2 command invalid: %s" % command)
+                                    self.handleStartPrintFromP2()
                         elif command["command"] == 88:
                             if command["total_params"] > 0:
-                                try:
-                                    error = int(command["params"][0][1:], 16)
-                                    self._logger.info("ERROR %d DETECTED" % error)
-                                    if os.path.isdir(os.path.expanduser('~') + "/.mosaicdata/"):
-                                        self._printer.pause_print()
-                                        self.updateUI({"command": "error", "data": error})
-                                except:
-                                    self._logger.info("Error command invalid: %s" % command)
+                                self.handleErrorDetected(command)
                         elif command["command"] == 97:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "U0":
                                     if command["total_params"] > 1:
                                         if command["params"][1] == "D0":
-                                            self.currentStatus = "Palette work completed: all splices prepared"
-                                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-                                            self._logger.info("Palette work is done.")
+                                            self.handleSpliceCompletion()
                                         elif command["params"][1] == "D2":
-                                            self._logger.info("P2 CANCELLING START")
-                                            if not self.cancelFromHub and not self.cancelFromP2:
-                                                self.cancelFromP2 = True
-                                                self._printer.cancel_print()
-                                            self.currentStatus = "Cancelling print"
-                                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-                                            self.updateUI({"command": "alert", "data": "cancelling"})
+                                            self.handlePrintCancelling()
                                         elif command["params"][1] == "D3":
-                                            self._logger.info("P2 CANCELLING END")
-                                            self.currentStatus = "Print cancelled"
-                                            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-                                            self.updateUI({"command": "alert", "data": "cancelled"})
-                                            self.cancelFromHub = False
-                                            self.cancelFromP2 = False
+                                            self.handlePrintCancelled()
                                 elif command["params"][0] == "U25":
                                     if command["total_params"] > 2:
                                         if command["params"][1] == "D0":
-                                            try:
-                                                self.currentSplice = int(command["params"][2][1:], 16)
-                                                self._logger.info("Current splice: %s" % self.currentSplice)
-                                                self.updateUI({"command": "currentSplice", "data": self.currentSplice})
-                                            except:
-                                                self._logger.info("Splice command invalid: %s" % command)
+                                            self.handleSpliceStart(command)
                                             self.feedRateControlStart()
                                         elif command["params"][1] == "D1":
                                             self.feedRateControlEnd()
                                 elif command["params"][0] == "U26":
                                     if command["total_params"] > 1:
-                                        try:
-                                            self.filamentLength = int(command["params"][1][1:], 16)
-                                            self._logger.info("%smm used" % self.filamentLength)
-                                            self.updateUI({"command": "filamentLength", "data": self.filamentLength})
-                                        except:
-                                            self._logger.info("Filament length update invalid: %s" % command)
+                                        self.handleFilamentUsed(command)
                                 elif command["params"][0] == "U39":
                                     if command["total_params"] == 1:
-                                        self.currentStatus = "Loading filament into extruder"
-                                        self.updateUI({"command": "alert", "data": "extruder"})
-                                        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-                                        self._logger.info("Filament must be loaded into extruder by user")
+                                        self.handleLoadingOffsetStart()
                                     # positive integer
                                     elif "-" in command["params"][1]:
-                                        try:
-                                            self.amountLeftToExtrude = int(command["params"][1][2:])
-                                            self._logger.info("%s mm left to extrude." % self.amountLeftToExtrude)
-                                            self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
-                                        except:
-                                            self._logger.info("Filament extrusion update invalid: %s" % command)
+                                        self.handleLoadingOffsetExtrude(command)
                                     # negative integer or 0
                                     elif "-" not in command["params"][1]:
-                                        try:
-                                            self.amountLeftToExtrude = int(command["params"][1][1:]) * -1
-                                            self._logger.info("%s mm left to extrude." % self.amountLeftToExtrude)
-                                            self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
-                                        except:
-                                            self._logger.info("Filament extrusion update invalid: %s" % command)
-                                        if self.amountLeftToExtrude == 0:
-                                            if not self.cancelFromHub and not self.cancelFromP2:
-                                                self.updateUI({"command": "alert", "data": "startPrint"})
+                                        self.handleLoadingOffsetCompletion(command)
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[0]:
                                     if command["total_params"] > 1 and command["params"][1] == "D0":
-                                        self.currentStatus = "Loading ingoing drives"
-                                        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-                                        self._logger.info("STARTING TO LOAD FIRST DRIVE")
+                                        self.handleDrivesLoading()
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[-1]:
                                     if command["total_params"] > 1 and command["params"][1] == "D1":
-                                        self.currentStatus = "Loading filament through outgoing tube"
-                                        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-                                        self.updateUI({"command": "alert", "data": "temperature"})
-                                        self._logger.info("FINISHED LOADING LAST DRIVE")
+                                        self.handleFilamentOutgoingTube()
             except Exception as e:
                 # Something went wrong with the connection to Palette2
                 self._logger.info("Palette 2 Read Thread error")
@@ -1146,3 +1054,149 @@ class Omega():
         download_filename = filename + ".txt"
         return {"filename": download_filename, "data": data}
 
+    def handlePrintStart(self):
+        self.currentStatus = "Print started: preparing splices"
+        self.actualPrintStarted = True
+        self.printPaused = False
+        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+        self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
+        self.updateUI({"command": "alert", "data": "printStarted"})
+        self._printer.toggle_pause_print()
+        self.updateUI({"command": "printPaused", "data": self.printPaused})
+        self._logger.info("Splices being prepared.")
+
+    def handlePing(self, command):
+        percent = command["params"][1][1:]
+        try:
+            number = int(command["params"][2][1:], 16) + self.missedPings
+            current = {"number": number, "percent": percent}
+            self.pings.append(current)
+            self.updateUI({"command": "pings", "data": self.pings})
+            self.showPingOnPrinter(number, percent)
+        except:
+            self._logger.info("Ping number invalid: %s" % command)
+
+    def handlePong(self, command):
+        percent = command["params"][1][1:]
+        try:
+            number = int(command["params"][2][1:], 16)
+            current = {"number": number, "percent": percent}
+            self.pongs.append(current)
+            self.updateUI({"command": "pongs", "data": self.pongs})
+        except:
+            self._logger.info("Pong number invalid: %s" % command)
+
+    def handleRejectedPing(self):
+        self._logger.info("REJECTING PING")
+        self.missedPings = self.missedPings + 1
+        current = {"number": len(self.pings) + 1, "percent": "MISSED"}
+        self.pings.append(current)
+        self.updateUI({"command": "pings", "data": self.pings})
+        self.showPingOnPrinter(number, percent)
+
+    def handleFirstTimePrint(self):
+        self._logger.info("FIRST TIME USE WITH PALETTE")
+        self.firstTime = True
+        self.updateUI({"command": "firstTime", "data": self.firstTime})
+
+    def handleP2RequestForMoreInfo(self, command):
+        try:
+            param_1 = int(command["params"][0][1:])
+            # send next line of data
+            self.sendNextData(param_1)
+        except:
+            self._logger.info("Error occured with: %s" % command)
+
+    def handleStartPrintFromP2(self, command):
+        try:
+            index_to_print = int(command["params"][1][1:], 16)
+            self.allMCFFiles.reverse()
+            file = self.allMCFFiles[index_to_print]
+            self.startPrintFromP2(file)
+        except:
+            self._logger.info("Print from P2 command invalid: %s" % command)
+
+    def handleErrorDetected(self, command):
+        try:
+            error = int(command["params"][0][1:], 16)
+            self._logger.info("ERROR %d DETECTED" % error)
+            if os.path.isdir(os.path.expanduser('~') + "/.mosaicdata/"):
+                self._printer.pause_print()
+                self.updateUI({"command": "error", "data": error})
+        except:
+            self._logger.info("Error command invalid: %s" % command)
+
+    def handleSpliceCompletion(self):
+        self.currentStatus = "Palette work completed: all splices prepared"
+        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+        self._logger.info("Palette work is done.")
+
+    def handlePrintCancelling(self):
+        self._logger.info("P2 CANCELLING START")
+        if not self.cancelFromHub and not self.cancelFromP2:
+            self.cancelFromP2 = True
+            self._printer.cancel_print()
+        self.currentStatus = "Cancelling print"
+        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+        self.updateUI({"command": "alert", "data": "cancelling"})
+
+    def handlePrintCancelled(self):
+        self._logger.info("P2 CANCELLING END")
+        self.currentStatus = "Print cancelled"
+        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+        self.updateUI({"command": "alert", "data": "cancelled"})
+        self.cancelFromHub = False
+        self.cancelFromP2 = False
+
+    def handleSpliceStart(self, command):
+        try:
+            self.currentSplice = int(command["params"][2][1:], 16)
+            self._logger.info("Current splice: %s" % self.currentSplice)
+            self.updateUI({"command": "currentSplice", "data": self.currentSplice})
+        except:
+            self._logger.info("Splice command invalid: %s" % command)
+
+    def handleFilamentUsed(self, command):
+        try:
+            self.filamentLength = int(command["params"][1][1:], 16)
+            self._logger.info("%smm used" % self.filamentLength)
+            self.updateUI({"command": "filamentLength", "data": self.filamentLength})
+        except:
+            self._logger.info("Filament length update invalid: %s" % command)
+
+    def handleLoadingOffsetStart(self):
+        self.currentStatus = "Loading filament into extruder"
+        self.updateUI({"command": "alert", "data": "extruder"})
+        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+        self._logger.info("Filament must be loaded into extruder by user")
+
+    def handleLoadingOffsetExtrude(self, command):
+        try:
+            self.amountLeftToExtrude = int(command["params"][1][2:])
+            self._logger.info("%s mm left to extrude." % self.amountLeftToExtrude)
+            self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
+        except:
+            self._logger.info("Filament extrusion update invalid: %s" % command)
+
+    def handleLoadingOffsetCompletion(self, command):
+        # also handles cases of LO over-extrusion
+        try:
+            self.amountLeftToExtrude = int(command["params"][1][1:]) * -1
+            self._logger.info("%s mm left to extrude." % self.amountLeftToExtrude)
+            self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude})
+        except:
+            self._logger.info("Filament extrusion update invalid: %s" % command)
+        if self.amountLeftToExtrude == 0:
+            if not self.cancelFromHub and not self.cancelFromP2:
+                self.updateUI({"command": "alert", "data": "startPrint"})
+
+    def handleDrivesLoading(self):
+        self.currentStatus = "Loading ingoing drives"
+        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+        self._logger.info("STARTING TO LOAD FIRST DRIVE")
+
+    def handleFilamentOutgoingTube(self):
+        self.currentStatus = "Loading filament through outgoing tube"
+        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+        self.updateUI({"command": "alert", "data": "temperature"})
+        self._logger.info("FINISHED LOADING LAST DRIVE")

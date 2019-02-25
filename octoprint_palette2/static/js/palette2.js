@@ -397,15 +397,16 @@ function OmegaViewModel(parameters) {
       command: "displayPorts",
       condition: condition
     };
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    }).then(() => {
+    self.ajax_payload(payload).then(() => {
       self.settings.requestData();
     });
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8"
+    // })
   };
 
   // self.refreshDemoList = () => {
@@ -436,14 +437,14 @@ function OmegaViewModel(parameters) {
         file: self.selectedDemoFile(),
         withPrinter: self.demoWithPrinter()
       };
-
-      $.ajax({
-        url: API_BASEURL + "plugin/palette2",
-        type: "POST",
-        dataType: "json",
-        data: JSON.stringify(payload),
-        contentType: "application/json; charset=UTF-8"
-      });
+      self.ajax_payload(payload);
+      // $.ajax({
+      //   url: API_BASEURL + "plugin/palette2",
+      //   type: "POST",
+      //   dataType: "json",
+      //   data: JSON.stringify(payload),
+      //   contentType: "application/json; charset=UTF-8"
+      // });
     }
   };
 
@@ -460,13 +461,14 @@ function OmegaViewModel(parameters) {
       var payload = { command: "connectOmega", port: "" };
     }
 
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
+    self.ajax_payload(payload);
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8"
+    // });
   };
 
   self.disconnectPalette2 = () => {
@@ -476,28 +478,30 @@ function OmegaViewModel(parameters) {
     var payload = {
       command: "disconnectPalette2"
     };
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
+    self.ajax_payload(payload);
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8"
+    // });
   };
 
   self.changeAlertSettings = condition => {
     self.displaySetupAlerts = !condition;
     var payload = { command: "changeAlertSettings", condition: self.displaySetupAlerts };
 
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    }).then(() => {
+    self.ajax_payload(payload).then(() => {
       self.settings.requestData();
     });
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8"
+    // })
   };
 
   self.sendOmegaCmd = (command, payload) => {
@@ -505,27 +509,29 @@ function OmegaViewModel(parameters) {
       command: "sendOmegaCmd",
       cmd: self.omegaCommand()
     };
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8",
-      success: self.fromResponse
-    });
+    self.ajax_payload(payload);
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8",
+    //   success: self.fromResponse
+    // });
   };
 
   self.uiUpdate = () => {
     console.log("Requesting BE to update UI");
     var payload = { command: "uiUpdate" };
+    self.ajax_payload(payload);
 
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8"
+    // });
   };
 
   self.connectWifi = () => {
@@ -534,43 +540,45 @@ function OmegaViewModel(parameters) {
       wifiSSID: self.wifiSSID(),
       wifiPASS: self.wifiPASS()
     };
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8",
-      success: self.fromResponse
-    });
+    self.ajax_payload(payload);
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8",
+    //   success: self.fromResponse
+    // });
   };
 
   self.sendCutCmd = () => {
     var payload = {
       command: "sendCutCmd"
     };
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8",
-      success: self.fromResponse
-    });
+    self.ajax_payload(payload);
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8",
+    //   success: self.fromResponse
+    // });
   };
 
   self.sendClearOutCmd = () => {
     var payload = {
       command: "clearPalette2"
     };
-
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8",
-      success: self.fromResponse
-    });
+    self.ajax_payload(payload);
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8",
+    //   success: self.fromResponse
+    // });
   };
 
   self.sendErrorReport = (errorNumber, description) => {
@@ -579,26 +587,28 @@ function OmegaViewModel(parameters) {
       errorNumber: errorNumber,
       description: description
     };
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
+    self.ajax_payload(payload);
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8"
+    // });
   };
 
   self.startPrintFromHub = () => {
     var payload = {
       command: "startPrint"
     };
-    $.ajax({
-      url: API_BASEURL + "plugin/palette2",
-      type: "POST",
-      dataType: "json",
-      data: JSON.stringify(payload),
-      contentType: "application/json; charset=UTF-8"
-    });
+    self.ajax_payload(payload);
+    // $.ajax({
+    //   url: API_BASEURL + "plugin/palette2",
+    //   type: "POST",
+    //   dataType: "json",
+    //   data: JSON.stringify(payload),
+    //   contentType: "application/json; charset=UTF-8"
+    // });
   };
 
   self.feedRateControl.subscribe(function() {
