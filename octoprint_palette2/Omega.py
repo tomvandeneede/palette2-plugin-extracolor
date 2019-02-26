@@ -488,6 +488,7 @@ class Omega():
         self.advanced_reset_values()
 
         self.autoLoadThread = None
+        self.isSplicing = False
         self._logger.info("Omega: Resetting all values - FINISHED")
 
     def resetPrintValues(self):
@@ -525,6 +526,7 @@ class Omega():
         self.filename = ""
 
         self.missedPings = 0
+        self.isSplicing = False
         self.advanced_reset_print_values()
         self._logger.info("Omega: Resetting print values - FINISHED")
 
@@ -808,6 +810,7 @@ class Omega():
 
     def feedRateControlStart(self):
         self._logger.info('ADVANCED: SPLICE START')
+        self.isSplicing = True
         if self.feedRateControl and self.actualPrintStarted:
             self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
             advanced_status = 'Splice (%s) starting: speed -> SLOW (%s%%)' % (self.currentSplice, self.feedRateSlowPct)
@@ -833,6 +836,7 @@ class Omega():
 
     def feedRateControlEnd(self):
         self._logger.info('ADVANCED: SPLICE END')
+        self.isSplicing = False
         if self.feedRateControl and self.actualPrintStarted:
             self._logger.info('ADVANCED: Feed-rate NORMAL - ACTIVE (%s)' % self.feedRateNormalPct)
             advanced_status = 'Splice (%s) finished: speed -> NORMAL (%s%%)' % (self.currentSplice, self.feedRateNormalPct)
@@ -1015,7 +1019,7 @@ class Omega():
                     timeout_start = time.time()
                 time.sleep(0.01)
 
-            if change_detected:
+            if change_detected and not self.isSplicing:
                 self.autoLoadFilament(self.amountLeftToExtrude)
             else:
                 self._logger.info("Loading offset at %smm did not change within %s seconds. Filament did not move. Must place filament again" % (self.amountLeftToExtrude, timeout))

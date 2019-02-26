@@ -216,7 +216,7 @@ omegaApp.readyToStartAlert = setupAlertSetting => {
 
 omegaApp.autoLoadFailAlert = () => {
   return swal({
-    title: "Auto load not completed",
+    title: "Auto load did not complete properly",
     text: `Filament stopped moving. Please make sure the filament is properly placed in the extruder and then continue extruding, either with "Auto Load" again or with manual controls.`,
     type: "info"
   });
