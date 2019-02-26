@@ -1007,7 +1007,8 @@ class Omega():
 
             old_value = amount_to_extrude
             change_detected = False
-            self._printer.extrude(amount_to_extrude)
+            if not self.isSplicing:
+                self._printer.extrude(amount_to_extrude)
             timeout = 6
             timeout_start = time.time()
             while time.time() < timeout_start + timeout:
@@ -1019,7 +1020,7 @@ class Omega():
                     timeout_start = time.time()
                 time.sleep(0.01)
 
-            if change_detected and not self.isSplicing:
+            if change_detected:
                 self.autoLoadFilament(self.amountLeftToExtrude)
             else:
                 self._logger.info("Loading offset at %smm did not change within %s seconds. Filament did not move. Must place filament again" % (self.amountLeftToExtrude, timeout))
