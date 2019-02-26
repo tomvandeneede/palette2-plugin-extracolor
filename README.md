@@ -22,17 +22,19 @@ On your OctoPrint server, manually install this plugin via the Plugin Manager us
 
 ![PALETTE 2 STATUS INDICATORS SUCH AS FILAMENT LENGTH AND NUMBER OF SPLICES](./extras/PALETTE_2_STATUS.png)
 
-### 4. Optionally, enable advanced options to enhance your print..
+### 4. Optionally, enable advanced options to enhance your print...
 
 ![PALETTE 2 ENABLE ADVANCED OPTIONS IN THE SETTINGS OPTIONS](./extras/PALETTE_2_ENABLE_ADVANCED_OPTIONS.png)
 
-### 4.1. And control your feed rate, ping display on printers and auto-loading
+### 4.1. ... And control your feed rate, ping display on printers and auto-loading
 
 ![PALETTE 2 ADVANCED OPTIONS SUCH AS FEED RATE ADJUSTMENT, PING DISPLAY AND AUTO-LOADING](./extras/PALETTE_2_ADVANCED_OPTIONS.png)
 
 ## Authors
 
 [Mosaic Manufacturing Ltd.](https://www.mosaicmfg.com/)
+
+[Tim Brookman](https://gitlab.com/skellatore) - Minor Modifications
 
 ## License
 
