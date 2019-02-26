@@ -400,13 +400,6 @@ function OmegaViewModel(parameters) {
     self.ajax_payload(payload).then(() => {
       self.settings.requestData();
     });
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8"
-    // })
   };
 
   // self.refreshDemoList = () => {
@@ -438,13 +431,6 @@ function OmegaViewModel(parameters) {
         withPrinter: self.demoWithPrinter()
       };
       self.ajax_payload(payload);
-      // $.ajax({
-      //   url: API_BASEURL + "plugin/palette2",
-      //   type: "POST",
-      //   dataType: "json",
-      //   data: JSON.stringify(payload),
-      //   contentType: "application/json; charset=UTF-8"
-      // });
     }
   };
 
@@ -462,13 +448,6 @@ function OmegaViewModel(parameters) {
     }
 
     self.ajax_payload(payload);
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8"
-    // });
   };
 
   self.disconnectPalette2 = () => {
@@ -479,13 +458,6 @@ function OmegaViewModel(parameters) {
       command: "disconnectPalette2"
     };
     self.ajax_payload(payload);
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8"
-    // });
   };
 
   self.changeAlertSettings = condition => {
@@ -495,13 +467,6 @@ function OmegaViewModel(parameters) {
     self.ajax_payload(payload).then(() => {
       self.settings.requestData();
     });
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8"
-    // })
   };
 
   self.sendOmegaCmd = (command, payload) => {
@@ -510,28 +475,12 @@ function OmegaViewModel(parameters) {
       cmd: self.omegaCommand()
     };
     self.ajax_payload(payload);
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8",
-    //   success: self.fromResponse
-    // });
   };
 
   self.uiUpdate = () => {
     console.log("Requesting BE to update UI");
     var payload = { command: "uiUpdate" };
     self.ajax_payload(payload);
-
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8"
-    // });
   };
 
   self.connectWifi = () => {
@@ -541,14 +490,6 @@ function OmegaViewModel(parameters) {
       wifiPASS: self.wifiPASS()
     };
     self.ajax_payload(payload);
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8",
-    //   success: self.fromResponse
-    // });
   };
 
   self.sendCutCmd = () => {
@@ -556,14 +497,6 @@ function OmegaViewModel(parameters) {
       command: "sendCutCmd"
     };
     self.ajax_payload(payload);
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8",
-    //   success: self.fromResponse
-    // });
   };
 
   self.sendClearOutCmd = () => {
@@ -571,14 +504,6 @@ function OmegaViewModel(parameters) {
       command: "clearPalette2"
     };
     self.ajax_payload(payload);
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8",
-    //   success: self.fromResponse
-    // });
   };
 
   self.sendErrorReport = (errorNumber, description) => {
@@ -588,13 +513,6 @@ function OmegaViewModel(parameters) {
       description: description
     };
     self.ajax_payload(payload);
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8"
-    // });
   };
 
   self.startPrintFromHub = () => {
@@ -602,13 +520,6 @@ function OmegaViewModel(parameters) {
       command: "startPrint"
     };
     self.ajax_payload(payload);
-    // $.ajax({
-    //   url: API_BASEURL + "plugin/palette2",
-    //   type: "POST",
-    //   dataType: "json",
-    //   data: JSON.stringify(payload),
-    //   contentType: "application/json; charset=UTF-8"
-    // });
   };
 
   self.feedRateControl.subscribe(function() {
@@ -954,17 +865,9 @@ function OmegaViewModel(parameters) {
         }
         self.showAlert("heartbeat", message.data);
       } else if (message.command === "pings") {
-        if (message.data.length) {
-          self.pings(message.data.reverse());
-        } else {
-          $(".ping-history").hide();
-        }
+        self.pings(message.data.reverse());
       } else if (message.command === "pongs") {
-        if (message.data.length) {
-          self.pongs(message.data.reverse());
-        } else {
-          $(".pong-history").hide();
-        }
+        self.pongs(message.data.reverse());
       } else if (message.command === "selectedPort") {
         selectedPort = message.data;
         if (selectedPort) {

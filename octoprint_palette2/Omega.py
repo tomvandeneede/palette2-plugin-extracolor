@@ -634,6 +634,7 @@ class Omega():
                 self.updateUI({"command": "palette2SetupStarted", "data": self.palette2SetupStarted})
                 self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
                 self.updateUI({"command": "printPaused", "data": self.printPaused})
+                self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": "Awaiting Update..."})
                 self.printHeartbeatCheck = ""
                 try:
                     filename = cmd.split(" ")[1][1:]

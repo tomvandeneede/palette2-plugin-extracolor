@@ -43,7 +43,7 @@
 								<i class="icon-download" data-bind="click: downloadPingHistory"></i>
 							</div>
 						</div>
-						<ul class="ping-history" data-bind="foreach: pingsDisplay">
+						<ul class="ping-history" data-bind="visible: pingsDisplay().length > 0, foreach: pingsDisplay">
 							<li class="single-ping">
 								<p class="ping-number">
 									Ping
@@ -65,7 +65,7 @@
 								<span class="single-status-value" data-bind="text: latestPongPercent"></span>
 							</p>
 						</div>
-						<ul class="pong-history" data-bind="foreach: pongsDisplay">
+						<ul class="pong-history" data-bind="visible: pongsDisplay().length > 0, foreach: pongsDisplay">
 							<li class="single-pong">
 								<p class="ping-number">
 									Pong
