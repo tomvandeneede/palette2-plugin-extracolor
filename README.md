@@ -1,47 +1,38 @@
-# PALETTE 2 BETA/TEST PLUGIN
+# PALETTE 2 PLUGIN
 
 This OctoPrint plugin enables connection and communication between OctoPrint and your [Palette 2](https://www.mosaicmfg.com/products/palette-2).
 
-This fork has a few little feature enhancements;
-* Display Last Ping statistic on Printer Status Line via M117
-    * Enable/Disable via Palette2 Settings panel
-* Ability to control feed rates via M220 during Splices
-    * Enable/Disable via Palette2 Settings panel
-    * Set NORMAL/SLOW feed rate percentage via Palette2 Tab.
-* Display when splice occurring as a status line in Palette2 information tab.
-* Adjust settings on the Palette2 Tab without interrupting current job!
+## Installing
 
-Details on the M220 and M117 commands can be found here;
-https://github.com/prusa3d/Prusa-Firmware/wiki/Supported-G-codes
+On your OctoPrint server, manually install this plugin via the Plugin Manager using the following URL:
 
-This has been only tested on a Original Prusa i3 Mk3, however others in the community have used this plugin successfully.
+`https://gitlab.com/mosaic-mfg/palette-2-plugin/-/archive/master/palette-2-plugin-master.zip`
 
-To be able to see the Advanced features, you must first enable it in the Palette2 Plugin Settings area by clicking the Spanner icon.
+## Functionalities
 
-This is not warranted nor covered by any warranties by Mosaic Manufacturing and I have no Affiliation with them but for the fact I own and love their Palette2.
+### 1. Connect your Palette 2 to OctoPrint
 
-In order for this to work, your printer must support the following GCODE(s)
-M220 and M117
+![PALETTE 2 CONNECTION TO BE ESTABLISHED BY CLICK OF BUTTON](./extras/PALETTE_2_CONNECT.png)
 
-# Installing
-On your OctoPrint server,
-1) Manually install this plugin via the Plugin Manager using the following URL:
-`https://github.com/skellatore/palette2-plugin/archive/master.zip`
-    * This will upgrade your current Palette2 Plugin.
-    * At any time you can revert to the original Palette2 Plugin, however it will require you to restart octoprint.
-4) Ensure version contains "1.3.2-SKELLATORE-RC1"
-5) To be able to see the Advanced features, you must first enable it in the Palette2 Plugin Settings (Spanner -> Palette2 -> Enable Advanced Options -> SAVE)
-5) Navigate to the Palette2 Plugin Tab.
-6) Adjust settings to suit your needs. These can be adjusted mid print without interrupting the print. Feedrate settings for the Splicing Speed will be in effect for the _next_ splice after the setting was modified.
+### 2. Start your Palette 2 Print and follow instructions on screen
 
-# Known issues
- - None Reported
+![PALETTE 2 INSTRUCTIONS ON OCTOPRINT USER INTERFACE](./extras/PALETTE_2_INSTRUCTIONS.png)
+
+### 3. Keep track of your Palette 2 splicing status
+
+![PALETTE 2 STATUS INDICATORS SUCH AS FILAMENT LENGTH AND NUMBER OF SPLICES](./extras/PALETTE_2_STATUS.png)
+
+### 4. Optionally, enable advanced options to enhance your print..
+
+![PALETTE 2 ENABLE ADVANCED OPTIONS IN THE SETTINGS OPTIONS](./extras/PALETTE_2_ENABLE_ADVANCED_OPTIONS.png)
+
+### 4.1. And control your feed rate, ping display on printers and auto-loading
+
+![PALETTE 2 ADVANCED OPTIONS SUCH AS FEED RATE ADJUSTMENT, PING DISPLAY AND AUTO-LOADING](./extras/PALETTE_2_ADVANCED_OPTIONS.png)
 
 ## Authors
 
 [Mosaic Manufacturing Ltd.](https://www.mosaicmfg.com/)
-
-Tim Brookman - Minor Modifications
 
 ## License
 
