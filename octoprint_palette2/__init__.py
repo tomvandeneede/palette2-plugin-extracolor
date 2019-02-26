@@ -187,7 +187,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         if cmd is not None and len(cmd) > 1:
             # pings in GCODE
             if "O31" in cmd:
-                self.palette.handlePing(cmd.strip())
+                self.palette.savePing(cmd.strip())
                 return "G4 P10",
             # header information
             elif 'O' in cmd[0]:

@@ -416,7 +416,7 @@ class Omega():
             self._logger.info("Need to resend last line")
             self.enqueueCmd(self.lastCommandSent)
 
-    def handlePing(self, pingCmd):
+    def savePing(self, pingCmd):
         self.currentPingCmd = pingCmd
         self.enqueueCmd("O31")
         self._logger.info("Got a ping cmd, saving it")
