@@ -846,7 +846,7 @@ class Omega():
         else:
             self._logger.info('ADVANCED: Feed-Rate Control: INACTIVE')
 
-    def showPingOnPrinter(self, ping_number, ping_percent):
+    def sendPingToPrinter(self, ping_number, ping_percent):
         self._logger.info("ADVANCED: Ping!")
         self._logger.info("ADVANCED: Show on Printer: %s" % self.showPingOnPrinter)
         # filter out ping offset information
@@ -1073,7 +1073,7 @@ class Omega():
             current = {"number": number, "percent": percent}
             self.pings.append(current)
             self.updateUI({"command": "pings", "data": self.pings})
-            self.showPingOnPrinter(number, percent)
+            self.sendPingToPrinter(number, percent)
         except:
             self._logger.info("Ping number invalid: %s" % command)
 
@@ -1093,7 +1093,7 @@ class Omega():
         current = {"number": len(self.pings) + 1, "percent": "MISSED"}
         self.pings.append(current)
         self.updateUI({"command": "pings", "data": self.pings})
-        self.showPingOnPrinter(number, percent)
+        self.sendPingToPrinter(number, percent)
 
     def handleFirstTimePrint(self):
         self._logger.info("FIRST TIME USE WITH PALETTE")
