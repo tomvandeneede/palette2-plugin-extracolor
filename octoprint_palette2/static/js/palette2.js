@@ -988,7 +988,6 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "amountLeftToExtrude") {
         if (!self.actualPrintStarted) {
           self.amountLeftToExtrude(message.data);
-          self.amountLeftToExtrude(56);
           if (!$("#jog-filament-notification").is(":visible")) {
             self.updateFilamentCountdown(true);
           } else if ($("#jog-filament-notification").is(":visible")) {
