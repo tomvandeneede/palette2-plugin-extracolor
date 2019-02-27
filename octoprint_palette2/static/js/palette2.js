@@ -873,7 +873,6 @@ function OmegaViewModel(parameters) {
     // self.refreshDemoList();
     self.uiUpdate();
     omegaApp.addNotificationList();
-    self.checkIfCountdownExists();
   };
 
   self.downloadPingHistory = (data, event) => {
