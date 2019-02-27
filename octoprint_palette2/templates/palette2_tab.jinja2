@@ -90,43 +90,43 @@
 										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
 										<div class="advanced-info-text" id="ping-display-info-text">
 											<h6 class="advanced-info-heading">Display latest PING information on printer screen</h6>
-											<div class="advanced-info-body"><p>By enabling this option, the latest ping information will be sent to your printer. Your printer MUST support M117 GCODE commands for this feature to work.</p></div>
+											<div class="advanced-info-body"><p>By enabling this option, the latest ping information will be sent to your printer. Your printer must support M117 GCODE commands for this feature to work.<br><br><span class="tim-brookman">Special thank you to <a target="_blank" href="https://gitlab.com/skellatore">Tim Brookman</a>.</span></p></div>
 										</div>
 									</div>
 								</div>
 							</div>
 						</li>
-						<li class="single-advanced-option autoload-filament">
+						{# <li class="single-advanced-option autoload-filament">
 							<div class="input-container">
-								<label for="autoload-filament-input"><span>Enable Filament Auto-Loading</span></label>
+								<label for="autoload-filament-input"><span>Enable Filament Smart Loading:</span></label>
 								<div class="interaction-container">
 									<input class="single-advanced-option-input" id="autoload-filament-input" type="checkbox" data-bind="checked: autoLoad">
 									<div class="advanced-info-container">
 										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
 										<div class="advanced-info-text" id="autoload-filament-text">
-											<h6 class="advanced-info-heading">LOAD your filament automatically into your printer</h6>
-											<div class="advanced-info-body"><p>By enabling this option, you may load your Palette 2 filament automatically into your printer. This functionality will only be enabled during the loading offset. Please make sure you have properly inserted your filament into the extruder before clicking on the button below.</p></div>
+											<h6 class="advanced-info-heading">Smart Loading makes starting a print easier</h6>
+											<div class="advanced-info-body"><p>Securely load your filament into your printer's extruder, insert the Outgoing Tube into the clip, then click "Smart Load". Palette 2 will automatically load the correct amount of filament into your printer and begin the print automatically.</p></div>
 										</div>
 									</div>
 								</div>
 							</div>
 							<div class="autoload-filament-options additional-options" data-bind="visible: autoLoad">
 								<div class="advanced-single-status remaining-loading-offset-container">
-									<h5 class="advanced-single-status-title loading-offset">Loading Offset: <span class="advanced-single-status-value loading-offset-value" data-bind="text: amountLeftToExtrudeText"></span><span class="small-loader-autoload" data-bind="visible: isAutoLoading"></span></h5>
+									<h5 class="advanced-single-status-title loading-offset">Loading Distance: <span class="advanced-single-status-value loading-offset-value" data-bind="text: amountLeftToExtrudeText"></span><span class="small-loader-autoload" data-bind="visible: isAutoLoading"></span></h5>
 								</div>
 								<button class="btn btn-primary autoload-button" data-bind="enable: amountLeftToExtrude() > 0 && !isAutoLoading(), click: startAutoLoad, text: autoLoadButtonText"></button>
 							</div>
-						</li>
+						</li> #}
 						<li class="single-advanced-option feed-rate-control">
 							<div class="input-container">
-								<label for="feed-rate-control-input"><span>Enable Feed Rate Control During Splices:</span></label>
+								<label for="feed-rate-control-input"><span>Enable Print Speed Control During Splices:</span></label>
 								<div class="interaction-container">
 									<input class="single-advanced-option-input" id="feed-rate-control-input" type="checkbox" data-bind="checked: feedRateControl">
 									<div class="advanced-info-container">
 										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
 										<div class="advanced-info-text" id="feed-rate-control-info-text">
-											<h6 class="advanced-info-heading">Control printer FEED RATE</h6>
-											<div class="advanced-info-body"><p>By enabling this option, you may adjust the filament feed rate used by your printer, both when Palette 2 IS and IS NOT splicing. Slowing down the feed rate during splices may help minimize Palette 2 buffer collapse.<br><br>Feed rate commands will only be applied once the print starts. Your printer MUST support M220 GCODE commands for this feature to work.</p></div>
+											<h6 class="advanced-info-heading">Control printer SPEED</h6>
+											<div class="advanced-info-body"><p>By enabling this option, you may adjust the filament feed rate used by your printer, both when Palette 2 is and is not splicing. Slowing down the feed rate during splices may prevent your printer from using filament faster than Palette 2 produces it.<br><br>Feed rate commands will only be applied once the print starts. Your printer must support M220 GCODE commands for this feature to work.<br><br><span class="tim-brookman">Special thank you to <a target="_blank" href="https://gitlab.com/skellatore">Tim Brookman</a>.</span></p></div>
 										</div>
 									</div>
 								</div>
@@ -134,14 +134,14 @@
 							<div class="feed-rate-control-options additional-options" data-bind="visible: feedRateControl">
 								<div class="feed-rate-speeds">
 									<div class="input-container">
-											<label for="normal-feedrate-input"><span>Normal Feed Rate Speed:</span></label>
+											<label for="normal-feedrate-input"><span>Normal Feed Rate:</span></label>
 											<div class="input-append feedrate-advanced-option-input-container">
 												<input id="normal-feedrate-input" class="input-mini" type="number" min="1" max="999" data-bind="value: feedRateNormalPct, enable: feedRateControl">
 												<span class="add-on">%</span>
 											</div>
 									</div>
 									<div class="input-container">
-										<label for="splicing-feedrate-input"><span>Splicing Feed Rate Speed:</span></label>
+										<label for="splicing-feedrate-input"><span>Splicing Feed Rate:</span></label>
 										<label>
 												<div class="input-append feedrate-advanced-option-input-container">
 													<input id="splicing-feedrate-input" class="input-mini" type="number" min="1" max="100" data-bind="value: feedRateSlowPct, enable: feedRateControl">
@@ -168,3 +168,24 @@
 			</div>
 	</div>
 </div>
+
+{# <ul class="side-notifications-list"> #}
+	{# <div id="jog-filament-notification" class="popup-notification">
+		<i class="material-icons remove-button" data-bind="click: removePopup">clear</i>
+		<h6 class="jog-filament-title">Remaining Length To Extrude:</h6>
+		<div>
+			<span class="jog-filament-value" data-bind="text: amountLeftToExtrudeText"></span>
+			<span class="small-loader-autoload" data-bind="visible: isAutoLoading"></span>
+		</div>
+		<div class="smart-load-container">
+			<button class="btn btn-primary autoload-button" data-bind="enable: amountLeftToExtrude() > 0 && !isAutoLoading(), click: startAutoLoad, text: autoLoadButtonText"></button>
+			<div class="smart-load-info-container">
+				<i class="material-icons smart-load-icon" data-bind="click: toggleSmartLoadInfo">info_outline</i>
+				<div class="smart-load-text" id="autoload-filament-text">
+					<h6 class="smart-load-heading">Smart Loading makes starting a print easier</h6>
+					<div class="smart-load-body"><p>Securely load your filament into your printer's extruder, insert the Outgoing Tube into the clip, then click "Smart Load". CANVAS Hub will automatically load the correct amount of filament into your printer and begin the print automatically.</p></div>
+				</div>
+			</div>
+		</div>
+	</div> #}
+{# </ul> #}

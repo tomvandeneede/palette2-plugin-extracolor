@@ -209,3 +209,154 @@ input[type="text"] {
 .negative-number {
   color: red;
 }
+
+.jog-filament-value {
+  margin: 0;
+  font-size: 12px;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  @color-2-space: nowrap;
+}
+
+.small-loader-autoload {
+  display: inline-flex;
+  overflow: hidden;
+  margin-top: 2px;
+  margin-left: 5px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid fade(@color-1, 40%);
+  border-top-color: @color-1;
+  border-radius: 50%;
+  animation: rotate360 1.5s linear infinite;
+}
+
+@keyframes rotate360 {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.popup-notification {
+  position: relative;
+  list-style: none;
+  text-align: right;
+  width: 200px;
+  padding: 0.5rem 1.1rem;
+  margin-bottom: 7px;
+  border: 1px solid @color-1;
+  border-left: none;
+  z-index: 5;
+  background-color: @color-5;
+  border-top-right-radius: 1px;
+  border-bottom-right-radius: 1px;
+  word-wrap: break-word;
+
+  i.remove-button {
+    cursor: pointer;
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    border: 1px solid @color-2;
+    background-color: @color-1;
+    color: @color-2;
+    border-radius: 50%;
+    padding: 1px;
+    font-size: 12px;
+    margin: 0;
+  }
+
+  .popup-title,
+  h6 {
+    margin: 0;
+    margin-bottom: 2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 12px;
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    @color-2-space: nowrap;
+  }
+
+  .smart-load-container {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 3px;
+
+    .smart-load-info-container {
+      margin-left: 5px;
+      position: relative;
+      display: inline-flex;
+
+      i.smart-load-icon {
+        margin-right: 0;
+        font-size: 20px;
+        cursor: pointer;
+      }
+      .smart-load-text {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        width: 250px;
+        left: 35px;
+        top: -30px;
+        background-color: @color-5;
+        border: 1px solid @color-1;
+        border-radius: 3px;
+        padding: 10px;
+        text-align: left;
+
+        &::after,
+        &::before {
+          content: "";
+          position: absolute;
+          display: block;
+          right: 100%;
+          width: 0;
+          height: 0;
+          border-style: solid;
+        }
+
+        // fill
+        &::after {
+          top: 29px;
+          border-color: transparent @color-5 transparent transparent;
+          border-width: 10px;
+        }
+
+        // border
+        &::before {
+          top: 28px;
+          border-color: transparent @color-1 transparent transparent;
+          border-width: 11px;
+        }
+
+        .smart-load-heading {
+          margin: 0 0 3px 0;
+          font-size: 15px;
+        }
+
+        .smart-load-body {
+          p {
+            margin: 0;
+            font-style: normal;
+            font-size: 13px;
+          }
+        }
+      }
+    }
+  }
+}
+
+.autoload-button {
+  font-size: 12px;
+  line-height: 16px;
+  padding: 3px 15px;
+}

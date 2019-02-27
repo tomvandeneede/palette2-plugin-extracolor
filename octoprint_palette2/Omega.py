@@ -868,7 +868,7 @@ class Omega():
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
         self.showPingOnPrinter = self._settings.get(["showPingOnPrinter"])
-        self.autoLoad = self._settings.get(["autoLoad"])
+        # self.autoLoad = self._settings.get(["autoLoad"])
         self.advanced_reset_print_values()
 
     def advanced_reset_print_values(self):
@@ -967,7 +967,7 @@ class Omega():
         self.feedRateControl = self._settings.get(["feedRateControl"])
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
-        self.autoLoad = self._settings.get(["autoLoad"])
+        # self.autoLoad = self._settings.get(["autoLoad"])
         self.advanced_updateUI()
 
     def isPositiveInteger(self, value):
@@ -983,6 +983,7 @@ class Omega():
 
         self._logger.info("Starting AutoLoad Thread")
         self.isAutoLoading = True
+        self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading})
         self.autoLoadThreadStop = False
         self.autoLoadThread = threading.Thread(target=self.omegaAutoLoadThread)
         self.autoLoadThread.daemon = True
@@ -1031,14 +1032,14 @@ class Omega():
         else:
             return None
 
-    def changeAutoLoad(self, condition):
-        try:
-            self._settings.set(["autoLoad"], condition, force=True)
-            self._settings.save(force=True)
-            self._logger.info("ADVANCED: autoLoad -> '%s' '%s'" % (condition, self._settings.get(["autoLoad"])))
-            self.autoLoad = self._settings.get(["autoLoad"])
-        except Exception as e:
-            self._logger.info(e)
+    # def changeAutoLoad(self, condition):
+    #     try:
+    #         self._settings.set(["autoLoad"], condition, force=True)
+    #         self._settings.save(force=True)
+    #         self._logger.info("ADVANCED: autoLoad -> '%s' '%s'" % (condition, self._settings.get(["autoLoad"])))
+    #         self.autoLoad = self._settings.get(["autoLoad"])
+    #     except Exception as e:
+    #         self._logger.info(e)
 
     def downloadPingHistory(self):
         self._logger.info("DOWNLOADING PING HISTORY")

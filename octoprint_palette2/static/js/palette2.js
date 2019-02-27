@@ -347,7 +347,7 @@ function OmegaViewModel(parameters) {
   self.autoLoad = ko.observable(false);
   self.isAutoLoading = ko.observable(false);
   self.autoLoadButtonText = ko.computed(function() {
-    return self.isAutoLoading() ? "Auto Loading..." : "Auto Load";
+    return self.isAutoLoading() ? "Loading..." : "Smart Load";
   });
   self.amountLeftToExtrudeText = ko.computed(function() {
     if (self.amountLeftToExtrude() > 0 || self.amountLeftToExtrude() < 0) {
@@ -534,9 +534,6 @@ function OmegaViewModel(parameters) {
   self.feedRateSlowPct.subscribe(function() {
     self.ajax_payload({ command: "changeFeedRateSlowPct", value: self.feedRateSlowPct() });
   });
-  self.autoLoad.subscribe(function() {
-    self.ajax_payload({ command: "changeAutoLoad", condition: self.autoLoad() });
-  });
 
   self.ajax_payload = payload => {
     return $.ajax({
@@ -546,6 +543,28 @@ function OmegaViewModel(parameters) {
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
     });
+  };
+
+  self.toggleSmallLoader = () => {
+    if (self.isAutoLoading()) {
+      $(".small-loader-autoload").show();
+    } else {
+      $(".small-loader-autoload").fadeOut(200);
+    }
+  };
+
+  self.toggleAutoLoadText = () => {
+    if (self.isAutoLoading()) {
+      $(self.jogId)
+        .find(".autoload-button")
+        .text(`${self.autoLoadButtonText()}`)
+        .attr("disabled", "disabled");
+    } else {
+      $(self.jogId)
+        .find(".autoload-button")
+        .text(`${self.autoLoadButtonText()}`)
+        .removeAttr("disabled");
+    }
   };
 
   self.handleAdvancedOptions = (subCommand, data) => {
@@ -576,6 +595,8 @@ function OmegaViewModel(parameters) {
         break;
       case "isAutoLoading":
         self.isAutoLoading(data);
+        self.toggleSmallLoader();
+        self.toggleAutoLoadText();
         break;
       default:
       //Do Nothing
@@ -592,14 +613,56 @@ function OmegaViewModel(parameters) {
     }
   };
 
+  self.smartLoadInfoListener = () => {
+    $("body")
+      .find(".smart-load-icon")
+      .on("click", () => {
+        self.toggleSmartLoadInfo();
+      });
+  };
+
+  self.removePopupListener = () => {
+    $(".remove-button").on("click", () => {
+      self.removeNotification();
+    });
+  };
+
+  self.autoLoadListener = () => {
+    $(".autoload-button").on("click", () => {
+      self.startAutoLoad();
+    });
+  };
+
   self.displayFilamentCountdown = () => {
     let notification = $(`<li id="jog-filament-notification" class="popup-notification">
-              <i class="material-icons remove-popup">clear</i>
-              <h6>Remaining Length To Extrude:</h6>
-              <p class="jog-filament-value">${self.amountLeftToExtrude()}mm</p>
-              </li>`).hide();
+		<i class="material-icons remove-button">clear</i>
+		<h6 class="jog-filament-title">Remaining Length To Extrude:</h6>
+		<div>
+			<span class="jog-filament-value">${self.amountLeftToExtrudeText()}</span>
+			<span class="small-loader-autoload"></span>
+		</div>
+		<div class="smart-load-container">
+			<button class="btn btn-primary autoload-button" data-bind="enable: amountLeftToExtrude() > 0 && !isAutoLoading(), click: startAutoLoad, text: autoLoadButtonText">${self.autoLoadButtonText()}</button>
+			<div class="smart-load-info-container">
+				<i class="material-icons smart-load-icon">info_outline</i>
+				<div class="smart-load-text" id="autoload-filament-text">
+					<h6 class="smart-load-heading">Smart Loading makes starting a print easier</h6>
+					<div class="smart-load-body"><p>Securely load your filament into your printer's extruder, insert the Outgoing Tube into the clip, then click "Smart Load". CANVAS Hub will automatically load the correct amount of filament into your printer and begin the print automatically.</p></div>
+				</div>
+			</div>
+		</div>
+  </li>`).hide();
+    // let notification = $(`<li id="jog-filament-notification" class="popup-notification">
+    //           <i class="material-icons remove-popup">clear</i>
+    //           <h6>Remaining Length To Extrude:</h6>
+    //           <p class="jog-filament-value">${self.amountLeftToExtrude()}mm</p><span class="small-loader-autoload" data-bind="visible: isAutoLoading"></span>
+    //           </li>`).hide();
     self.jogId = "#jog-filament-notification";
     $(".side-notifications-list").append(notification);
+
+    self.smartLoadInfoListener();
+    self.removePopupListener();
+    self.autoLoadListener();
   };
 
   self.updateFilamentCountdown = firstValue => {
@@ -617,11 +680,11 @@ function OmegaViewModel(parameters) {
       $(self.jogId)
         .fadeIn(200)
         .find(".jog-filament-value")
-        .text(`${self.amountLeftToExtrude()}mm`);
+        .text(`${self.amountLeftToExtrudeText()}`);
     } else {
       $(self.jogId)
         .find(".jog-filament-value")
-        .text(`${self.amountLeftToExtrude()}mm`);
+        .text(`${self.amountLeftToExtrudeText()}`);
     }
   };
 
@@ -704,11 +767,15 @@ function OmegaViewModel(parameters) {
   };
 
   self.toggleAdvancedOptionInfo = (data, event) => {
-    let targetClass = `#${event.target.nextElementSibling.id}`;
-    if ($(`.advanced-info-text:not(${targetClass})`).is(":visible")) {
+    let targetId = `#${event.target.nextElementSibling.id}`;
+    if ($(`.advanced-info-text:not(${targetId})`).is(":visible")) {
       $(".advanced-info-text").hide(50);
     }
-    $(targetClass).toggle(50);
+    $(targetId).toggle(50);
+  };
+
+  self.toggleSmartLoadInfo = (data, event) => {
+    $(".smart-load-text").toggle(50);
   };
 
   /* VIEWMODELS MODIFICATIONS FOR P2 PLUGIN */
@@ -806,6 +873,7 @@ function OmegaViewModel(parameters) {
     // self.refreshDemoList();
     self.uiUpdate();
     omegaApp.addNotificationList();
+    self.checkIfCountdownExists();
   };
 
   self.downloadPingHistory = (data, event) => {
@@ -830,7 +898,6 @@ function OmegaViewModel(parameters) {
   };
 
   self.startAutoLoad = () => {
-    self.isAutoLoading(true);
     self.ajax_payload({ command: "startAutoLoad" });
   };
 
@@ -922,6 +989,7 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "amountLeftToExtrude") {
         if (!self.actualPrintStarted) {
           self.amountLeftToExtrude(message.data);
+          self.amountLeftToExtrude(56);
           if (!$("#jog-filament-notification").is(":visible")) {
             self.updateFilamentCountdown(true);
           } else if ($("#jog-filament-notification").is(":visible")) {
