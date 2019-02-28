@@ -91,31 +91,16 @@ omegaApp.preheatAlert = () => {
   });
 };
 
-omegaApp.extrusionAlert = (firstTime, autoLoad) => {
-  let text = `Use the "Extrude" button in the Controls tab to drive filament into the extruder. To accurately load, we recommend setting the extrusion amount to a low number.`;
+omegaApp.extrusionAlert = firstTime => {
+  let text = `Use the "Extrude" button in the Controls tab or the "Smart Load" button in the loading notification to drive filament into the extruder. If using "Smart Load", please place the filament at a proper angle to be inserted into the extruder before loading.`;
   if (firstTime) {
     text = `Use the "Extrude" button in the Controls tab to drive filament into the extruder until you see the desired color. To accurately load, we recommend setting the extrusion amount to a low number.`;
-    return swal({
-      title: "Follow instructions on Palette 2 ",
-      text: text,
-      type: "info"
-    });
-  } else {
-    if (autoLoad) {
-      text = `Use the "Extrude" button in the Controls tab or the "Smart Load" button in the loading notification to drive filament into the extruder. If using "Smart Load", please place the filament at a proper angle to be inserted into the extruder before loading.`;
-      return swal({
-        title: "Follow instructions on Palette 2 ",
-        text: text,
-        type: "info"
-      });
-    } else {
-      return swal({
-        title: "Follow instructions on Palette 2 ",
-        text: text,
-        type: "info"
-      });
-    }
   }
+  return swal({
+    title: "Follow instructions on Palette 2 ",
+    text: text,
+    type: "info"
+  });
 };
 
 omegaApp.printCancellingAlert = () => {
@@ -550,7 +535,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.toggleAutoLoadText = () => {
-    if (self.isAutoLoading() || self.amountLeftToExtrude() <= 0) {
+    if (self.isAutoLoading() || self.amountLeftToExtrude() <= 0 || self.firstTime()) {
       $(self.jogId)
         .find(".autoload-button")
         .text(`${self.autoLoadButtonText()}`)
@@ -697,7 +682,7 @@ function OmegaViewModel(parameters) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#control`;
         omegaApp.extrusionHighlight();
-        omegaApp.extrusionAlert(self.firstTime, self.autoLoad());
+        omegaApp.extrusionAlert(self.firstTime);
       }
     } else if (command === "cancelling") {
       self.removeNotification();
