@@ -244,6 +244,10 @@ function OmegaViewModel(parameters) {
   self.wifiSSID = ko.observable();
   self.wifiPASS = ko.observable();
   self.omegaPort = ko.observable();
+  self.demoWithPrinter = ko.observable(false);
+  self.selectedDemoFile = ko.observable();
+  // self.files = ko.observableArray([]);
+
   self.currentSplice = ko.observable();
   self.nSplices = ko.observable();
   self.totalSplicesDisplay = ko.computed(function() {
@@ -256,7 +260,6 @@ function OmegaViewModel(parameters) {
   self.disconnectPaletteText = ko.computed(function() {
     return self.connected() ? "Disconnect" : "Disconnected";
   });
-  self.demoWithPrinter = ko.observable(false);
 
   self.currentStatus = ko.observable();
   self.amountLeftToExtrude = ko.observable();
@@ -265,6 +268,7 @@ function OmegaViewModel(parameters) {
   self.tryingToConnect = false;
   self.firstTime = false;
   self.actualPrintStarted = false;
+  self.palette2SetupStarted = ko.observable();
   self.autoconnect = false;
   self.connectionStateMsg = ko.computed(function() {
     if (self.connected()) {
@@ -277,11 +281,6 @@ function OmegaViewModel(parameters) {
   self.filaLengthDisplay = ko.computed(function() {
     return (Number(self.filaLength()) / 1000.0).toFixed(2) + "m";
   });
-  self.palette2SetupStarted = ko.observable();
-
-  // self.files = ko.observableArray([]);
-
-  self.selectedDemoFile = ko.observable();
 
   self.ports = ko.observableArray([]);
   self.selectedPort = ko.observable();
@@ -321,6 +320,7 @@ function OmegaViewModel(parameters) {
   self.latestPongPercent = ko.computed(function() {
     return self.pongsDisplay()[0] ? self.pongsDisplay()[0].percent : "%";
   });
+
   self.showPingOnPrinter = ko.observable(true);
   self.feedRateControl = ko.observable(true);
   self.feedRateSlowed = ko.observable(false);
@@ -349,18 +349,6 @@ function OmegaViewModel(parameters) {
 
   /* COMMUNICATION TO BACK-END FUNCTIONS */
 
-  self.togglePingHistory = (data, event) => {
-    if (self.pingsDisplay().length) {
-      $(".ping-history").slideToggle();
-    }
-  };
-
-  self.togglePongHistory = () => {
-    if (self.pongsDisplay().length) {
-      $(".pong-history").slideToggle();
-    }
-  };
-
   // window.onload = () => {
   //   self.refreshDemoList();
   // };
@@ -371,24 +359,6 @@ function OmegaViewModel(parameters) {
   //   });
   //   return filteredFiles;
   // });
-
-  self.displayPorts = () => {
-    let condition = "";
-    // determine if user is opening or closing list of ports
-    if ($(".serial-ports-list").is(":visible")) {
-      condition = "closing";
-    } else {
-      condition = "opening";
-    }
-
-    var payload = {
-      command: "displayPorts",
-      condition: condition
-    };
-    self.ajax_payload(payload).then(() => {
-      self.settings.requestData();
-    });
-  };
 
   // self.refreshDemoList = () => {
   //   var payload = {};
@@ -410,6 +380,24 @@ function OmegaViewModel(parameters) {
   //     }
   //   });
   // };
+
+  self.displayPorts = () => {
+    let condition = "";
+    // determine if user is opening or closing list of ports
+    if ($(".serial-ports-list").is(":visible")) {
+      condition = "closing";
+    } else {
+      condition = "opening";
+    }
+
+    var payload = {
+      command: "displayPorts",
+      condition: condition
+    };
+    self.ajax_payload(payload).then(() => {
+      self.settings.requestData();
+    });
+  };
 
   self.startSpliceDemo = () => {
     if (self.selectedDemoFile()) {
@@ -510,6 +498,31 @@ function OmegaViewModel(parameters) {
     self.ajax_payload(payload);
   };
 
+  self.downloadPingHistory = (data, event) => {
+    event.stopPropagation();
+    self.ajax_payload({ command: "downloadPingHistory" }).then(result => {
+      let filename = result.response.filename;
+      let data = result.response.data;
+
+      let blob = new Blob([data], { type: "text/plain" });
+      if (window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveBlob(blob, filename);
+      } else {
+        let elem = window.document.createElement("a");
+        elem.href = window.URL.createObjectURL(blob);
+        elem.download = filename;
+        document.body.appendChild(elem);
+        elem.click();
+        elem.href = window.URL.revokeObjectURL(blob);
+        document.body.removeChild(elem);
+      }
+    });
+  };
+
+  self.startAutoLoad = () => {
+    self.ajax_payload({ command: "startAutoLoad" });
+  };
+
   self.feedRateControl.subscribe(function() {
     self.ajax_payload({ command: "changeFeedRateControl", condition: self.feedRateControl() });
   });
@@ -531,28 +544,6 @@ function OmegaViewModel(parameters) {
       data: JSON.stringify(payload),
       contentType: "application/json; charset=UTF-8"
     });
-  };
-
-  self.toggleSmallLoader = () => {
-    if (self.isAutoLoading()) {
-      $(".small-loader-autoload").show();
-    } else {
-      $(".small-loader-autoload").fadeOut(200);
-    }
-  };
-
-  self.toggleAutoLoadText = () => {
-    if (self.isAutoLoading() || self.amountLeftToExtrude() <= 0 || self.firstTime) {
-      $(self.jogId)
-        .find(".autoload-button")
-        .text(`${self.autoLoadButtonText()}`)
-        .attr("disabled", "disabled");
-    } else {
-      $(self.jogId)
-        .find(".autoload-button")
-        .text(`${self.autoLoadButtonText()}`)
-        .removeAttr("disabled");
-    }
   };
 
   self.handleAdvancedOptions = (subCommand, data) => {
@@ -755,6 +746,40 @@ function OmegaViewModel(parameters) {
     $(".smart-load-text").toggle(50);
   };
 
+  self.toggleSmallLoader = () => {
+    if (self.isAutoLoading()) {
+      $(".small-loader-autoload").show();
+    } else {
+      $(".small-loader-autoload").fadeOut(200);
+    }
+  };
+
+  self.toggleAutoLoadText = () => {
+    if (self.isAutoLoading() || self.amountLeftToExtrude() <= 0 || self.firstTime) {
+      $(self.jogId)
+        .find(".autoload-button")
+        .text(`${self.autoLoadButtonText()}`)
+        .attr("disabled", "disabled");
+    } else {
+      $(self.jogId)
+        .find(".autoload-button")
+        .text(`${self.autoLoadButtonText()}`)
+        .removeAttr("disabled");
+    }
+  };
+
+  self.togglePingHistory = (data, event) => {
+    if (self.pingsDisplay().length) {
+      $(".ping-history").slideToggle();
+    }
+  };
+
+  self.togglePongHistory = () => {
+    if (self.pongsDisplay().length) {
+      $(".pong-history").slideToggle();
+    }
+  };
+
   /* VIEWMODELS MODIFICATIONS FOR P2 PLUGIN */
 
   self.modifyPrinterStateVM = () => {
@@ -849,31 +874,6 @@ function OmegaViewModel(parameters) {
   self.onAfterBinding = () => {
     // self.refreshDemoList();
     self.uiUpdate();
-  };
-
-  self.downloadPingHistory = (data, event) => {
-    event.stopPropagation();
-    self.ajax_payload({ command: "downloadPingHistory" }).then(result => {
-      let filename = result.response.filename;
-      let data = result.response.data;
-
-      let blob = new Blob([data], { type: "text/plain" });
-      if (window.navigator.msSaveOrOpenBlob) {
-        window.navigator.msSaveBlob(blob, filename);
-      } else {
-        let elem = window.document.createElement("a");
-        elem.href = window.URL.createObjectURL(blob);
-        elem.download = filename;
-        document.body.appendChild(elem);
-        elem.click();
-        elem.href = window.URL.revokeObjectURL(blob);
-        document.body.removeChild(elem);
-      }
-    });
-  };
-
-  self.startAutoLoad = () => {
-    self.ajax_payload({ command: "startAutoLoad" });
   };
 
   self.onEventFileSelected = payload => {
