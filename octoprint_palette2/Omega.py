@@ -1004,8 +1004,7 @@ class Omega():
         self.autoLoadThread = None
 
     def omegaAutoLoadThread(self):
-        self._printer.extrude(1)
-        time.sleep(1)
+        self._printer.extrude(0)
         self.autoLoadFilament(self.amountLeftToExtrude)
 
     def autoLoadFilament(self, amount_to_extrude):
