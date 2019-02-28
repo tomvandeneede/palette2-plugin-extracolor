@@ -26,9 +26,9 @@ On your OctoPrint server, manually install this plugin via the Plugin Manager us
 
 ![PALETTE 2 ENABLE ADVANCED OPTIONS IN THE SETTINGS OPTIONS](./extras/PALETTE_2_ENABLE_ADVANCED_OPTIONS.png)
 
-### 4.1. ... And control your feed rate, ping display on printers and auto-loading
+### 4.1. ... And control your feed rate and ping display on printers
 
-![PALETTE 2 ADVANCED OPTIONS SUCH AS FEED RATE ADJUSTMENT, PING DISPLAY AND AUTO-LOADING](./extras/PALETTE_2_ADVANCED_OPTIONS.png)
+![PALETTE 2 ADVANCED OPTIONS SUCH AS FEED RATE ADJUSTMENT AND PING DISPLAY ON PRINTER](./extras/PALETTE_2_ADVANCED_OPTIONS.png)
 
 ## Authors
 
