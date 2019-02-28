@@ -699,7 +699,7 @@ class Omega():
 
     def sendErrorReport(self, error_number, description):
         self._logger.info("SENDING ERROR REPORT TO MOSAIC")
-        log_content = self.prepareErroReport(error_number, description)
+        log_content = self.prepareErrorReport(error_number, description)
 
         hub_id, hub_token = self.getHubData()
         url = "https://" + BASE_URL_API + "hubs/" + hub_id + "/log"
@@ -717,7 +717,7 @@ class Omega():
         except requests.exceptions.RequestException as e:
             self._logger.info(e)
 
-    def prepareErroReport(self, error_number, description):
+    def prepareErrorReport(self, error_number, description):
         error_report_path = os.path.expanduser('~') + "/.mosaicdata/error_report.log"
 
         # error number

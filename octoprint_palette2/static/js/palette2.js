@@ -1,3 +1,10 @@
+if (!document.getElementById("material-icons")) {
+  let link = document.createElement("link");
+  link.id = "material-icons";
+  link.href = "https://fonts.googleapis.com/icon?family=Material+Icons";
+  link.rel = "stylesheet";
+  document.head.appendChild(link);
+}
 if (!document.getElementById("sweetalert2-styling")) {
   let link = document.createElement("link");
   link.id = "sweetalert2-styling";
