@@ -663,6 +663,7 @@ function OmegaViewModel(parameters) {
     self.smartLoadInfoListener();
     self.removePopupListener();
     self.autoLoadListener();
+    self.toggleSmallLoader();
   };
 
   self.updateFilamentCountdown = firstValue => {
@@ -988,6 +989,7 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "amountLeftToExtrude") {
         if (!self.actualPrintStarted) {
           self.amountLeftToExtrude(message.data);
+          self.checkIfCountdownExists();
           if (!$("#jog-filament-notification").is(":visible")) {
             self.updateFilamentCountdown(true);
           } else if ($("#jog-filament-notification").is(":visible")) {
