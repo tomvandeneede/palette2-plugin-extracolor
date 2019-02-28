@@ -112,8 +112,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.changeFeedRateNormalPct(data["value"])
         elif command == "changeFeedRateSlowPct":
             self.palette.changeFeedRateSlowPct(data["value"])
-        elif command == "changeAutoLoad":
-            self.palette.changeAutoLoad(data["condition"])
         elif command == "downloadPingHistory":
             return flask.jsonify(response=self.palette.downloadPingHistory())
         return flask.jsonify(foo="bar")
@@ -171,7 +169,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             if not self._settings.get(["advancedOptions"]):
                 self.palette.changeShowPingOnPrinter(False)
                 self.palette.changeFeedRateControl(False)
-                self.palette.changeAutoLoad(False)
             self.palette.advanced_update_variables()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()

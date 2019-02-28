@@ -349,7 +349,7 @@ function OmegaViewModel(parameters) {
     if (self.amountLeftToExtrude() > 0 || self.amountLeftToExtrude() < 0) {
       return `${self.amountLeftToExtrude()}mm`;
     } else if (self.amountLeftToExtrude() === 0) {
-      return "Loading offset completed";
+      return "Loading complete";
     } else {
       return "No loading offset detected";
     }

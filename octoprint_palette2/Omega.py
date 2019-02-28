@@ -907,10 +907,14 @@ class Omega():
 
     def changeFeedRateNormalPct(self, value):
         if self.isPositiveInteger(value):
-            clean_value = value.lstrip("0")
+            clean_value = int(value)
             advanced_status = ""
             if clean_value == self.feedRateNormalPct:
                 self._logger.info("Normal Feed Rate Speed did not change. Do nothing")
+            elif clean_value > 150:
+                self._logger.info("Cannot set normal feed rate above 150%.")
+                advanced_status = 'Cannot set normal feed rate above 150%%. Keeping speed at (%s%%).' % self.feedRateNormalPct
+                self.updateUI({"command": "advanced", "subCommand": "feedRateNormalPct", "data": self._settings.get(["feedRateNormalPct"])})
             else:
                 try:
                     self._settings.set(["feedRateNormalPct"], clean_value)
@@ -929,15 +933,18 @@ class Omega():
                     self._logger.info(e)
             if advanced_status != "":
                 self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
+        else:
+            self._logger.info("Not positive integer")
+            self.updateUI({"command": "advanced", "subCommand": "feedRateNormalPct", "data": self._settings.get(["feedRateNormalPct"])})
 
 
     def changeFeedRateSlowPct(self, value):
         if self.isPositiveInteger(value):
-            clean_value = value.lstrip("0")
+            clean_value = int(value)
             advanced_status = ""
             if clean_value == self.feedRateSlowPct:
                 self._logger.info("Splice Feed Rate Speed did not change. Do nothing")
-            elif int(clean_value) > 100:
+            elif clean_value > 100:
                 self._logger.info("Cannot set splicing feed rate above 100%.")
                 advanced_status = 'Cannot set splicing feed rate above 100%%. Keeping speed at (%s%%).' % self.feedRateSlowPct
                 self.updateUI({"command": "advanced", "subCommand": "feedRateSlowPct", "data": self._settings.get(["feedRateSlowPct"])})
@@ -959,6 +966,10 @@ class Omega():
                     self._logger.info(e)
             if advanced_status != "":
                 self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
+        else:
+            self._logger.info("Not positive integer")
+            self.updateUI({"command": "advanced", "subCommand": "feedRateSlowPct", "data": self._settings.get(["feedRateSlowPct"])})
+
 
     def advanced_update_variables(self):
         self.showPingOnPrinter = self._settings.get(["showPingOnPrinter"])
