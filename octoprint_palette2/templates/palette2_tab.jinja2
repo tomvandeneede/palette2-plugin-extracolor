@@ -37,16 +37,19 @@
 							</p>
 							<span class="separator">---</span>
 							<p class="current-ping-percentage">
-								<span class="single-status-value" data-bind="text: latestPingPercent"></span>%
+								<span class="single-status-value" data-bind="text: latestPingPercent"></span>
 							</p>
+							<div class="icon-download-container" data-bind="visible: pingsDisplay().length > 0">
+								<i class="icon-download" data-bind="click: downloadPingHistory"></i>
+							</div>
 						</div>
-						<ul class="ping-history" data-bind="foreach: pings">
+						<ul class="ping-history" data-bind="visible: pingsDisplay().length > 0, foreach: pingsDisplay">
 							<li class="single-ping">
 								<p class="ping-number">
 									Ping
 									<span data-bind="text: number"></span>
 								</p>
-								<p class="ping-percent"><span class="ping-percent" data-bind="text: percent"></span>%</p>
+								<p class="ping-percent"><span class="ping-percent" data-bind="text: percent"></span></p>
 							</li>
 						</ul>
 					</li>
@@ -59,22 +62,84 @@
 							</p>
 							<span class="separator">---</span>
 							<p class="current-pong-percentage">
-								<span class="single-status-value" data-bind="text: latestPongPercent"></span>%
+								<span class="single-status-value" data-bind="text: latestPongPercent"></span>
 							</p>
 						</div>
-						<ul class="pong-history" data-bind="foreach: pongs">
+						<ul class="pong-history" data-bind="visible: pongsDisplay().length > 0, foreach: pongsDisplay">
 							<li class="single-pong">
 								<p class="ping-number">
 									Pong
 									<span data-bind="text: number"></span>
 								</p>
-								<p class="ping-percent"><span class="pong-percent" data-bind="text: percent"></span>%</p>
+								<p class="ping-percent"><span class="pong-percent" data-bind="text: percent"></span></p>
 							</li>
 						</ul>
 					</li>
 				</ul>
 			</div>
 			<hr>
+			<div class="row advanced_options" data-bind="visible: connected() && advancedOptions()">
+				<h4>Advanced Options</h4>
+				<ul class="list-advanced-options">
+						<li class="single-advanced-option ping-printer-display">
+							<div class="input-container">
+								<label for="ping-printer-display-input"><span>Enable Ping Display on Printer:</span></label>
+								<div class="interaction-container">
+									<input class="single-advanced-option-input" id="ping-printer-display-input" type="checkbox" data-bind="checked: showPingOnPrinter">
+									<div class="advanced-info-container">
+										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
+										<div class="advanced-info-text" id="ping-display-info-text">
+											<h6 class="advanced-info-heading">Display latest PING information on printer screen</h6>
+											<div class="advanced-info-body"><p>By enabling this option, the latest ping information will be sent to your printer. Your printer must support M117 GCODE commands for this feature to work.<br><br><span class="tim-brookman">Special thank you to <a target="_blank" href="https://gitlab.com/skellatore">Tim Brookman</a>.</span></p></div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</li>
+						<li class="single-advanced-option feed-rate-control">
+							<div class="input-container">
+								<label for="feed-rate-control-input"><span>Enable Print Speed Control During Splices:</span></label>
+								<div class="interaction-container">
+									<input class="single-advanced-option-input" id="feed-rate-control-input" type="checkbox" data-bind="checked: feedRateControl">
+									<div class="advanced-info-container">
+										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
+										<div class="advanced-info-text" id="feed-rate-control-info-text">
+											<h6 class="advanced-info-heading">Control printer SPEED</h6>
+											<div class="advanced-info-body"><p>By enabling this option, you may adjust the filament feed rate used by your printer, both when Palette 2 is and is not splicing. Slowing down the feed rate during splices may prevent your printer from using filament faster than Palette 2 produces it.<br><br>Feed rate commands will only be applied once the print starts. Your printer must support M220 GCODE commands for this feature to work.<br><br><span class="tim-brookman">Special thank you to <a target="_blank" href="https://gitlab.com/skellatore">Tim Brookman</a>.</span></p></div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="feed-rate-control-options additional-options" data-bind="visible: feedRateControl">
+								<div class="feed-rate-speeds">
+									<div class="input-container">
+											<label for="normal-feedrate-input"><span>Normal Feed Rate:</span></label>
+											<div class="input-append feedrate-advanced-option-input-container">
+												<input id="normal-feedrate-input" class="input-mini" type="number" min="1" max="150" data-bind="value: feedRateNormalPct, enable: feedRateControl">
+												<span class="add-on">%</span>
+											</div>
+									</div>
+									<div class="input-container">
+										<label for="splicing-feedrate-input"><span>Splicing Feed Rate:</span></label>
+										<label>
+												<div class="input-append feedrate-advanced-option-input-container">
+													<input id="splicing-feedrate-input" class="input-mini" type="number" min="1" max="100" data-bind="value: feedRateSlowPct, enable: feedRateControl">
+													<span class="add-on">%</span>
+												</div>
+										</label>
+									</div>
+								</div>
+								<div class="advanced-single-status feed-rate-status-container">
+									<h5 class="advanced-single-status-title">Feed Rate Status: <span class="advanced-single-status-value feed-rate-status" data-bind="text: feedRateStatus">Awaiting Update..</span></h5>
+								</div>
+								<div class="advanced-single-status feed-rate-slowed-container">
+									<h5 class="advanced-single-status-title">Feed Rate Currently Slowed? <span class="advanced-single-status-value" data-bind="text: feedRateSlowedText"></span></h5>
+								</div>
+							</div>
+						</li>
+					</ul>
+					<hr>
+			</div>
 			<div class="row" style="margin-bottom: 10px">
 				<h4 class="manual-controls">Manual Controls</h4>
 				<button type="button" class="btn btn-primary" data-bind="click: sendCutCmd, enable: connected">Cut</button>

@@ -32,7 +32,15 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette = Omega.Omega(self)
 
     def get_settings_defaults(self):
-        return dict(autoconnect=False, palette2Alerts=True, baudrate=115200)
+        return dict(autoconnect=False,
+                    palette2Alerts=True,
+                    baudrate=115200,
+                    advancedOptions=False,
+                    feedRateControl=False,
+                    feedRateNormalPct=100,
+                    feedRateSlowPct=75,
+                    showPingOnPrinter=False
+                    )
 
     def get_template_configs(self):
         return [
@@ -59,7 +67,14 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             changeAlertSettings=["condition"],
             displayPorts=["condition"],
             sendErrorReport=["errorNumber", "description"],
-            startPrint=[]
+            startPrint=[],
+            changeShowPingOnPrinter=["condition"],
+            changeFeedRateControl=["condition"],
+            changeFeedRateSlowed=["condition"],
+            changeFeedRateNormalPct=["value"],
+            changeFeedRateSlowPct=["value"],
+            startAutoLoad=[],
+            downloadPingHistory=[]
         )
 
     def on_api_command(self, command, data):
@@ -87,6 +102,18 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.startPrintFromHub()
         elif command == "connectWifi":
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
+        elif command == "startAutoLoad":
+            self.palette.startAutoLoadThread()
+        elif command == "changeShowPingOnPrinter":
+            self.palette.changeShowPingOnPrinter(data["condition"])
+        elif command == "changeFeedRateControl":
+            self.palette.changeFeedRateControl(data["condition"])
+        elif command == "changeFeedRateNormalPct":
+            self.palette.changeFeedRateNormalPct(data["value"])
+        elif command == "changeFeedRateSlowPct":
+            self.palette.changeFeedRateSlowPct(data["value"])
+        elif command == "downloadPingHistory":
+            return flask.jsonify(response=self.palette.downloadPingHistory())
         return flask.jsonify(foo="bar")
 
     def on_api_get(self, request):
@@ -96,10 +123,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def on_event(self, event, payload):
         if "ClientOpened" in event:
             self.palette.updateUIAll()
-        elif "PrintStarted" in event:
-            if ".mcf.gcode" in payload["name"]:
-                self._logger.info("Filename: %s" % payload["name"].split('.')[0])
-                self.palette.setFilename(payload["name"].split(".")[0])
         elif "PrintPaused" in event:
             if ".mcf.gcode" in payload["name"]:
                 self.palette.printPaused = True
@@ -138,9 +161,15 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             # self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
         elif "SettingsUpdated" in event:
             self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
-            self._logger.info("Display alerts: %s" % str(self._settings.get(["palette2Alerts"])))
+            self._logger.info("Display Alerts: %s" % str(self._settings.get(["palette2Alerts"])))
+            self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["advancedOptions"])))
             self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
             self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
+            self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])})
+            if not self._settings.get(["advancedOptions"]):
+                self.palette.changeShowPingOnPrinter(False)
+                self.palette.changeFeedRateControl(False)
+            self.palette.advanced_update_variables()
             if self._settings.get(["autoconnect"]):
                 self.palette.startConnectionThread()
             else:
@@ -153,7 +182,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         if cmd is not None and len(cmd) > 1:
             # pings in GCODE
             if "O31" in cmd:
-                self.palette.handlePing(cmd.strip())
+                self.palette.savePing(cmd.strip())
                 return "G4 P10",
             # header information
             elif 'O' in cmd[0]:
