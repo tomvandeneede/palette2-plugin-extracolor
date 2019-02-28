@@ -40,7 +40,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                     feedRateNormalPct=100,
                     feedRateSlowPct=75,
                     showPingOnPrinter=False
-                    # autoLoad=False
                     )
 
     def get_template_configs(self):
@@ -74,7 +73,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             changeFeedRateSlowed=["condition"],
             changeFeedRateNormalPct=["value"],
             changeFeedRateSlowPct=["value"],
-            # changeAutoLoad=["condition"],
             startAutoLoad=[],
             downloadPingHistory=[]
         )

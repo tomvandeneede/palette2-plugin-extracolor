@@ -102,15 +102,11 @@ omegaApp.extrusionAlert = (firstTime, autoLoad) => {
     });
   } else {
     if (autoLoad) {
-      text = `Use the "Extrude" button in the Controls tab or the "Auto Load" button in the Palette 2 tab to drive filament into the extruder. If using "Auto Load", please place the filament at a proper angle to be inserted into the extruder before loading.`;
+      text = `Use the "Extrude" button in the Controls tab or the "Smart Load" button in the loading notification to drive filament into the extruder. If using "Smart Load", please place the filament at a proper angle to be inserted into the extruder before loading.`;
       return swal({
         title: "Follow instructions on Palette 2 ",
         text: text,
-        type: "info",
-        showConfirmButton: true,
-        showCancelButton: true,
-        confirmButtonText: "Go to Auto Load",
-        cancelButtonText: "OK"
+        type: "info"
       });
     } else {
       return swal({
@@ -216,8 +212,8 @@ omegaApp.readyToStartAlert = setupAlertSetting => {
 
 omegaApp.autoLoadFailAlert = () => {
   return swal({
-    title: "Auto load did not complete properly",
-    text: `Filament stopped moving. Please make sure the filament is properly placed in the extruder and then continue extruding, either with "Auto Load" again or with manual controls. If a splice is occurring, please wait for it to finish before trying again.`,
+    title: "Smart Load did not complete properly",
+    text: `Filament stopped moving. Please make sure the filament is properly placed in the extruder and then continue extruding, either with "Smart Load" again or with manual controls. If a splice is occurring, please wait for it to finish before trying again.`,
     type: "info"
   });
 };
@@ -554,7 +550,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.toggleAutoLoadText = () => {
-    if (self.isAutoLoading()) {
+    if (self.isAutoLoading() || self.amountLeftToExtrude() <= 0) {
       $(self.jogId)
         .find(".autoload-button")
         .text(`${self.autoLoadButtonText()}`)
@@ -589,9 +585,6 @@ function OmegaViewModel(parameters) {
         break;
       case "advancedStatus":
         self.feedRateStatus(data);
-        break;
-      case "autoLoad":
-        self.autoLoad(data);
         break;
       case "isAutoLoading":
         self.isAutoLoading(data);
@@ -634,29 +627,25 @@ function OmegaViewModel(parameters) {
   };
 
   self.displayFilamentCountdown = () => {
-    let notification = $(`<li id="jog-filament-notification" class="popup-notification">
-		<i class="material-icons remove-button">clear</i>
-		<h6 class="jog-filament-title">Remaining Length To Extrude:</h6>
-		<div>
-			<span class="jog-filament-value">${self.amountLeftToExtrudeText()}</span>
-			<span class="small-loader-autoload"></span>
-		</div>
-		<div class="smart-load-container">
-			<button class="btn btn-primary autoload-button" data-bind="enable: amountLeftToExtrude() > 0 && !isAutoLoading(), click: startAutoLoad, text: autoLoadButtonText">${self.autoLoadButtonText()}</button>
-			<div class="smart-load-info-container">
-				<i class="material-icons smart-load-icon">info_outline</i>
-				<div class="smart-load-text" id="autoload-filament-text">
-					<h6 class="smart-load-heading">Smart Loading makes starting a print easier</h6>
-					<div class="smart-load-body"><p>Securely load your filament into your printer's extruder, insert the Outgoing Tube into the clip, then click "Smart Load". CANVAS Hub will automatically load the correct amount of filament into your printer and begin the print automatically.</p></div>
-				</div>
-			</div>
-		</div>
-  </li>`).hide();
-    // let notification = $(`<li id="jog-filament-notification" class="popup-notification">
-    //           <i class="material-icons remove-popup">clear</i>
-    //           <h6>Remaining Length To Extrude:</h6>
-    //           <p class="jog-filament-value">${self.amountLeftToExtrude()}mm</p><span class="small-loader-autoload" data-bind="visible: isAutoLoading"></span>
-    //           </li>`).hide();
+    let notification = $(`
+    <li id="jog-filament-notification" class="popup-notification">
+		  <i class="material-icons remove-button">clear</i>
+		  <h6 class="jog-filament-title">Remaining Length To Extrude:</h6>
+      <div>
+        <span class="jog-filament-value">${self.amountLeftToExtrudeText()}</span>
+        <span class="small-loader-autoload"></span>
+      </div>
+      <div class="smart-load-container">
+        <button class="btn btn-primary autoload-button">${self.autoLoadButtonText()}</button>
+        <div class="smart-load-info-container">
+          <i class="material-icons smart-load-icon">info_outline</i>
+          <div class="smart-load-text" id="autoload-filament-text">
+            <h6 class="smart-load-heading">Smart Loading makes starting a print easier</h6>
+            <div class="smart-load-body"><p>Securely load your filament into your printer's extruder, insert the Outgoing Tube into the clip, then click "Smart Load". CANVAS Hub will automatically load the correct amount of filament into your printer and begin the print automatically.</p></div>
+          </div>
+        </div>
+      </div>
+    </li>`).hide();
     self.jogId = "#jog-filament-notification";
     $(".side-notifications-list").append(notification);
 
@@ -708,12 +697,7 @@ function OmegaViewModel(parameters) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#control`;
         omegaApp.extrusionHighlight();
-        omegaApp.extrusionAlert(self.firstTime, self.autoLoad()).then(result => {
-          if (result.value && !self.firstTime && self.autoLoad()) {
-            let base_url = window.location.origin;
-            window.location.href = `${base_url}/#tab_plugin_palette2`;
-          }
-        });
+        omegaApp.extrusionAlert(self.firstTime, self.autoLoad());
       }
     } else if (command === "cancelling") {
       self.removeNotification();
@@ -873,7 +857,6 @@ function OmegaViewModel(parameters) {
   self.onAfterBinding = () => {
     // self.refreshDemoList();
     self.uiUpdate();
-    omegaApp.addNotificationList();
   };
 
   self.downloadPingHistory = (data, event) => {
@@ -979,6 +962,7 @@ function OmegaViewModel(parameters) {
         if (message.data && message.data !== self.currentStatus()) {
           self.currentStatus(message.data);
           if (self.currentStatus() === "Loading filament into extruder") {
+            omegaApp.addNotificationList();
             self.checkIfCountdownExists();
           } else if (self.currentStatus() === "Print started: preparing splices") {
             self.removeNotification();
@@ -989,7 +973,6 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "amountLeftToExtrude") {
         if (!self.actualPrintStarted) {
           self.amountLeftToExtrude(message.data);
-          self.checkIfCountdownExists();
           if (!$("#jog-filament-notification").is(":visible")) {
             self.updateFilamentCountdown(true);
           } else if ($("#jog-filament-notification").is(":visible")) {

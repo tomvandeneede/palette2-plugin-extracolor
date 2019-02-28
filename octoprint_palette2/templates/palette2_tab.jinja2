@@ -96,27 +96,6 @@
 								</div>
 							</div>
 						</li>
-						{# <li class="single-advanced-option autoload-filament">
-							<div class="input-container">
-								<label for="autoload-filament-input"><span>Enable Filament Smart Loading:</span></label>
-								<div class="interaction-container">
-									<input class="single-advanced-option-input" id="autoload-filament-input" type="checkbox" data-bind="checked: autoLoad">
-									<div class="advanced-info-container">
-										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
-										<div class="advanced-info-text" id="autoload-filament-text">
-											<h6 class="advanced-info-heading">Smart Loading makes starting a print easier</h6>
-											<div class="advanced-info-body"><p>Securely load your filament into your printer's extruder, insert the Outgoing Tube into the clip, then click "Smart Load". Palette 2 will automatically load the correct amount of filament into your printer and begin the print automatically.</p></div>
-										</div>
-									</div>
-								</div>
-							</div>
-							<div class="autoload-filament-options additional-options" data-bind="visible: autoLoad">
-								<div class="advanced-single-status remaining-loading-offset-container">
-									<h5 class="advanced-single-status-title loading-offset">Loading Distance: <span class="advanced-single-status-value loading-offset-value" data-bind="text: amountLeftToExtrudeText"></span><span class="small-loader-autoload" data-bind="visible: isAutoLoading"></span></h5>
-								</div>
-								<button class="btn btn-primary autoload-button" data-bind="enable: amountLeftToExtrude() > 0 && !isAutoLoading(), click: startAutoLoad, text: autoLoadButtonText"></button>
-							</div>
-						</li> #}
 						<li class="single-advanced-option feed-rate-control">
 							<div class="input-container">
 								<label for="feed-rate-control-input"><span>Enable Print Speed Control During Splices:</span></label>
@@ -168,24 +147,3 @@
 			</div>
 	</div>
 </div>
-
-{# <ul class="side-notifications-list"> #}
-	{# <div id="jog-filament-notification" class="popup-notification">
-		<i class="material-icons remove-button" data-bind="click: removePopup">clear</i>
-		<h6 class="jog-filament-title">Remaining Length To Extrude:</h6>
-		<div>
-			<span class="jog-filament-value" data-bind="text: amountLeftToExtrudeText"></span>
-			<span class="small-loader-autoload" data-bind="visible: isAutoLoading"></span>
-		</div>
-		<div class="smart-load-container">
-			<button class="btn btn-primary autoload-button" data-bind="enable: amountLeftToExtrude() > 0 && !isAutoLoading(), click: startAutoLoad, text: autoLoadButtonText"></button>
-			<div class="smart-load-info-container">
-				<i class="material-icons smart-load-icon" data-bind="click: toggleSmartLoadInfo">info_outline</i>
-				<div class="smart-load-text" id="autoload-filament-text">
-					<h6 class="smart-load-heading">Smart Loading makes starting a print easier</h6>
-					<div class="smart-load-body"><p>Securely load your filament into your printer's extruder, insert the Outgoing Tube into the clip, then click "Smart Load". CANVAS Hub will automatically load the correct amount of filament into your printer and begin the print automatically.</p></div>
-				</div>
-			</div>
-		</div>
-	</div> #}
-{# </ul> #}

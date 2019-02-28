@@ -868,7 +868,6 @@ class Omega():
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
         self.showPingOnPrinter = self._settings.get(["showPingOnPrinter"])
-        # self.autoLoad = self._settings.get(["autoLoad"])
         self.advanced_reset_print_values()
 
     def advanced_reset_print_values(self):
@@ -884,7 +883,6 @@ class Omega():
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowed", "data": self.feedRateSlowed}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateNormalPct", "data": self._settings.get(["feedRateNormalPct"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowPct", "data": self._settings.get(["feedRateSlowPct"])}, True)
-            self.updateUI({"command": "advanced", "subCommand": "autoLoad", "data": self._settings.get(["autoLoad"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading}, True)
         except Exception as e:
             self._logger.info(e)
@@ -967,7 +965,6 @@ class Omega():
         self.feedRateControl = self._settings.get(["feedRateControl"])
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
-        # self.autoLoad = self._settings.get(["autoLoad"])
         self.advanced_updateUI()
 
     def isPositiveInteger(self, value):
@@ -1031,15 +1028,6 @@ class Omega():
                 return None
         else:
             return None
-
-    # def changeAutoLoad(self, condition):
-    #     try:
-    #         self._settings.set(["autoLoad"], condition, force=True)
-    #         self._settings.save(force=True)
-    #         self._logger.info("ADVANCED: autoLoad -> '%s' '%s'" % (condition, self._settings.get(["autoLoad"])))
-    #         self.autoLoad = self._settings.get(["autoLoad"])
-    #     except Exception as e:
-    #         self._logger.info(e)
 
     def downloadPingHistory(self):
         self._logger.info("DOWNLOADING PING HISTORY")
@@ -1195,7 +1183,12 @@ class Omega():
             self._logger.info("Filament extrusion update invalid: %s" % command)
         if self.amountLeftToExtrude == 0:
             if not self.cancelFromHub and not self.cancelFromP2:
-                self.updateUI({"command": "alert", "data": "startPrint"})
+                if self.isAutoLoading:
+                    while self.isAutoLoading:
+                        time.sleep(0.01)
+                    self.updateUI({"command": "alert", "data": "startPrint"})
+                else:
+                    self.updateUI({"command": "alert", "data": "startPrint"})
 
     def handleDrivesLoading(self):
         self.currentStatus = "Loading ingoing drives"
