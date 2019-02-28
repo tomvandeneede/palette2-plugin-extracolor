@@ -535,7 +535,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.toggleAutoLoadText = () => {
-    if (self.isAutoLoading() || self.amountLeftToExtrude() <= 0 || self.firstTime()) {
+    if (self.isAutoLoading() || self.amountLeftToExtrude() <= 0 || self.firstTime) {
       $(self.jogId)
         .find(".autoload-button")
         .text(`${self.autoLoadButtonText()}`)
