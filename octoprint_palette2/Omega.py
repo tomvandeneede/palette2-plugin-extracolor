@@ -1010,12 +1010,19 @@ class Omega():
     def autoLoadFilament(self, amount_to_extrude):
         if not self.autoLoadThreadStop:
             self._logger.info("Amount to extrude: %s" % amount_to_extrude)
+
             if amount_to_extrude == 0:
                 self.isAutoLoading = False
                 self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading})
                 return 0
 
             old_value = amount_to_extrude
+
+            # cap extrusion amount at 50 for large loading offsets, in case there are splices
+            if amount_to_extrude > 50:
+                self._logger.info("Amount above 50, setting extrusion amount to 50.")
+                amount_to_extrude = 50
+
             change_detected = False
             if not self.isSplicing:
                 self._printer.extrude(amount_to_extrude)
@@ -1031,6 +1038,11 @@ class Omega():
                 time.sleep(0.01)
 
             if change_detected:
+                if self.isSplicing:
+                    self._logger.info("Palette 2 is currently splicing. Waiting for end of splice before continuing...)
+                    while self.isSplicing:
+                        time.sleep(0.01)
+                    self._logger.info("Splicing done. Resuming autoload.)
                 self.autoLoadFilament(self.amountLeftToExtrude)
             else:
                 self._logger.info("Loading offset at %smm did not change within %s seconds. Filament did not move. Must place filament again" % (self.amountLeftToExtrude, timeout))
