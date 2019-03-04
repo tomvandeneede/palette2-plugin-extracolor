@@ -1114,7 +1114,7 @@ class Omega():
         current = {"number": len(self.pings) + 1, "percent": "MISSED"}
         self.pings.append(current)
         self.updateUI({"command": "pings", "data": self.pings})
-        self.sendPingToPrinter(number, percent)
+        self.sendPingToPrinter(current["number"], current["percent"])
 
     def handleFirstTimePrint(self):
         self._logger.info("FIRST TIME USE WITH PALETTE")
