@@ -264,7 +264,7 @@ class Omega():
                                     self.handleStartPrintFromP2()
                         elif command["command"] == 55:
                             if command["total_params"] > 0:
-                                extrudeDist = int(command["params"][0])
+                                extrudeDist = int(command["params"][0][1:])
                                 extrudeCmd = "G1 X1 E%s F10" % extrudeDist
                                 self._printer.commands(["G91", extrudeCmd, "G90", "G92 E0"])
                                 self._logger.info("Sending autoload: %s" % extrudeCmd)
