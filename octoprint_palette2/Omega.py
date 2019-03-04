@@ -262,6 +262,11 @@ class Omega():
                             if command["total_params"] > 1:
                                 if command["params"][0] == "D1":
                                     self.handleStartPrintFromP2()
+                        elif command["command"] == 55:
+                            if command["total_params"] > 1:
+                                extrudeDist = int(command["params"][0])
+                                extrudeCmd = "G1 X1 E%s F10" % extrudeDist
+                                self._printer.commands(["G91", extrudeCmd, "G90", "G92 E0"])
                         elif command["command"] == 88:
                             if command["total_params"] > 0:
                                 self.handleErrorDetected(command)
