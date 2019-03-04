@@ -1050,8 +1050,6 @@ class Omega():
                     self._logger.info("Palette 2 is currently splicing. Waiting for end of splice before continuing...")
                     while self.isSplicing:
                         time.sleep(1)
-                    self._logger.info("Splicing done. Waiting for buffer to fill up again.")
-                    time.sleep(10)
                     self._logger.info("Resuming smart load.")
                 self.autoLoadFilament(self.amountLeftToExtrude)
             else:
