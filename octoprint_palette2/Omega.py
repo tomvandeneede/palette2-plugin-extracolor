@@ -1017,15 +1017,18 @@ class Omega():
                 return 0
 
             old_value = amount_to_extrude
-
-            # cap extrusion amount at 50 for large loading offsets, in case there are splices
-            if amount_to_extrude > 50:
-                self._logger.info("Amount above 50, setting extrusion amount to 50.")
-                amount_to_extrude = 50
-
             change_detected = False
+
+            # if not splicing, send extrusion command to printer
             if not self.isSplicing:
-                self._printer.extrude(amount_to_extrude)
+                # do increments of 50mm for large loading offsets, in case a splice occurs after extrusion command is sent
+                if amount_to_extrude > 50:
+                    self._logger.info("Amount above 50, sending 50 to printer.")
+                    self._printer.extrude(50)
+                else:
+                    self._logger.info("Amount below 50, sending %s to printer." % amount_to_extrude)
+                    self._printer.extrude(amount_to_extrude)
+
             timeout = 6
             timeout_start = time.time()
             while time.time() < timeout_start + timeout:
@@ -1041,8 +1044,8 @@ class Omega():
                 if self.isSplicing:
                     self._logger.info("Palette 2 is currently splicing. Waiting for end of splice before continuing...)
                     while self.isSplicing:
-                        time.sleep(0.01)
-                    self._logger.info("Splicing done. Resuming autoload.)
+                        time.sleep(1)
+                    self._logger.info("Splicing done. Resuming smart load.)
                 self.autoLoadFilament(self.amountLeftToExtrude)
             else:
                 self._logger.info("Loading offset at %smm did not change within %s seconds. Filament did not move. Must place filament again" % (self.amountLeftToExtrude, timeout))
