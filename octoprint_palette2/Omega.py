@@ -1025,8 +1025,11 @@ class Omega():
                 if amount_to_extrude > 50:
                     self._logger.info("Amount above 50, sending 50 to printer.")
                     self._printer.extrude(50)
-                else:
-                    self._logger.info("Amount below 50, sending %s to printer." % amount_to_extrude)
+                elif amount_to_extrude > 5:
+                    self._logger.info("Amount above 5, sending half (%s) to printer." % (amount_to_extrude / 2))
+                    self._printer.extrude(amount_to_extrude / 2)
+                elif amount_to_extrude > 0:
+                    self._logger.info("Amount 5 or below, sending %s to printer." % amount_to_extrude)
                     self._printer.extrude(amount_to_extrude)
 
             timeout = 6
