@@ -1022,8 +1022,8 @@ class Omega():
             # if not splicing, send extrusion command to printer
             if not self.isSplicing:
                 # do increments of 50mm for large loading offsets, in case a splice occurs after extrusion command is sent
-                if amount_to_extrude > 50:
-                    self._logger.info("Amount above 50, sending 50 to printer.")
+                if amount_to_extrude > 60:
+                    self._logger.info("Amount above 60, sending 50 to printer.")
                     self._printer.extrude(50)
                 elif amount_to_extrude > 5:
                     self._logger.info("Amount above 5, sending half (%s) to printer." % (amount_to_extrude / 2))
@@ -1044,6 +1044,7 @@ class Omega():
                 time.sleep(0.01)
 
             if change_detected:
+                # wait for current splice to finish before recursively continuing smart loading
                 if self.isSplicing:
                     self._logger.info("Palette 2 is currently splicing. Waiting for end of splice before continuing...")
                     while self.isSplicing:
