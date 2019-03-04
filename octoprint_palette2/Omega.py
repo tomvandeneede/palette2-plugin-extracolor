@@ -1042,7 +1042,7 @@ class Omega():
 
             if change_detected:
                 if self.isSplicing:
-                    self._logger.info("Palette 2 is currently splicing. Waiting for end of splice before continuing...)
+                    self._logger.info("Palette 2 is currently splicing. Waiting for end of splice before continuing...")
                     while self.isSplicing:
                         time.sleep(1)
                     self._logger.info("Splicing done. Resuming smart load.)
