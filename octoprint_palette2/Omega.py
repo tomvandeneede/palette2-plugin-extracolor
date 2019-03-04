@@ -261,7 +261,7 @@ class Omega():
                         elif command["command"] == 53:
                             if command["total_params"] > 1:
                                 if command["params"][0] == "D1":
-                                    self.handleStartPrintFromP2()
+                                    self.handleStartPrintFromP2(command)
                         elif command["command"] == 88:
                             if command["total_params"] > 0:
                                 self.handleErrorDetected(command)
@@ -1022,8 +1022,8 @@ class Omega():
             # if not splicing, send extrusion command to printer
             if not self.isSplicing:
                 # do increments of 50mm for large loading offsets, in case a splice occurs after extrusion command is sent
-                if amount_to_extrude > 60:
-                    self._logger.info("Amount above 60, sending 50 to printer.")
+                if amount_to_extrude > 70:
+                    self._logger.info("Amount above 70, sending 50 to printer.")
                     self._printer.extrude(50)
                 elif amount_to_extrude > 5:
                     self._logger.info("Amount above 5, sending half (%s) to printer." % (amount_to_extrude / 2))
