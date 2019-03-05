@@ -265,9 +265,14 @@ class Omega():
                         elif command["command"] == 55:
                             if command["total_params"] > 0:
                                 extrudeDist = int(command["params"][0][1:])
-                                extrudeCmd = "G1 X1 E%s F10" % extrudeDist
-                                self._printer.commands(["G91", extrudeCmd, "G90", "G92 E0"])
-                                self._logger.info("Sending autoload: %s" % extrudeCmd)
+                                if extrudeDist > 5:
+                                    extrudeCmd = "G1 E%s F300" % (extrudeDist - 1) 
+                                    self._printer.commands(["G91", "G1 E1 F300", extrudeCmd, "G90", "G92 E0"])
+                                    self._logger.info("Sending autoload: %s" % extrudeCmd)
+                                else:
+                                    extrudeCmd = "G1 E%s F300" % extrudeDist 
+                                    self._printer.commands(["G91", extrudeCmd, "G90", "G92 E0"])
+                                    self._logger.info("Sending autoload: %s" % extrudeCmd)
                         elif command["command"] == 88:
                             if command["total_params"] > 0:
                                 self.handleErrorDetected(command)
