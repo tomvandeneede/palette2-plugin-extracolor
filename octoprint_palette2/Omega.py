@@ -261,7 +261,7 @@ class Omega():
                         elif command["command"] == 53:
                             if command["total_params"] > 1:
                                 if command["params"][0] == "D1":
-                                    self.handleStartPrintFromP2()
+                                    self.handleStartPrintFromP2(command)
                         elif command["command"] == 88:
                             if command["total_params"] > 0:
                                 self.handleErrorDetected(command)
@@ -1010,17 +1010,32 @@ class Omega():
     def autoLoadFilament(self, amount_to_extrude):
         if not self.autoLoadThreadStop:
             self._logger.info("Amount to extrude: %s" % amount_to_extrude)
-            if amount_to_extrude == 0:
+
+            if amount_to_extrude <= 0:
                 self.isAutoLoading = False
                 self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading})
                 return 0
 
             old_value = amount_to_extrude
             change_detected = False
+
+            # if not splicing, send extrusion command to printer
             if not self.isSplicing:
-                self._printer.extrude(amount_to_extrude)
+                if amount_to_extrude > 70:
+                    # do increments of 50mm for large loading offsets to minimize filament grinding, in case a splice occurs
+                    self._logger.info("Amount above 70, sending 50 to printer.")
+                    self._printer.extrude(50)
+                elif amount_to_extrude > 5:
+                    # half the amount to minimize risk of over-extrusion
+                    self._logger.info("Amount above 5, sending half (%s) to printer." % (amount_to_extrude / 2))
+                    self._printer.extrude(amount_to_extrude / 2)
+                elif amount_to_extrude > 0:
+                    self._logger.info("Amount 5 or below, sending %s to printer." % amount_to_extrude)
+                    self._printer.extrude(amount_to_extrude)
+
             timeout = 6
             timeout_start = time.time()
+            # check for change in remaining offset value after extrusion command was sent to know if smart load is working
             while time.time() < timeout_start + timeout:
                 if self.amountLeftToExtrude != old_value:
                     old_value = self.amountLeftToExtrude
@@ -1031,6 +1046,12 @@ class Omega():
                 time.sleep(0.01)
 
             if change_detected:
+                # wait for current splice to finish before recursively continuing smart loading
+                if self.isSplicing:
+                    self._logger.info("Palette 2 is currently splicing. Waiting for end of splice before continuing...")
+                    while self.isSplicing:
+                        time.sleep(1)
+                    self._logger.info("Resuming smart load.")
                 self.autoLoadFilament(self.amountLeftToExtrude)
             else:
                 self._logger.info("Loading offset at %smm did not change within %s seconds. Filament did not move. Must place filament again" % (self.amountLeftToExtrude, timeout))
@@ -1099,7 +1120,7 @@ class Omega():
         current = {"number": len(self.pings) + 1, "percent": "MISSED"}
         self.pings.append(current)
         self.updateUI({"command": "pings", "data": self.pings})
-        self.sendPingToPrinter(number, percent)
+        self.sendPingToPrinter(current["number"], current["percent"])
 
     def handleFirstTimePrint(self):
         self._logger.info("FIRST TIME USE WITH PALETTE")
