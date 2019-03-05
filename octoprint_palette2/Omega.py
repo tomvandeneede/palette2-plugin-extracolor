@@ -1011,7 +1011,7 @@ class Omega():
         if not self.autoLoadThreadStop:
             self._logger.info("Amount to extrude: %s" % amount_to_extrude)
 
-            if amount_to_extrude == 0:
+            if amount_to_extrude <= 0:
                 self.isAutoLoading = False
                 self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading})
                 return 0
@@ -1022,7 +1022,7 @@ class Omega():
             # if not splicing, send extrusion command to printer
             if not self.isSplicing:
                 if amount_to_extrude > 70:
-                    # do increments of 50mm for large loading offsets, in case a splice occurs after extrusion command is sent
+                    # do increments of 50mm for large loading offsets to minimize filament grinding, in case a splice occurs
                     self._logger.info("Amount above 70, sending 50 to printer.")
                     self._printer.extrude(50)
                 elif amount_to_extrude > 5:
@@ -1035,6 +1035,7 @@ class Omega():
 
             timeout = 6
             timeout_start = time.time()
+            # check for change in remaining offset value after extrusion command was sent to know if smart load is working
             while time.time() < timeout_start + timeout:
                 if self.amountLeftToExtrude != old_value:
                     old_value = self.amountLeftToExtrude
