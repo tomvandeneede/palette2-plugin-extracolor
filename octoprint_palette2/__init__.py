@@ -107,7 +107,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         elif command == "startAutoLoad":
             self.palette.startAutoLoadThread()
         elif command == "changeAutoCancelPing":
-            self.palette.autoCancelPing(data["condition"])
+            self.palette.changeAutoCancelPing(data["condition"])
         elif command == "changeShowPingOnPrinter":
             self.palette.changeShowPingOnPrinter(data["condition"])
         elif command == "changeFeedRateControl":
