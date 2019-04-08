@@ -39,6 +39,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                     feedRateControl=False,
                     feedRateNormalPct=100,
                     feedRateSlowPct=75,
+                    autoCancelPing=False,
                     showPingOnPrinter=False
                     )
 
@@ -68,6 +69,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             displayPorts=["condition"],
             sendErrorReport=["errorNumber", "description"],
             startPrint=[],
+            changeAutoCancelPing=["condition"],
             changeShowPingOnPrinter=["condition"],
             changeFeedRateControl=["condition"],
             changeFeedRateSlowed=["condition"],
@@ -104,6 +106,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "startAutoLoad":
             self.palette.startAutoLoadThread()
+        elif command == "changeAutoCancelPing":
+            self.palette.changeAutoCancelPing(data["condition"])
         elif command == "changeShowPingOnPrinter":
             self.palette.changeShowPingOnPrinter(data["condition"])
         elif command == "changeFeedRateControl":
@@ -167,6 +171,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
             self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])})
             if not self._settings.get(["advancedOptions"]):
+                self.palette.changeAutoCancelPing(False)
                 self.palette.changeShowPingOnPrinter(False)
                 self.palette.changeFeedRateControl(False)
             self.palette.advanced_update_variables()
