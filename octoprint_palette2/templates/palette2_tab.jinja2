@@ -83,14 +83,14 @@
 				<ul class="list-advanced-options">
 						<li class="single-advanced-option ping-auto-cancel">
 							<div class="input-container">
-								<label for="ping-auto-cancel-input"><span>Cancel Print if Missed Ping:</span></label>
+								<label for="ping-auto-cancel-input"><span>Cancel Print On Missed Ping:</span></label>
 								<div class="interaction-container">
 									<input class="single-advanced-option-input" id="ping-auto-cancel-input" type="checkbox" data-bind="checked: autoCancelPing">
 									<div class="advanced-info-container">
 										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
 										<div class="advanced-info-text" id="ping-auto-cancel-text">
-											<h6 class="advanced-info-heading">Auto cancel the print when a ping is missed</h6>
-											<div class="advanced-info-body"><p>When using your palette in connected mode, a missed ping may be a good indication of jammed or broken filament. When this option is enabled the print will automatically cancel when a ping is missed.</p></div>
+											<h6 class="advanced-info-heading">Automatically cancel print when ping is missed</h6>
+											<div class="advanced-info-body"><p>By enabling this option, your Hub will cancel the print when it detects a missed ping from Palette 2. A missed ping may be an indication of jammed/broken filament or of something wrong with your printer.<br><br><span class="contributors">Special thank you to <a target="_blank" href="https://gitlab.com/clifford.roche">Clifford Roche</a>.</span></p></div>
 										</div>
 									</div>
 								</div>
@@ -98,14 +98,14 @@
 						</li>
 						<li class="single-advanced-option ping-printer-display">
 							<div class="input-container">
-								<label for="ping-printer-display-input"><span>Enable Ping Display on Printer:</span></label>
+								<label for="ping-printer-display-input"><span>Enable Ping Display On Printer:</span></label>
 								<div class="interaction-container">
 									<input class="single-advanced-option-input" id="ping-printer-display-input" type="checkbox" data-bind="checked: showPingOnPrinter">
 									<div class="advanced-info-container">
 										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
 										<div class="advanced-info-text" id="ping-display-info-text">
 											<h6 class="advanced-info-heading">Display latest PING information on printer screen</h6>
-											<div class="advanced-info-body"><p>By enabling this option, the latest ping information will be sent to your printer. Your printer must support M117 GCODE commands for this feature to work.<br><br><span class="tim-brookman">Special thank you to <a target="_blank" href="https://gitlab.com/skellatore">Tim Brookman</a>.</span></p></div>
+											<div class="advanced-info-body"><p>By enabling this option, the latest ping information will be sent to your printer. Your printer must support M117 GCODE commands for this feature to work.<br><br><span class="contributors">Special thank you to <a target="_blank" href="https://gitlab.com/skellatore">Tim Brookman</a>.</span></p></div>
 										</div>
 									</div>
 								</div>
@@ -120,7 +120,7 @@
 										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
 										<div class="advanced-info-text" id="feed-rate-control-info-text">
 											<h6 class="advanced-info-heading">Control printer SPEED</h6>
-											<div class="advanced-info-body"><p>By enabling this option, you may adjust the filament feed rate used by your printer, both when Palette 2 is and is not splicing. Slowing down the feed rate during splices may prevent your printer from using filament faster than Palette 2 produces it.<br><br>Feed rate commands will only be applied once the print starts. Your printer must support M220 GCODE commands for this feature to work.<br><br><span class="tim-brookman">Special thank you to <a target="_blank" href="https://gitlab.com/skellatore">Tim Brookman</a>.</span></p></div>
+											<div class="advanced-info-body"><p>By enabling this option, you may adjust the filament feed rate used by your printer, both when Palette 2 is and is not splicing. Slowing down the feed rate during splices may prevent your printer from using filament faster than Palette 2 produces it.<br><br>Feed rate commands will only be applied once the print starts. Your printer must support M220 GCODE commands for this feature to work.<br><br><span class="contributors">Special thank you to <a target="_blank" href="https://gitlab.com/skellatore">Tim Brookman</a>.</span></p></div>
 										</div>
 									</div>
 								</div>
