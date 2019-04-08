@@ -210,6 +210,14 @@ omegaApp.autoLoadFailAlert = () => {
   });
 };
 
+omegaApp.P2SerialConnectionErrorAlert = () => {
+  return swal({
+    title: "Palette 2 connection error detected",
+    text: `The connection between CANVAS Hub and Palette 2 has stopped. Please make sure Palette 2 is turned on and its cable is properly inserted into the Hub before connecting again.`,
+    type: "error"
+  });
+};
+
 /* 3.1 CLOSE ALERT */
 omegaApp.closeAlert = () => {
   if (Swal.isVisible()) {
@@ -250,14 +258,14 @@ function OmegaViewModel(parameters) {
 
   self.currentSplice = ko.observable();
   self.nSplices = ko.observable();
-  self.totalSplicesDisplay = ko.computed(function() {
+  self.totalSplicesDisplay = ko.computed(function () {
     return " / " + self.nSplices() + " Splices";
   });
   self.connected = ko.observable(false);
-  self.connectPaletteText = ko.computed(function() {
+  self.connectPaletteText = ko.computed(function () {
     return self.connected() ? "Connected" : "Connect to Palette 2";
   });
-  self.disconnectPaletteText = ko.computed(function() {
+  self.disconnectPaletteText = ko.computed(function () {
     return self.connected() ? "Disconnect" : "Disconnected";
   });
 
@@ -270,7 +278,7 @@ function OmegaViewModel(parameters) {
   self.actualPrintStarted = false;
   self.palette2SetupStarted = ko.observable();
   self.autoconnect = false;
-  self.connectionStateMsg = ko.computed(function() {
+  self.connectionStateMsg = ko.computed(function () {
     if (self.connected()) {
       return "Connected";
     } else {
@@ -278,14 +286,14 @@ function OmegaViewModel(parameters) {
     }
   });
   self.filaLength = ko.observable();
-  self.filaLengthDisplay = ko.computed(function() {
+  self.filaLengthDisplay = ko.computed(function () {
     return (Number(self.filaLength()) / 1000.0).toFixed(2) + "m";
   });
 
   self.ports = ko.observableArray([]);
   self.selectedPort = ko.observable();
   self.pings = ko.observableArray([]);
-  self.pingsDisplay = ko.computed(function() {
+  self.pingsDisplay = ko.computed(function () {
     if (self.pings()) {
       return self.pings().map(ping => {
         if (ping.percent !== "MISSED") {
@@ -297,14 +305,14 @@ function OmegaViewModel(parameters) {
       return [];
     }
   });
-  self.latestPing = ko.computed(function() {
+  self.latestPing = ko.computed(function () {
     return self.pingsDisplay()[0] ? self.pingsDisplay()[0].number : 0;
   });
-  self.latestPingPercent = ko.computed(function() {
+  self.latestPingPercent = ko.computed(function () {
     return self.pingsDisplay()[0] ? self.pingsDisplay()[0].percent : "%";
   });
   self.pongs = ko.observableArray([]);
-  self.pongsDisplay = ko.computed(function() {
+  self.pongsDisplay = ko.computed(function () {
     if (self.pongs()) {
       return self.pongs().map(pong => {
         pong.percent = pong.percent + "%";
@@ -314,17 +322,18 @@ function OmegaViewModel(parameters) {
       return [];
     }
   });
-  self.latestPong = ko.computed(function() {
+  self.latestPong = ko.computed(function () {
     return self.pongsDisplay()[0] ? self.pongsDisplay()[0].number : 0;
   });
-  self.latestPongPercent = ko.computed(function() {
+  self.latestPongPercent = ko.computed(function () {
     return self.pongsDisplay()[0] ? self.pongsDisplay()[0].percent : "%";
   });
 
+  self.autoCancelPing = ko.observable(true);
   self.showPingOnPrinter = ko.observable(true);
   self.feedRateControl = ko.observable(true);
   self.feedRateSlowed = ko.observable(false);
-  self.feedRateSlowedText = ko.computed(function() {
+  self.feedRateSlowedText = ko.computed(function () {
     return self.feedRateSlowed() && self.printerState.isPrinting() ? "Yes" : "No";
   });
   self.feedRateNormalPct = ko.observable(100);
@@ -334,10 +343,10 @@ function OmegaViewModel(parameters) {
 
   self.autoLoad = ko.observable(false);
   self.isAutoLoading = ko.observable(false);
-  self.autoLoadButtonText = ko.computed(function() {
+  self.autoLoadButtonText = ko.computed(function () {
     return self.isAutoLoading() ? "Loading..." : "Smart Load";
   });
-  self.amountLeftToExtrudeText = ko.computed(function() {
+  self.amountLeftToExtrudeText = ko.computed(function () {
     if (self.amountLeftToExtrude() > 0 || self.amountLeftToExtrude() < 0) {
       return `${self.amountLeftToExtrude()}mm`;
     } else if (self.amountLeftToExtrude() === 0) {
@@ -523,16 +532,19 @@ function OmegaViewModel(parameters) {
     self.ajax_payload({ command: "startAutoLoad" });
   };
 
-  self.feedRateControl.subscribe(function() {
+  self.feedRateControl.subscribe(function () {
     self.ajax_payload({ command: "changeFeedRateControl", condition: self.feedRateControl() });
   });
-  self.showPingOnPrinter.subscribe(function() {
+  self.autoCancelPing.subscribe(function () {
+    self.ajax_payload({ command: "changeAutoCancelPing", condition: self.autoCancelPing() });
+  });
+  self.showPingOnPrinter.subscribe(function () {
     self.ajax_payload({ command: "changeShowPingOnPrinter", condition: self.showPingOnPrinter() });
   });
-  self.feedRateNormalPct.subscribe(function() {
+  self.feedRateNormalPct.subscribe(function () {
     self.ajax_payload({ command: "changeFeedRateNormalPct", value: self.feedRateNormalPct() });
   });
-  self.feedRateSlowPct.subscribe(function() {
+  self.feedRateSlowPct.subscribe(function () {
     self.ajax_payload({ command: "changeFeedRateSlowPct", value: self.feedRateSlowPct() });
   });
 
@@ -557,6 +569,9 @@ function OmegaViewModel(parameters) {
       case "feedRateSlowed":
         self.feedRateSlowed(data);
         break;
+      case "autoCancelPing":
+        self.autoCancelPing(data);
+        break;
       case "showPingOnPrinter":
         self.showPingOnPrinter(data);
         break;
@@ -579,7 +594,7 @@ function OmegaViewModel(parameters) {
     }
   };
 
-  self.fromResponse = () => {};
+  self.fromResponse = () => { };
 
   /* UI FUNCTIONS */
 
@@ -662,7 +677,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.removeNotification = () => {
-    $(self.jogId).fadeOut(500, function() {
+    $(self.jogId).fadeOut(500, function () {
       this.remove();
     });
   };
@@ -731,6 +746,8 @@ function OmegaViewModel(parameters) {
       omegaApp.palette2NotConnectedAlert();
     } else if (command === "autoLoadIncomplete") {
       omegaApp.autoLoadFailAlert();
+    } else if (command === "threadError") {
+      omegaApp.P2SerialConnectionErrorAlert()
     }
   };
 
@@ -783,7 +800,7 @@ function OmegaViewModel(parameters) {
   /* VIEWMODELS MODIFICATIONS FOR P2 PLUGIN */
 
   self.modifyPrinterStateVM = () => {
-    self.printerState.enablePrint = ko.pureComputed(function() {
+    self.printerState.enablePrint = ko.pureComputed(function () {
       if (self.printerState.filename() && self.printerState.filename().includes(".mcf.gcode")) {
         return (
           self.printerState.isOperational() &&
@@ -808,7 +825,7 @@ function OmegaViewModel(parameters) {
       }
     });
 
-    self.printerState.enablePause = ko.pureComputed(function() {
+    self.printerState.enablePause = ko.pureComputed(function () {
       if (
         self.printerState.filename() &&
         self.printerState.filename().includes(".mcf.gcode") &&
@@ -828,7 +845,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.modifyFilesVM = () => {
-    self.files.enablePrint = function(data) {
+    self.files.enablePrint = function (data) {
       if (data.name.includes(".mcf.gcode")) {
         return (
           self.files.loginState.isUser() &&
@@ -845,7 +862,7 @@ function OmegaViewModel(parameters) {
       }
     };
 
-    self.files.enableSelect = function(data, printAfterSelect) {
+    self.files.enableSelect = function (data, printAfterSelect) {
       if (
         data.name.includes(".mcf.gcode") &&
         self.files.isOperational() &&
@@ -994,7 +1011,7 @@ function OmegaViewModel(parameters) {
   RUN
   ======================= */
 
-$(function() {
+$(function () {
   OCTOPRINT_VIEWMODELS.push({
     // This is the constructor to call for instantiating the plugin
     construct: OmegaViewModel,
