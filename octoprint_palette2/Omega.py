@@ -304,6 +304,11 @@ class Omega():
                 # Something went wrong with the connection to Palette2
                 self._logger.info("Palette 2 Read Thread error")
                 self._logger.info(e)
+                self.readThreadError = True
+                break
+        if self.readThreadError:
+            self.disconnect()
+            self.updateUI({"command": "alert", "data": "threadError"})
 
     def omegaWriteThread(self, serialConnection):
         self._logger.info("Omega Write Thread: Starting Thread")
@@ -326,7 +331,6 @@ class Omega():
             except Exception as e:
                 self._logger.info("Palette 2 Write Thread Error")
                 self._logger.info(e)
-                time.sleep(0.01)
 
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
@@ -480,6 +484,7 @@ class Omega():
         self.connected = False
         self.readThread = None
         self.writeThread = None
+        self.readThreadError = None
         self.connectionThread = None
         self.connectionStop = False
         self.heartbeat = False
