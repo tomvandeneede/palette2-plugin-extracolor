@@ -8,7 +8,7 @@ if (!document.getElementById("material-icons")) {
 
 const UI = {
   /* LOADER */
-  loadingOverlay = (condition, status) => {
+  loadingOverlay: (condition, status) => {
     if (condition) {
       if (status === "connect") {
         message = `<h1 class="loading-overlay-message">Trying to connect to Palette 2...</h1>`;
@@ -28,7 +28,7 @@ const UI = {
     }
   },
   /* HIGHLIGHT TO HELP USER USE TEMP CONTROLS */
-  temperatureHighlight = () => {
+  temperatureHighlight: () => {
     $("body")
       .find(`#temperature-table .input-mini.input-nospin:first`)
       .addClass("highlight-glow")
@@ -37,7 +37,7 @@ const UI = {
       });
   },
   /* HIGHLIGHT TO HELP USER USE EXTRUSION CONTROLS */
-  extrusionHighlight = () => {
+  extrusionHighlight: () => {
     $("body")
       .find("#control-jog-extrusion .input-mini.text-right")
       .addClass("highlight-glow")

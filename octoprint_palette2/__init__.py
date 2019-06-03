@@ -51,7 +51,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
     def get_assets(self):
         return dict(
-            js=["js/palette2.js"],
+            js=["js/palette2.js", "js/utils/alerts.js", "js/utils/ui.js"],
             css=["css/palette2.css"],
             less=["less/palette2.less"]
         )
