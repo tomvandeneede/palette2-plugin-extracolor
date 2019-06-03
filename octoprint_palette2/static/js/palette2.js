@@ -8,13 +8,18 @@ function OmegaViewModel(parameters) {
   self.files = parameters[3];
 
   /* GLOBAL VARIABLES */
+  self.jogId = "";
+  self.displaySetupAlerts = true;
+  self.tryingToConnect = false;
+  self.firstTime = false;
+  self.actualPrintStarted = false;
+  self.autoconnect = false;
+
+  /* KNOCKOUT DATA-BINDINGS */
   self.omegaCommand = ko.observable();
   self.wifiSSID = ko.observable();
   self.wifiPASS = ko.observable();
   self.omegaPort = ko.observable();
-  self.demoWithPrinter = ko.observable(false);
-  self.selectedDemoFile = ko.observable();
-  // self.files = ko.observableArray([]);
 
   self.currentSplice = ko.observable();
   self.nSplices = ko.observable();
@@ -31,13 +36,7 @@ function OmegaViewModel(parameters) {
 
   self.currentStatus = ko.observable();
   self.amountLeftToExtrude = ko.observable();
-  self.jogId = "";
-  self.displaySetupAlerts = true;
-  self.tryingToConnect = false;
-  self.firstTime = false;
-  self.actualPrintStarted = false;
   self.palette2SetupStarted = ko.observable();
-  self.autoconnect = false;
   self.connectionStateMsg = ko.computed(function () {
     if (self.connected()) {
       return "Connected";
@@ -117,39 +116,6 @@ function OmegaViewModel(parameters) {
   });
 
   /* COMMUNICATION TO BACK-END FUNCTIONS */
-
-  // window.onload = () => {
-  //   self.refreshDemoList();
-  // };
-
-  // self.filterDemoFiles = ko.computed(function() {
-  //   var filteredFiles = self.files().filter(f => {
-  //     return f.match(/.msf$/i);
-  //   });
-  //   return filteredFiles;
-  // });
-
-  // self.refreshDemoList = () => {
-  //   var payload = {};
-  //   $.ajax({
-  //     headers: {
-  //       "X-Api-Key": UI_API_KEY
-  //     },
-  //     url: API_BASEURL + "files?recursive=true",
-  //     type: "GET",
-  //     dataType: "json",
-  //     data: JSON.stringify(payload),
-  //     contentType: "application/json; charset=UTF-8",
-  //     success: function(d) {
-  //       self.files(
-  //         d.files.map(function(file, index) {
-  //           return file.name;
-  //         })
-  //       );
-  //     }
-  //   });
-  // };
-
   self.displayPorts = () => {
     let condition = "";
     // determine if user is opening or closing list of ports
@@ -166,17 +132,6 @@ function OmegaViewModel(parameters) {
     self.ajax_payload(payload).then(() => {
       self.settings.requestData();
     });
-  };
-
-  self.startSpliceDemo = () => {
-    if (self.selectedDemoFile()) {
-      var payload = {
-        command: "startSpliceDemo",
-        file: self.selectedDemoFile(),
-        withPrinter: self.demoWithPrinter()
-      };
-      self.ajax_payload(payload);
-    }
   };
 
   self.connectOmega = () => {
@@ -650,7 +605,6 @@ function OmegaViewModel(parameters) {
   };
 
   self.onAfterBinding = () => {
-    // self.refreshDemoList();
     self.uiUpdate();
   };
 
@@ -722,11 +676,7 @@ function OmegaViewModel(parameters) {
             self.showAlert("cannotConnect");
           }
         }
-      }
-      // else if (message.includes("UI:Refresh Demo List")) {
-      //   self.refreshDemoList();
-      // }
-      else if (message.command === "filamentLength") {
+      } else if (message.command === "filamentLength") {
         self.filaLength(message.data);
       } else if (message.command === "currentStatus") {
         if (message.data && message.data !== self.currentStatus()) {
