@@ -125,60 +125,59 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         return flask.jsonify(foo="bar")
 
     def on_event(self, event, payload):
-        if "ClientOpened" in event:
-            self.palette.updateUIAll()
-        elif "PrintPaused" in event:
-            if ".mcf.gcode" in payload["name"]:
-                self.palette.printPaused = True
-                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
-        elif "PrintResumed" in event:
-            if ".mcf.gcode" in payload["name"]:
-                self.palette.palette2SetupStarted = False
-                self.palette.updateUI({"command": "palette2SetupStarted", "data": self.palette.palette2SetupStarted})
-                self.palette.printPaused = False
-                self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
-        elif "PrintDone" in event:
-            if ".mcf.gcode" in payload["name"]:
-                self.palette.actualPrintStarted = False
-                self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
-        elif "PrintFailed" in event:
-            if ".mcf.gcode" in payload["name"]:
-                self.palette.actualPrintStarted = False
-                self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
-        elif "PrintCancelled" in event:
-            if ".mcf.gcode" in payload["name"] and self.palette.connected:
-                self.palette.actualPrintStarted = False
-                self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
-                if not self.palette.cancelFromP2:
-                    self._logger.info("Cancelling print from Hub")
-                    self.palette.cancelFromHub = True
-                    self.palette.cancel()
+        try:
+            if "ClientOpened" in event:
+                self.palette.updateUIAll()
+            elif "PrintPaused" in event:
+                if ".mcf.gcode" in payload["name"]:
+                    self.palette.printPaused = True
+                    self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
+            elif "PrintResumed" in event:
+                if ".mcf.gcode" in payload["name"]:
+                    self.palette.palette2SetupStarted = False
+                    self.palette.updateUI({"command": "palette2SetupStarted", "data": self.palette.palette2SetupStarted})
+                    self.palette.printPaused = False
+                    self.palette.updateUI({"command": "printPaused", "data": self.palette.printPaused})
+            elif "PrintDone" in event:
+                if ".mcf.gcode" in payload["name"]:
+                    self.palette.actualPrintStarted = False
+                    self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
+            elif "PrintFailed" in event:
+                if ".mcf.gcode" in payload["name"]:
+                    self.palette.actualPrintStarted = False
+                    self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
+            elif "PrintCancelled" in event:
+                if ".mcf.gcode" in payload["name"] and self.palette.connected:
+                    self.palette.actualPrintStarted = False
+                    self.palette.updateUI({"command": "actualPrintStarted", "data": self.palette.actualPrintStarted})
+                    if not self.palette.cancelFromP2:
+                        self._logger.info("Cancelling print from Hub")
+                        self.palette.cancelFromHub = True
+                        self.palette.cancel()
+                    else:
+                        self._logger.info("Cancel already done from P2.")
+            elif "FileAdded" in event:
+                self.palette.getAllMCFFilenames()
+            elif "FileRemoved" in event:
+                self.palette.getAllMCFFilenames()
+            elif "SettingsUpdated" in event:
+                self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
+                self._logger.info("Display Alerts: %s" % str(self._settings.get(["palette2Alerts"])))
+                self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["advancedOptions"])))
+                self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
+                self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
+                self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])})
+                if not self._settings.get(["advancedOptions"]):
+                    self.palette.changeAutoCancelPing(False)
+                    self.palette.changeShowPingOnPrinter(False)
+                    self.palette.changeFeedRateControl(False)
+                self.palette.advanced_update_variables()
+                if self._settings.get(["autoconnect"]):
+                    self.palette.startConnectionThread()
                 else:
-                    self._logger.info("Cancel already done from P2.")
-        elif "FileAdded" in event:
-            self.palette.getAllMCFFilenames()
-            # User uploads a new file to Octoprint, we should update the demo list of files
-            # self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
-        elif "FileRemoved" in event:
-            self.palette.getAllMCFFilenames()
-            # User removed a file from Octoprint, we should update the demo list of files
-            # self._plugin_manager.send_plugin_message(self._identifier, "UI:Refresh Demo List")
-        elif "SettingsUpdated" in event:
-            self._logger.info("Auto-reconnect: %s" % str(self._settings.get(["autoconnect"])))
-            self._logger.info("Display Alerts: %s" % str(self._settings.get(["palette2Alerts"])))
-            self._logger.info("Display Advanced Options: %s" % str(self._settings.get(["advancedOptions"])))
-            self.palette.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
-            self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
-            self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])})
-            if not self._settings.get(["advancedOptions"]):
-                self.palette.changeAutoCancelPing(False)
-                self.palette.changeShowPingOnPrinter(False)
-                self.palette.changeFeedRateControl(False)
-            self.palette.advanced_update_variables()
-            if self._settings.get(["autoconnect"]):
-                self.palette.startConnectionThread()
-            else:
-                self.palette.stopConnectionThread()
+                    self.palette.stopConnectionThread()
+        except Exception as e:
+            self._logger.info(e)
 
     def on_shutdown(self):
         self.palette.shutdown()
