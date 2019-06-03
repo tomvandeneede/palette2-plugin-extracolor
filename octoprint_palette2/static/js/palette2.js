@@ -11,52 +11,52 @@ HELPER FUNCTIONS
 ======================= */
 const omegaApp = {};
 
-/* 1. LOADER */
-omegaApp.loadingOverlay = (condition, status) => {
-  if (condition) {
-    if (status === "connect") {
-      message = `<h1 class="loading-overlay-message">Trying to connect to Palette 2...</h1>`;
-    } else if (status === "disconnect") {
-      message = `<h1 class="loading-overlay-message">Disconnecting Palette 2...</h1>`;
-    } else if (status === "heartbeat") {
-      message = `<h1 class="loading-overlay-message">Verifying Palette 2 connection before starting print...</h1>`;
-    }
-    $("body").append(`<div class="loading-overlay-container">
-    <div class="loader"></div>
-    ${message}
-    </div>`);
-  } else {
-    $("body")
-      .find(".loading-overlay-container")
-      .remove();
-  }
-};
+// /* 1. LOADER */
+// omegaApp.loadingOverlay = (condition, status) => {
+//   if (condition) {
+//     if (status === "connect") {
+//       message = `<h1 class="loading-overlay-message">Trying to connect to Palette 2...</h1>`;
+//     } else if (status === "disconnect") {
+//       message = `<h1 class="loading-overlay-message">Disconnecting Palette 2...</h1>`;
+//     } else if (status === "heartbeat") {
+//       message = `<h1 class="loading-overlay-message">Verifying Palette 2 connection before starting print...</h1>`;
+//     }
+//     $("body").append(`<div class="loading-overlay-container">
+//     <div class="loader"></div>
+//     ${message}
+//     </div>`);
+//   } else {
+//     $("body")
+//       .find(".loading-overlay-container")
+//       .remove();
+//   }
+// };
 
-/* 2. HIGHLIGHT TO HELP USER USE TEMP CONTROLS */
-omegaApp.temperatureHighlight = () => {
-  $("body")
-    .find(`#temperature-table .input-mini.input-nospin:first`)
-    .addClass("highlight-glow")
-    .on("focus", event => {
-      $(event.target).removeClass("highlight-glow");
-    });
-};
+// /* 2. HIGHLIGHT TO HELP USER USE TEMP CONTROLS */
+// omegaApp.temperatureHighlight = () => {
+//   $("body")
+//     .find(`#temperature-table .input-mini.input-nospin:first`)
+//     .addClass("highlight-glow")
+//     .on("focus", event => {
+//       $(event.target).removeClass("highlight-glow");
+//     });
+// };
 
-/* 2.1 HIGHLIGHT TO HELP USER USE EXTRUSION CONTROLS */
-omegaApp.extrusionHighlight = () => {
-  $("body")
-    .find("#control-jog-extrusion .input-mini.text-right")
-    .addClass("highlight-glow")
-    .on("focus", event => {
-      $(event.target).removeClass("highlight-glow");
-    });
-  $("body")
-    .find("#control-jog-extrusion > div :nth-child(3)")
-    .addClass("highlight-glow-border")
-    .on("focus", event => {
-      $(event.target).removeClass("highlight-glow-border");
-    });
-};
+// /* 2.1 HIGHLIGHT TO HELP USER USE EXTRUSION CONTROLS */
+// omegaApp.extrusionHighlight = () => {
+//   $("body")
+//     .find("#control-jog-extrusion .input-mini.text-right")
+//     .addClass("highlight-glow")
+//     .on("focus", event => {
+//       $(event.target).removeClass("highlight-glow");
+//     });
+//   $("body")
+//     .find("#control-jog-extrusion > div :nth-child(3)")
+//     .addClass("highlight-glow-border")
+//     .on("focus", event => {
+//       $(event.target).removeClass("highlight-glow-border");
+//     });
+// };
 
 /* 3. ALERT TEXTS */
 // omegaApp.cannotConnectAlert = () => {
@@ -205,21 +205,21 @@ omegaApp.extrusionHighlight = () => {
 //   });
 // };
 
-/* 3.1 CLOSE ALERT */
-omegaApp.closeAlert = () => {
-  if (Swal.isVisible()) {
-    Swal.close();
-  }
-};
+// /* 3.1 CLOSE ALERT */
+// omegaApp.closeAlert = () => {
+//   if (Swal.isVisible()) {
+//     Swal.close();
+//   }
+// };
 
-/* 4. Append Notification List to DOM */
-omegaApp.addNotificationList = () => {
-  if ($("body").find(".side-notifications-list").length === 0) {
-    $("body")
-      .css("position", "relative")
-      .append(`<ul class="side-notifications-list"></ul>`);
-  }
-};
+// /* 4. Append Notification List to DOM */
+// omegaApp.addNotificationList = () => {
+//   if ($("body").find(".side-notifications-list").length === 0) {
+//     $("body")
+//       .css("position", "relative")
+//       .append(`<ul class="side-notifications-list"></ul>`);
+//   }
+// };
 
 /* ======================
 OMEGA VIEWMODEL FOR OCTOPRINT
@@ -408,7 +408,7 @@ function OmegaViewModel(parameters) {
 
   self.connectOmega = () => {
     self.tryingToConnect = true;
-    omegaApp.loadingOverlay(true, "connect");
+    UI.loadingOverlay(true, "connect");
 
     if (self.selectedPort()) {
       var payload = {
@@ -423,7 +423,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.disconnectPalette2 = () => {
-    omegaApp.loadingOverlay(true, "disconnect");
+    UI.loadingOverlay(true, "disconnect");
     self.connected(false);
     self.removeNotification();
     var payload = {
@@ -642,7 +642,7 @@ function OmegaViewModel(parameters) {
 
   self.updateFilamentCountdown = firstValue => {
     if (self.amountLeftToExtrude() < 0) {
-      omegaApp.closeAlert();
+      UI.closeAlert();
       $(self.jogId)
         .find(".jog-filament-value")
         .addClass("negative-number");
@@ -674,14 +674,14 @@ function OmegaViewModel(parameters) {
       if (self.displaySetupAlerts) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#temp`;
-        omegaApp.temperatureHighlight();
+        UI.temperatureHighlight();
         Alerts.preheatAlert();
       }
     } else if (command === "extruder") {
       if (self.displaySetupAlerts) {
         let base_url = window.location.origin;
         window.location.href = `${base_url}/#control`;
-        omegaApp.extrusionHighlight();
+        UI.extrusionHighlight();
         Alerts.extrusionAlert(self.firstTime);
       }
     } else if (command === "cancelling") {
@@ -689,7 +689,7 @@ function OmegaViewModel(parameters) {
       Alerts.printCancellingAlert();
     } else if (command === "printStarted") {
       // if user presses start from P2
-      omegaApp.closeAlert();
+      UI.closeAlert();
     } else if (command === "cancelled") {
       self.removeNotification();
       Alerts.printCancelledAlert();
@@ -889,7 +889,7 @@ function OmegaViewModel(parameters) {
 
   self.onEventPrintStarted = payload => {
     if (payload.name.includes(".mcf.gcode") && self.connected()) {
-      omegaApp.loadingOverlay(true, "heartbeat");
+      UI.loadingOverlay(true, "heartbeat");
     }
   };
 
@@ -937,13 +937,13 @@ function OmegaViewModel(parameters) {
         self.nSplices(message.data);
       } else if (message.command === "p2Connection") {
         if (self.tryingToConnect) {
-          omegaApp.loadingOverlay(false);
+          UI.loadingOverlay(false);
         }
         self.connected(message.data);
         if (self.connected()) {
           self.tryingToConnect = false;
         } else {
-          omegaApp.loadingOverlay(false);
+          UI.loadingOverlay(false);
           if (self.tryingToConnect) {
             self.tryingToConnect = false;
             self.showAlert("cannotConnect");
@@ -959,7 +959,7 @@ function OmegaViewModel(parameters) {
         if (message.data && message.data !== self.currentStatus()) {
           self.currentStatus(message.data);
           if (self.currentStatus() === "Loading filament into extruder") {
-            omegaApp.addNotificationList();
+            UI.addNotificationList();
             self.checkIfCountdownExists();
           } else if (self.currentStatus() === "Print started: preparing splices") {
             self.removeNotification();
