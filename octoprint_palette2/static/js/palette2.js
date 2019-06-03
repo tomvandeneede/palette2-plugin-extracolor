@@ -8,7 +8,7 @@ function OmegaViewModel(parameters) {
   self.files = parameters[3];
 
   /* GLOBAL VARIABLES */
-  self.jogId = "";
+  self.notificationId = "";
   self.displaySetupAlerts = true;
   self.tryingToConnect = false;
   self.firstTime = false;
@@ -117,19 +117,12 @@ function OmegaViewModel(parameters) {
 
   /* COMMUNICATION TO BACK-END FUNCTIONS */
   self.displayPorts = () => {
-    let condition = "";
-    // determine if user is opening or closing list of ports
-    if ($(".serial-ports-list").is(":visible")) {
-      condition = "closing";
-    } else {
-      condition = "opening";
-    }
-
-    var payload = {
+    const condition = $(".serial-ports-list").is(":visible") ? "closing" : "opening";
+    const payload = {
       command: "displayPorts",
       condition: condition
     };
-    self.ajax_payload(payload).then(() => {
+    self.ajaxRequest(payload).then(() => {
       self.settings.requestData();
     });
   };
@@ -137,102 +130,90 @@ function OmegaViewModel(parameters) {
   self.connectOmega = () => {
     self.tryingToConnect = true;
     UI.loadingOverlay(true, "connect");
-
-    if (self.selectedPort()) {
-      var payload = {
-        command: "connectOmega",
-        port: self.selectedPort()
-      };
-    } else {
-      var payload = { command: "connectOmega", port: "" };
+    const payload = {
+      command: "connectOmega",
+      port: self.selectedPort() || ""
     }
-
-    self.ajax_payload(payload);
+    self.ajaxRequest(payload);
   };
 
   self.disconnectPalette2 = () => {
     UI.loadingOverlay(true, "disconnect");
     self.connected(false);
     self.removeNotification();
-    var payload = {
-      command: "disconnectPalette2"
-    };
-    self.ajax_payload(payload);
+    const payload = { command: "disconnectPalette2" };
+    self.ajaxRequest(payload);
   };
 
   self.changeAlertSettings = condition => {
     self.displaySetupAlerts = !condition;
-    var payload = { command: "changeAlertSettings", condition: self.displaySetupAlerts };
-
-    self.ajax_payload(payload).then(() => {
+    const payload = {
+      command: "changeAlertSettings",
+      condition: self.displaySetupAlerts
+    };
+    self.ajaxRequest(payload).then(() => {
       self.settings.requestData();
     });
   };
 
-  self.sendOmegaCmd = (command, payload) => {
-    var payload = {
+  self.sendOmegaCmd = (command) => {
+    const payload = {
       command: "sendOmegaCmd",
-      cmd: self.omegaCommand()
+      cmd: command,
     };
-    self.ajax_payload(payload);
+    self.ajaxRequest(payload);
   };
 
   self.uiUpdate = () => {
     console.log("Requesting BE to update UI");
-    var payload = { command: "uiUpdate" };
-    self.ajax_payload(payload);
+    const payload = { command: "uiUpdate" };
+    self.ajaxRequest(payload);
   };
 
   self.connectWifi = () => {
-    var payload = {
+    const payload = {
       command: "connectWifi",
       wifiSSID: self.wifiSSID(),
       wifiPASS: self.wifiPASS()
     };
-    self.ajax_payload(payload);
+    self.ajaxRequest(payload);
   };
 
   self.sendCutCmd = () => {
-    var payload = {
-      command: "sendCutCmd"
-    };
-    self.ajax_payload(payload);
+    const payload = { command: "sendCutCmd" };
+    self.ajaxRequest(payload);
   };
 
   self.sendClearOutCmd = () => {
-    var payload = {
-      command: "clearPalette2"
-    };
-    self.ajax_payload(payload);
+    const payload = { command: "clearPalette2" };
+    self.ajaxRequest(payload);
   };
 
   self.sendErrorReport = (errorNumber, description) => {
-    var payload = {
+    const payload = {
       command: "sendErrorReport",
       errorNumber: errorNumber,
       description: description
     };
-    self.ajax_payload(payload);
+    self.ajaxRequest(payload);
   };
 
   self.startPrintFromHub = () => {
-    var payload = {
-      command: "startPrint"
-    };
-    self.ajax_payload(payload);
+    const payload = { command: "startPrint" };
+    self.ajaxRequest(payload);
   };
 
   self.downloadPingHistory = (data, event) => {
     event.stopPropagation();
-    self.ajax_payload({ command: "downloadPingHistory" }).then(result => {
-      let filename = result.response.filename;
-      let data = result.response.data;
+    self.ajaxRequest({ command: "downloadPingHistory" }).then(result => {
+      const filename = result.response.filename;
+      const data = result.response.data;
 
-      let blob = new Blob([data], { type: "text/plain" });
+      const blob = new Blob([data], { type: "text/plain" });
       if (window.navigator.msSaveOrOpenBlob) {
         window.navigator.msSaveBlob(blob, filename);
       } else {
-        let elem = window.document.createElement("a");
+        const elem = window.document.createElement("a");
         elem.href = window.URL.createObjectURL(blob);
         elem.download = filename;
         document.body.appendChild(elem);
@@ -244,26 +225,26 @@ function OmegaViewModel(parameters) {
   };
 
   self.startAutoLoad = () => {
-    self.ajax_payload({ command: "startAutoLoad" });
+    self.ajaxRequest({ command: "startAutoLoad" });
   };
 
   self.feedRateControl.subscribe(function () {
-    self.ajax_payload({ command: "changeFeedRateControl", condition: self.feedRateControl() });
+    self.ajaxRequest({ command: "changeFeedRateControl", condition: self.feedRateControl() });
   });
   self.autoCancelPing.subscribe(function () {
-    self.ajax_payload({ command: "changeAutoCancelPing", condition: self.autoCancelPing() });
+    self.ajaxRequest({ command: "changeAutoCancelPing", condition: self.autoCancelPing() });
   });
   self.showPingOnPrinter.subscribe(function () {
-    self.ajax_payload({ command: "changeShowPingOnPrinter", condition: self.showPingOnPrinter() });
+    self.ajaxRequest({ command: "changeShowPingOnPrinter", condition: self.showPingOnPrinter() });
   });
   self.feedRateNormalPct.subscribe(function () {
-    self.ajax_payload({ command: "changeFeedRateNormalPct", value: self.feedRateNormalPct() });
+    self.ajaxRequest({ command: "changeFeedRateNormalPct", value: self.feedRateNormalPct() });
   });
   self.feedRateSlowPct.subscribe(function () {
-    self.ajax_payload({ command: "changeFeedRateSlowPct", value: self.feedRateSlowPct() });
+    self.ajaxRequest({ command: "changeFeedRateSlowPct", value: self.feedRateSlowPct() });
   });
 
-  self.ajax_payload = payload => {
+  self.ajaxRequest = payload => {
     return $.ajax({
       url: API_BASEURL + "plugin/palette2",
       type: "POST",
@@ -314,17 +295,15 @@ function OmegaViewModel(parameters) {
   /* UI FUNCTIONS */
 
   self.checkIfCountdownExists = () => {
-    if ($("body").find("#jog-filament-notification").length === 0) {
+    if ($("body").find("#load-filament-notification").length === 0) {
       self.displayFilamentCountdown();
     }
   };
 
   self.smartLoadInfoListener = () => {
-    $("body")
-      .find(".smart-load-icon")
-      .on("click", () => {
-        self.toggleSmartLoadInfo();
-      });
+    $("body").find(".smart-load-icon").on("click", () => {
+      self.toggleSmartLoadInfo();
+    });
   };
 
   self.removePopupListener = () => {
@@ -340,12 +319,12 @@ function OmegaViewModel(parameters) {
   };
 
   self.displayFilamentCountdown = () => {
-    let notification = $(`
-    <li id="jog-filament-notification" class="popup-notification">
+    const notification = $(`
+    <li id="load-filament-notification" class="popup-notification">
 		  <i class="material-icons remove-button">clear</i>
-		  <h6 class="jog-filament-title">Remaining Length To Extrude:</h6>
+		  <h6 class="load-filament-title">Remaining Length To Extrude:</h6>
       <div>
-        <span class="jog-filament-value">${self.amountLeftToExtrudeText()}</span>
+        <span class="load-filament-value">${self.amountLeftToExtrudeText()}</span>
         <span class="small-loader-autoload"></span>
       </div>
       <div class="smart-load-container">
@@ -359,7 +338,7 @@ function OmegaViewModel(parameters) {
         </div>
       </div>
     </li>`).hide();
-    self.jogId = "#jog-filament-notification";
+    self.notificationId = "#load-filament-notification";
     $(".side-notifications-list").append(notification);
 
     self.smartLoadInfoListener();
@@ -371,28 +350,28 @@ function OmegaViewModel(parameters) {
   self.updateFilamentCountdown = firstValue => {
     if (self.amountLeftToExtrude() < 0) {
       UI.closeAlert();
-      $(self.jogId)
-        .find(".jog-filament-value")
+      $(self.notificationId)
+        .find(".load-filament-value")
         .addClass("negative-number");
     } else {
-      $(self.jogId)
-        .find(".jog-filament-value")
+      $(self.notificationId)
+        .find(".load-filament-value")
         .removeClass("negative-number");
     }
     if (firstValue) {
-      $(self.jogId)
+      $(self.notificationId)
         .fadeIn(200)
-        .find(".jog-filament-value")
+        .find(".load-filament-value")
         .text(`${self.amountLeftToExtrudeText()}`);
     } else {
-      $(self.jogId)
-        .find(".jog-filament-value")
+      $(self.notificationId)
+        .find(".load-filament-value")
         .text(`${self.amountLeftToExtrudeText()}`);
     }
   };
 
   self.removeNotification = () => {
-    $(self.jogId).fadeOut(500, function () {
+    $(self.notificationId).fadeOut(500, function () {
       this.remove();
     });
   };
@@ -400,14 +379,14 @@ function OmegaViewModel(parameters) {
   self.showAlert = (command, condition) => {
     if (command === "temperature") {
       if (self.displaySetupAlerts) {
-        let base_url = window.location.origin;
+        const base_url = window.location.origin;
         window.location.href = `${base_url}/#temp`;
         UI.temperatureHighlight();
         Alerts.preheatAlert();
       }
     } else if (command === "extruder") {
       if (self.displaySetupAlerts) {
-        let base_url = window.location.origin;
+        const base_url = window.location.origin;
         window.location.href = `${base_url}/#control`;
         UI.extrusionHighlight();
         Alerts.extrusionAlert(self.firstTime);
@@ -468,7 +447,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.toggleAdvancedOptionInfo = (data, event) => {
-    let targetId = `#${event.target.nextElementSibling.id}`;
+    const targetId = `#${event.target.nextElementSibling.id}`;
     if ($(`.advanced-info-text:not(${targetId})`).is(":visible")) {
       $(".advanced-info-text").hide(50);
     }
@@ -489,12 +468,12 @@ function OmegaViewModel(parameters) {
 
   self.toggleAutoLoadText = () => {
     if (self.isAutoLoading() || self.amountLeftToExtrude() <= 0 || self.firstTime) {
-      $(self.jogId)
+      $(self.notificationId)
         .find(".autoload-button")
         .text(`${self.autoLoadButtonText()}`)
         .attr("disabled", "disabled");
     } else {
-      $(self.jogId)
+      $(self.notificationId)
         .find(".autoload-button")
         .text(`${self.autoLoadButtonText()}`)
         .removeAttr("disabled");
@@ -634,7 +613,7 @@ function OmegaViewModel(parameters) {
         self.showAlert("error", message.data);
       } else if (message.command === "printHeartbeatCheck") {
         if (message.data === "P2NotConnected") {
-          let base_url = window.location.origin;
+          const base_url = window.location.origin;
           window.location.href = `${base_url}/#tab_plugin_palette2`;
         }
         self.showAlert("heartbeat", message.data);
@@ -693,9 +672,9 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "amountLeftToExtrude") {
         if (!self.actualPrintStarted) {
           self.amountLeftToExtrude(message.data);
-          if (!$("#jog-filament-notification").is(":visible")) {
+          if (!$("#load-filament-notification").is(":visible")) {
             self.updateFilamentCountdown(true);
-          } else if ($("#jog-filament-notification").is(":visible")) {
+          } else if ($("#load-filament-notification").is(":visible")) {
             self.updateFilamentCountdown(false);
           }
         }
