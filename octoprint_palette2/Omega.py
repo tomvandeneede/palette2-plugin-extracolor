@@ -493,6 +493,7 @@ class Omega():
         self.advanced_reset_values()
 
         self.autoLoadThread = None
+        self.ledThread = None
         self.isSplicing = False
         self._logger.info("Omega: Resetting all values - FINISHED")
 
@@ -542,6 +543,7 @@ class Omega():
     def shutdown(self):
         self._logger.info("Shutdown")
         self.disconnect()
+        self.stopLedThread()
 
     def disconnect(self):
         self._logger.info("Disconnecting from Palette")
@@ -1078,6 +1080,36 @@ class Omega():
                 return None
         else:
             return None
+
+     def startLedThread(self):
+        if self.ledThread is not None:
+            self.stopLedThread()
+        self._logger.info("Starting Led Thread")
+        self.ledThreadStop = False
+        self.ledThread = threading.Thread(target=self.omegaLedThread)
+        self.ledThread.daemon = True
+        self.ledThread.start()
+
+    def stopLedThread(self):
+        self.ledThreadStop = True
+        if self.ledThread and threading.current_thread() != self.ledThread:
+            self.ledThread.join()
+        self.ledThread = None
+
+    def omegaLedThread(self):
+        palette_flag_path = "/home/pi/.mosaicdata/palette_flag"
+        try:
+            while not self.ledThreadStop:
+                if self.connected:
+                    if not os.path.exists(palette_flag_path):
+                        call(["touch %s" % palette_flag_path], shell=True)
+                else:
+                    if os.path.exists(palette_flag_path):
+                        call(["rm %s" % palette_flag_path], shell=True)
+                time.sleep(2)
+        except Exception as e:
+                self._logger.info("Palette 2 Led Thread Error")
+                self._logger.info(e)
 
     def downloadPingHistory(self):
         self._logger.info("DOWNLOADING PING HISTORY")
