@@ -33,13 +33,12 @@ class Omega():
         self.ports = []
         self.selectedPort = ""
         self.ledThread = None
-        self.isHubS = False
+        self.isHubS = self.determineHubVersion()
 
         self.writeQueue = Queue()
 
         self.resetVariables()
         self.resetConnection()
-        self.determineHubVersion()
 
         # Tries to automatically connect to palette first
         if self._settings.get(["autoconnect"]):
@@ -54,9 +53,9 @@ class Omega():
             hub_data.close()
 
             hub_rank = hub_yaml["versions"]["global"]
-            self._logger.info(hub_rank)
             if hub_rank == "0.2.0":
-                self.isHubS = True
+                return True
+            return False
 
     def getAllPorts(self):
         baselist = []
