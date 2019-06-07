@@ -1123,7 +1123,7 @@ class Omega():
                 else:
                     if os.path.exists(palette_flag_path):
                         call(["rm %s" % palette_flag_path], shell=True)
-                if self._printer.get_current_connection()[0] != "Closed":
+                if self._printer.get_state_id() in ["OPERATIONAL", "PRINTING", "PAUSED"]:
                     if not os.path.exists(printer_flag_path):
                         call(["touch %s" % printer_flag_path], shell=True)
                 else:
