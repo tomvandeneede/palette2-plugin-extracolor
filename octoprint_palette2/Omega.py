@@ -37,6 +37,7 @@ class Omega():
 
         self.resetVariables()
         self.resetConnection()
+        self.ledThread = None
 
         # Tries to automatically connect to palette first
         if self._settings.get(["autoconnect"]):
@@ -493,7 +494,6 @@ class Omega():
         self.advanced_reset_values()
 
         self.autoLoadThread = None
-        self.ledThread = None
         self.isSplicing = False
         self._logger.info("Omega: Resetting all values - FINISHED")
 
