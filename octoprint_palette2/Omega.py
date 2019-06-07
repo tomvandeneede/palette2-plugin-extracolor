@@ -54,7 +54,7 @@ class Omega():
             hub_data.close()
 
             hub_rank = hub_yaml["versions"]["global"]
-            self._logger(hub_rank)
+            self._logger.info(hub_rank)
             if hub_rank == "0.2.0":
                 self.isHubS = True
 
