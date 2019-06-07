@@ -32,16 +32,31 @@ class Omega():
 
         self.ports = []
         self.selectedPort = ""
+        self.ledThread = None
+        self.isHubS = False
 
         self.writeQueue = Queue()
 
         self.resetVariables()
         self.resetConnection()
-        self.ledThread = None
+        self.determineHubVersion()
 
         # Tries to automatically connect to palette first
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
+
+    def determineHubVersion(self):
+        hub_file_path = os.path.expanduser('~') + "/.mosaicdata/canvas-hub-data.yml"
+
+        if os.path.exists(hub_file_path):
+            hub_data = open(hub_file_path, "r")
+            hub_yaml = yaml.load(hub_data)
+            hub_data.close()
+
+            hub_rank = hub_yaml["versions"]["global"]
+            self._logger(hub_rank)
+            if hub_rank == 0.2.0:
+                self.isHubS = True
 
     def getAllPorts(self):
         baselist = []
@@ -1082,19 +1097,21 @@ class Omega():
             return None
 
     def startLedThread(self):
-        if self.ledThread is not None:
-            self.stopLedThread()
-        self._logger.info("Starting Led Thread")
-        self.ledThreadStop = False
-        self.ledThread = threading.Thread(target=self.omegaLedThread)
-        self.ledThread.daemon = True
-        self.ledThread.start()
+        if self.isHubS:
+            if self.ledThread is not None:
+                self.stopLedThread()
+            self._logger.info("Starting Led Thread")
+            self.ledThreadStop = False
+            self.ledThread = threading.Thread(target=self.omegaLedThread)
+            self.ledThread.daemon = True
+            self.ledThread.start()
 
     def stopLedThread(self):
-        self.ledThreadStop = True
-        if self.ledThread and threading.current_thread() != self.ledThread:
-            self.ledThread.join()
-        self.ledThread = None
+        if self.isHubS:
+            self.ledThreadStop = True
+            if self.ledThread and threading.current_thread() != self.ledThread:
+                self.ledThread.join()
+            self.ledThread = None
 
     def omegaLedThread(self):
         palette_flag_path = "/home/pi/.mosaicdata/palette_flag"
