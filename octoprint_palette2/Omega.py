@@ -1081,7 +1081,7 @@ class Omega():
         else:
             return None
 
-     def startLedThread(self):
+    def startLedThread(self):
         if self.ledThread is not None:
             self.stopLedThread()
         self._logger.info("Starting Led Thread")
