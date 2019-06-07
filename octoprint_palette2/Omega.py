@@ -1114,6 +1114,7 @@ class Omega():
 
     def omegaLedThread(self):
         palette_flag_path = "/home/pi/.mosaicdata/palette_flag"
+        printer_flag_path = "/home/pi/.mosaicdata/printer_flag"
         try:
             while not self.ledThreadStop:
                 if self.connected:
@@ -1122,6 +1123,12 @@ class Omega():
                 else:
                     if os.path.exists(palette_flag_path):
                         call(["rm %s" % palette_flag_path], shell=True)
+                if self._printer.get_current_connection()[0] != "Closed":
+                    if not os.path.exists(printer_flag_path):
+                        call(["touch %s" % printer_flag_path], shell=True)
+                else:
+                    if os.path.exists(printer_flag_path):
+                        call(["rm %s" % printer_flag_path], shell=True)
                 time.sleep(2)
         except Exception as e:
                 self._logger.info("Palette 2 Led Thread Error")
