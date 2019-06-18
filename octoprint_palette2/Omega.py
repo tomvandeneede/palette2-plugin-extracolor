@@ -302,6 +302,8 @@ class Omega():
                                         self.handleFilamentOutgoingTube()
                         elif command["command"] == 100:
                             self.handlePauseRequest()
+                        elif command["command"] == 102:
+                            self.handleSmartLoadRequest()
 
             except Exception as e:
                 # Something went wrong with the connection to Palette2
@@ -1260,3 +1262,7 @@ class Omega():
         self._printer.pause_print()
         self.printPaused = True
         self.updateUI({"command": "printPaused", "data": self.printPaused})
+
+    def handleSmartLoadRequest(self):
+        if self.autoLoadThread is not None:
+            self.startAutoLoadThread()
