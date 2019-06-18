@@ -55,7 +55,7 @@ class Omega():
             hub_rank = hub_yaml["versions"]["global"]
             if hub_rank == "0.2.0":
                 return True
-            return False
+        return False
 
     def getAllPorts(self):
         baselist = []
