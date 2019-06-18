@@ -255,7 +255,7 @@ class Omega():
                                 elif command["params"][0] == "D2":
                                     self.handlePong(command)
                         elif command["command"] == 40:
-                            self.handlePrintStart()
+                            self.handleResumeRequest()
                         elif command["command"] == 50:
                             self.sendAllMCFFilenamesToOmega()
                         elif command["command"] == 53:
@@ -1104,16 +1104,17 @@ class Omega():
         download_filename = filename + ".txt"
         return {"filename": download_filename, "data": data}
 
-    def handlePrintStart(self):
-        self.currentStatus = "Print started: preparing splices"
-        self.actualPrintStarted = True
+    def handleResumeRequest(self):
+        if not self.actualPrintStarted:
+            self.currentStatus = "Print started: preparing splices"
+            self.actualPrintStarted = True
+            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+            self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
+            self.updateUI({"command": "alert", "data": "printStarted"})
+            self._logger.info("Splices being prepared.")
+        self._printer.resume_print()
         self.printPaused = False
-        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-        self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
-        self.updateUI({"command": "alert", "data": "printStarted"})
-        self._printer.toggle_pause_print()
         self.updateUI({"command": "printPaused", "data": self.printPaused})
-        self._logger.info("Splices being prepared.")
 
     def handlePing(self, command):
         percent = command["params"][1][1:]
