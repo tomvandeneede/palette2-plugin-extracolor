@@ -300,6 +300,9 @@ class Omega():
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[-1]:
                                     if command["total_params"] > 1 and command["params"][1] == "D1":
                                         self.handleFilamentOutgoingTube()
+                        elif command["command"] == 100:
+                            self.handlePauseRequest()
+
             except Exception as e:
                 # Something went wrong with the connection to Palette2
                 self._logger.info("Palette 2 Read Thread error")
@@ -1252,3 +1255,8 @@ class Omega():
         self.updateUI({"command": "currentStatus", "data": self.currentStatus})
         self.updateUI({"command": "alert", "data": "temperature"})
         self._logger.info("FINISHED LOADING LAST DRIVE")
+
+    def handlePauseRequest(self):
+        self._printer.pause_print()
+        self.printPaused = True
+        self.updateUI({"command": "printPaused", "data": self.printPaused})
