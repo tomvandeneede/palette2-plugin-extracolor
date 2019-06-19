@@ -667,7 +667,7 @@ class Omega():
                 self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": "Awaiting Update..."})
                 self.printHeartbeatCheck = ""
                 try:
-                    filename = cmd.split(" ")[1][1:]
+                    filename = self._printer.get_current_job()["file"]["name"].replace(".mcf.gcode", "").strip()
                     self.setFilename(filename)
                 except:
                     self._logger.info("Error getting filename")
