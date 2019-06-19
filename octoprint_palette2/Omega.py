@@ -1323,5 +1323,5 @@ class Omega():
         self.updateUI({"command": "printPaused", "data": self.printPaused})
 
     def handleSmartLoadRequest(self):
-        if self.autoLoadThread is None:
+        if not self.isAutoLoading:
             self.startAutoLoadThread()
