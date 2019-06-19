@@ -318,7 +318,9 @@ class Omega():
                         elif command["command"] == 100:
                             self.handlePauseRequest()
                         elif command["command"] == 102:
-                            self.handleSmartLoadRequest()
+                            if command["total_params"] > 0:
+                                if command["params"][0] == "D0":
+                                    self.handleSmartLoadRequest()
 
             except Exception as e:
                 # Something went wrong with the connection to Palette2
@@ -1096,6 +1098,7 @@ class Omega():
                 self.isAutoLoading = False
                 self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading})
                 self.updateUI({"command": "alert", "data": "autoLoadIncomplete"})
+                self.enqueueCmd("O102 D1")
                 return None
         else:
             return None
@@ -1320,5 +1323,5 @@ class Omega():
         self.updateUI({"command": "printPaused", "data": self.printPaused})
 
     def handleSmartLoadRequest(self):
-        if self.autoLoadThread is not None:
+        if self.autoLoadThread is None:
             self.startAutoLoadThread()

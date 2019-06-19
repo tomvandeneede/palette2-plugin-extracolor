@@ -107,6 +107,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
         elif command == "startAutoLoad":
             self.palette.startAutoLoadThread()
+            self.palette.enqueueCmd("O102 D0")
         elif command == "changeAutoCancelPing":
             self.palette.changeAutoCancelPing(data["condition"])
         elif command == "changeShowPingOnPrinter":
