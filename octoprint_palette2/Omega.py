@@ -1163,7 +1163,7 @@ class Omega():
         return {"filename": download_filename, "data": data}
 
     def handleResumeRequest(self):
-        if not self.actualPrintStarted:
+        if not self.actualPrintStarted and self.currentStatus == "Loading filament into extruder":
             self.currentStatus = "Print started: preparing splices"
             self.actualPrintStarted = True
             self.updateUI({"command": "currentStatus", "data": self.currentStatus})
