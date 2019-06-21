@@ -1163,16 +1163,21 @@ class Omega():
         return {"filename": download_filename, "data": data}
 
     def handleResumeRequest(self):
-        if not self.actualPrintStarted and self.currentStatus == "Loading filament into extruder":
-            self.currentStatus = "Print started: preparing splices"
-            self.actualPrintStarted = True
-            self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-            self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
-            self.updateUI({"command": "alert", "data": "printStarted"})
-            self._logger.info("Splices being prepared.")
-        self._printer.resume_print()
-        self.printPaused = False
-        self.updateUI({"command": "printPaused", "data": self.printPaused})
+        if self.actualPrintStarted:
+            self._printer.resume_print()
+            self.printPaused = False
+            self.updateUI({"command": "printPaused", "data": self.printPaused})
+        else:
+            if self.currentStatus == "Loading filament into extruder":
+                self._printer.resume_print()
+                self.printPaused = False
+                self.currentStatus = "Print started: preparing splices"
+                self.actualPrintStarted = True
+                self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
+                self.updateUI({"command": "alert", "data": "printStarted"})
+                self.updateUI({"command": "printPaused", "data": self.printPaused})
+                self._logger.info("Splices being prepared.")
 
     def handlePing(self, command):
         percent = command["params"][1][1:]
