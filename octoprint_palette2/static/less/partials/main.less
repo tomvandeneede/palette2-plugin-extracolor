@@ -113,11 +113,11 @@ input[type="text"] {
     padding: 0 3px;
     line-height: 20px;
     font-size: 18px;
-    color: @color-1;
+    color: @color-2;
     cursor: pointer;
 
     &:hover {
-      border-bottom: 1px solid @color-1;
+      border-bottom: 1px solid @color-2;
     }
   }
 }
@@ -140,7 +140,7 @@ input[type="text"] {
   overflow: scroll;
   background-color: #fcfcfc;
   border-radius: 1px;
-  border: 1px solid @color-1;
+  border: 1px solid @color-11;
   padding: 3px 15px;
   margin: 5px 55% 5px 5px;
   list-style: none;
@@ -151,7 +151,7 @@ input[type="text"] {
     display: inline-flex;
     justify-content: space-between;
     padding: 5px 0;
-    border-bottom: 1px solid @color-1;
+    border-bottom: 1px solid @color-11;
 
     .ping-number,
     .pong-number,
@@ -187,14 +187,14 @@ input[type="text"] {
   justify-content: center;
   align-items: center;
 
-  background-color: fade(@color-4, 50%);
+  background-color: @screenOverlay;
 }
 
 .loader {
   width: 4em;
   height: 4em;
-  border: 8px solid fade(@color-2, 40%);
-  border-top-color: @color-2;
+  border: 8px solid fade(@color-1, 40%);
+  border-top-color: @color-1;
   border-radius: 50%;
   animation: rotate360 1.5s linear infinite;
 }
@@ -209,7 +209,7 @@ input[type="text"] {
 }
 
 .loading-overlay-message {
-  color: @color-2;
+  color: @color-1;
   font-size: 16px;
   text-align: center;
 }
@@ -251,13 +251,17 @@ input[type="text"] {
   color: red;
 }
 
+.value-container {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .load-filament-value {
   margin: 0;
   font-size: 12px;
   font-style: italic;
   overflow: hidden;
   text-overflow: ellipsis;
-  @color-2-space: nowrap;
 }
 
 .small-loader-autoload {
@@ -267,8 +271,8 @@ input[type="text"] {
   margin-left: 5px;
   width: 11px;
   height: 11px;
-  border: 2px solid fade(@color-1, 40%);
-  border-top-color: @color-1;
+  border: 2px solid fade(@color-2, 40%);
+  border-top-color: @color-2;
   border-radius: 50%;
   animation: rotate360 1.5s linear infinite;
 }
@@ -289,10 +293,10 @@ input[type="text"] {
   width: 200px;
   padding: 0.5rem 1.1rem;
   margin-bottom: 7px;
-  border: 1px solid @color-1;
+  border: 1px solid @color-2;
   border-left: none;
   z-index: 5;
-  background-color: @color-5;
+  background-color: @color-1;
   border-top-right-radius: 1px;
   border-bottom-right-radius: 1px;
   word-wrap: break-word;
@@ -323,7 +327,6 @@ input[type="text"] {
     font-style: italic;
     overflow: hidden;
     text-overflow: ellipsis;
-    @color-2-space: nowrap;
   }
 
   .smart-load-container {
@@ -348,8 +351,8 @@ input[type="text"] {
         width: 250px;
         left: 35px;
         top: -30px;
-        background-color: @color-5;
-        border: 1px solid @color-1;
+        background-color: @color-1;
+        border: 1px solid @color-6;
         border-radius: 3px;
         padding: 10px;
         text-align: left;
@@ -368,14 +371,14 @@ input[type="text"] {
         // fill
         &::after {
           top: 29px;
-          border-color: transparent @color-5 transparent transparent;
+          border-color: transparent @color-1 transparent transparent;
           border-width: 10px;
         }
 
         // border
         &::before {
           top: 28px;
-          border-color: transparent @color-1 transparent transparent;
+          border-color: transparent @color-6 transparent transparent;
           border-width: 11px;
         }
 
@@ -400,4 +403,8 @@ input[type="text"] {
   font-size: 12px;
   line-height: 16px;
   padding: 3px 15px;
+}
+
+#connection-state-msg-palette {
+  margin-left: 3px;
 }

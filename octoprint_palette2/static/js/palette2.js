@@ -323,7 +323,7 @@ function OmegaViewModel(parameters) {
     <li id="load-filament-notification" class="popup-notification">
 		  <i class="material-icons remove-button">clear</i>
 		  <h6 class="load-filament-title">Remaining Length To Extrude:</h6>
-      <div>
+      <div class="value-container">
         <span class="load-filament-value">${self.amountLeftToExtrudeText()}</span>
         <span class="small-loader-autoload"></span>
       </div>
