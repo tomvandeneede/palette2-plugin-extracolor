@@ -255,7 +255,7 @@ class Omega():
                                 elif command["params"][0] == "D2":
                                     self.handlePong(command)
                         elif command["command"] == 40:
-                            self.handlePrintStart()
+                            self.handleResumeRequest()
                         elif command["command"] == 50:
                             self.sendAllMCFFilenamesToOmega()
                         elif command["command"] == 53:
@@ -300,6 +300,13 @@ class Omega():
                                 elif self.drivesInUse and command["params"][0] == self.drivesInUse[-1]:
                                     if command["total_params"] > 1 and command["params"][1] == "D1":
                                         self.handleFilamentOutgoingTube()
+                        elif command["command"] == 100:
+                            self.handlePauseRequest()
+                        elif command["command"] == 102:
+                            if command["total_params"] > 0:
+                                if command["params"][0] == "D0":
+                                    self.handleSmartLoadRequest()
+
             except Exception as e:
                 # Something went wrong with the connection to Palette2
                 self._logger.info("Palette 2 Read Thread error")
@@ -644,7 +651,7 @@ class Omega():
                 self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": "Awaiting Update..."})
                 self.printHeartbeatCheck = ""
                 try:
-                    filename = cmd.split(" ")[1][1:]
+                    filename = self._printer.get_current_job()["file"]["name"].replace(".mcf.gcode", "").strip()
                     self.setFilename(filename)
                 except:
                     self._logger.info("Error getting filename")
@@ -1075,6 +1082,7 @@ class Omega():
                 self.isAutoLoading = False
                 self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading})
                 self.updateUI({"command": "alert", "data": "autoLoadIncomplete"})
+                self.enqueueCmd("O102 D1")
                 return None
         else:
             return None
@@ -1099,16 +1107,22 @@ class Omega():
         download_filename = filename + ".txt"
         return {"filename": download_filename, "data": data}
 
-    def handlePrintStart(self):
-        self.currentStatus = "Print started: preparing splices"
-        self.actualPrintStarted = True
-        self.printPaused = False
-        self.updateUI({"command": "currentStatus", "data": self.currentStatus})
-        self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
-        self.updateUI({"command": "alert", "data": "printStarted"})
-        self._printer.toggle_pause_print()
-        self.updateUI({"command": "printPaused", "data": self.printPaused})
-        self._logger.info("Splices being prepared.")
+    def handleResumeRequest(self):
+        if self.actualPrintStarted:
+            self._printer.resume_print()
+            self.printPaused = False
+            self.updateUI({"command": "printPaused", "data": self.printPaused})
+        else:
+            if self.currentStatus == "Loading filament into extruder":
+                self._printer.resume_print()
+                self.printPaused = False
+                self.currentStatus = "Print started: preparing splices"
+                self.actualPrintStarted = True
+                self.updateUI({"command": "currentStatus", "data": self.currentStatus})
+                self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
+                self.updateUI({"command": "alert", "data": "printStarted"})
+                self.updateUI({"command": "printPaused", "data": self.printPaused})
+                self._logger.info("Splices being prepared.")
 
     def handlePing(self, command):
         percent = command["params"][1][1:]
@@ -1252,3 +1266,12 @@ class Omega():
         self.updateUI({"command": "currentStatus", "data": self.currentStatus})
         self.updateUI({"command": "alert", "data": "temperature"})
         self._logger.info("FINISHED LOADING LAST DRIVE")
+
+    def handlePauseRequest(self):
+        self._printer.pause_print()
+        self.printPaused = True
+        self.updateUI({"command": "printPaused", "data": self.printPaused})
+
+    def handleSmartLoadRequest(self):
+        if not self.isAutoLoading:
+            self.startAutoLoadThread()
