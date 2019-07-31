@@ -124,10 +124,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             return flask.jsonify(response=self.palette.downloadPingHistory())
         return flask.jsonify(foo="bar")
 
-    def on_api_get(self, request):
-        self._plugin_manager.send_plugin_message(self._identifier, "Omega Message")
-        return flask.jsonify(foo="bar")
-
     def on_event(self, event, payload):
         try:
             if "ClientOpened" in event:
