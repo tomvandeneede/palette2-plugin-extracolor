@@ -206,8 +206,8 @@ function OmegaViewModel(parameters) {
   self.downloadPingHistory = (data, event) => {
     event.stopPropagation();
     self.ajaxRequest({ command: "downloadPingHistory" }).then(result => {
-      const filename = result.response.filename;
-      const data = result.response.data;
+      const filename = result.data.filename;
+      const data = result.data.data;
 
       const blob = new Blob([data], { type: "text/plain" });
       if (window.navigator.msSaveOrOpenBlob) {

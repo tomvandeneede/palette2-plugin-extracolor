@@ -22,6 +22,7 @@ load_dotenv(env_path)
 BASE_URL_API = os.getenv("DEV_BASE_URL_API", "api.canvas3d.io/")
 from subprocess import call
 from Queue import Queue, Empty
+from . import constants
 
 
 class Omega():
@@ -80,6 +81,8 @@ class Omega():
         self._logger.info("Selected port: %s" % self._settings.get(["selectedPort"]))
         self.updateUI({"command": "ports", "data": self.ports})
         self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
+        if not self.ports:
+            raise Exception(constants.NO_SERIAL_PORTS_FOUND)
 
     def getRealPaths(self, ports):
         self._logger.info("Paths: %s" % ports)
@@ -117,8 +120,8 @@ class Omega():
                     self.getSelectedPort()
                     port = self._settings.get(["selectedPort"])
                 if self.isPrinterPort(port):
-                    self._logger.info("This is the printer port. Will not connect to this.")
                     self.updateUIAll()
+                    raise Exception(constants.PRINTER_ON_CURRENT_PORT)
                 else:
                     default_baudrate = self._settings.get(["baudrate"])
                     second_baudrate = self.getSecondBaudrate(default_baudrate)
@@ -130,15 +133,16 @@ class Omega():
                             if not self.tryHeartbeatBeforeConnect(port, second_baudrate):
                                 self._logger.info("Not the %s baudrate" % second_baudrate)
                                 self.updateUIAll()
+                                raise
                     except:
-                        self._logger.info("Another resource is connected to port")
                         self.updateUIAll()
+                        raise Exception(constants.HEARTBEAT_CONNECT_FAILURE)
             else:
-                self._logger.info("Unable to find port")
                 self.updateUIAll()
+                raise Exception(constants.NO_SERIAL_PORTS_FOUND)
         else:
-            self._logger.info("Already Connected")
             self.updateUIAll()
+            raise Exception(constants.P2_ALREADY_CONNECTED)
 
     def getSecondBaudrate(self, default_baudrate):
         if default_baudrate == 115200:
@@ -169,7 +173,6 @@ class Omega():
             else:
                 time.sleep(0.01)
         if not self.heartbeat:
-            self._logger.info("Palette is not turned on OR this is not the serial port for Palette OR this is the wrong baudrate.")
             self.resetOmega()
             return False
 
@@ -196,7 +199,9 @@ class Omega():
         if self.readThread is None:
             self.readThreadStop = False
             self.readThread = threading.Thread(
-                target=self.omegaReadThread, args=(self.omegaSerial,))
+                target=self.omegaReadThread,
+                args=(self.omegaSerial,)
+            )
             self.readThread.daemon = True
             self.readThread.start()
 
@@ -204,7 +209,9 @@ class Omega():
         if self.writeThread is None:
             self.writeThreadStop = False
             self.writeThread = threading.Thread(
-                target=self.omegaWriteThread, args=(self.omegaSerial,))
+                target=self.omegaWriteThread,
+                args=(self.omegaSerial,)
+            )
             self.writeThread.daemon = True
             self.writeThread.start()
 
@@ -212,7 +219,8 @@ class Omega():
         if self.connectionThread is None:
             self.connectionThreadStop = False
             self.connectionThread = threading.Thread(
-                target=self.omegaConnectionThread)
+                target=self.omegaConnectionThread
+            )
             self.connectionThread.daemon = True
             self.connectionThread.start()
 
