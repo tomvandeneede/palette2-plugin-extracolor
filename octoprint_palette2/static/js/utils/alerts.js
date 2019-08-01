@@ -98,16 +98,12 @@ const Alerts = {
       confirmButtonText: "Send"
     });
   },
-  displayHeartbeatAlert: status => {
-    if (status === "P2NotConnected") {
-      return swal({
-        title: "No response from Palette 2",
-        text: `Please make sure Palette 2 is turned on and try reconnecting to it in the Palette 2 tab before starting another print.`,
-        type: "error"
-      });
-    } else if (status === "P2Responded") {
-      Alerts.palette2PrintStartAlert();
-    }
+  displayHeartbeatAlert: () => {
+    return swal({
+      title: "No response from Palette 2",
+      text: `Please make sure Palette 2 is turned on and try reconnecting to it in the Palette 2 tab before starting another print.`,
+      type: "error"
+    });
   },
   readyToStartAlert: setupAlertSetting => {
     if (setupAlertSetting) {
