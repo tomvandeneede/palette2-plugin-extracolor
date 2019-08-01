@@ -34,7 +34,6 @@ class Omega():
         self._settings = plugin._settings
 
         self.ports = []
-        self.selectedPort = ""
 
         self.writeQueue = Queue()
 
@@ -44,6 +43,11 @@ class Omega():
         # Tries to automatically connect to palette first
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
+
+    def getSelectedPort(self):
+        if self.ports and not self._settings.get(["selectedPort"]):
+            self._settings.set(["selectedPort"], self.ports[0], force=True)
+            self._settings.save(force=True)
 
     def getAllPorts(self):
         baselist = []
@@ -71,12 +75,11 @@ class Omega():
             self._settings.save(force=True)
             self.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
         self.ports = self.getAllPorts()
+        self.getSelectedPort()
         self._logger.info("All ports: %s" % self.ports)
-        if self.ports and not self.selectedPort:
-            self.selectedPort = self.ports[0]
-        self._logger.info("Selected port: %s" % self.selectedPort)
+        self._logger.info("Selected port: %s" % self._settings.get(["selectedPort"]))
         self.updateUI({"command": "ports", "data": self.ports})
-        self.updateUI({"command": "selectedPort", "data": self.selectedPort})
+        self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
 
     def getRealPaths(self, ports):
         self._logger.info("Paths: %s" % ports)
@@ -111,7 +114,8 @@ class Omega():
             self._logger.info("Potential ports: %s" % self.ports)
             if len(self.ports) > 0:
                 if not port:
-                    port = self.ports[0]
+                    self.getSelectedPort()
+                    port = self._settings.get(["selectedPort"])
                 if self.isPrinterPort(port):
                     self._logger.info("This is the printer port. Will not connect to this.")
                     self.updateUIAll()
@@ -156,10 +160,10 @@ class Omega():
             if self.heartbeat:
                 self.connected = True
                 self._logger.info("Connected to Omega")
-                self.selectedPort = port
+                self._settings.set(["selectedPort"], port, force=True)
                 self._settings.set(["baudrate"], baudrate, force=True)
                 self._settings.save(force=True)
-                self.updateUI({"command": "selectedPort", "data": self.selectedPort})
+                self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
                 self.updateUIAll()
                 return True
             else:
@@ -345,7 +349,7 @@ class Omega():
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
             if self.connected is False and not self._printer.is_printing():
-                self.connectOmega(self.selectedPort)
+                self.connectOmega(self._settings.get(["selectedPort"]))
             time.sleep(1)
 
     def enqueueCmd(self, line):
