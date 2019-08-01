@@ -9,7 +9,10 @@ import binascii
 import sys
 import json
 import requests
-from ruamel.yaml import YAML
+try:
+    from ruamel.yaml import YAML
+except ImportError:
+    from ruamel.yaml.main import YAML
 from dotenv import load_dotenv
 yaml = YAML(typ="safe")
 env_path = os.path.abspath(".") + "/.env"
