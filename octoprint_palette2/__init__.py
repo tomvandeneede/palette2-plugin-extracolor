@@ -7,6 +7,7 @@ import flask
 import requests
 import os.path
 from distutils.version import LooseVersion
+from . import constants
 from . import Omega
 from subprocess import call
 
@@ -30,11 +31,15 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             call(["sudo rm -rf /home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"], shell=True)
             call(["sudo chown -R pi:pi /home/pi/OctoPrint/venv/lib/python2.7/site-packages/"], shell=True)
         self.palette = Omega.Omega(self)
+        self.palette.checkForRuamelVersion()
+        self.palette.ports = self.palette.getAllPorts()
+        self.palette.getSelectedPort()
 
     def get_settings_defaults(self):
         return dict(autoconnect=False,
                     palette2Alerts=True,
                     baudrate=115200,
+                    selectedPort=None,
                     advancedOptions=False,
                     feedRateControl=False,
                     feedRateNormalPct=100,
@@ -79,51 +84,53 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             downloadPingHistory=[]
         )
 
-    def on_api_command(self, command, data):
+    def on_api_command(self, command, payload):
         self._logger.info("Got a command %s" % command)
-        if command == "connectOmega":
-            self._logger.info("Command received")
-            self.palette.connectOmega(data["port"])
-        elif command == "disconnectPalette2":
-            self.palette.disconnect()
-        elif command == "sendCutCmd":
-            self.palette.cut()
-        elif command == "clearPalette2":
-            self.palette.clear()
-        elif command == "sendOmegaCmd":
-            self.palette.enqueueCmd(data["cmd"])
-        elif command == "uiUpdate":
-            self.palette.updateUIAll()
-        elif command == "changeAlertSettings":
-            self.palette.changeAlertSettings(data["condition"])
-        elif command == "displayPorts":
-            self.palette.displayPorts(data["condition"])
-        elif command == "sendErrorReport":
-            self.palette.sendErrorReport(data["errorNumber"], data["description"])
-        elif command == "startPrint":
-            self.palette.startPrintFromHub()
-        elif command == "connectWifi":
-            self.palette.connectWifi(data["wifiSSID"], data["wifiPASS"])
-        elif command == "startAutoLoad":
-            self.palette.startAutoLoadThread()
-            self.palette.enqueueCmd("O102 D0")
-        elif command == "changeAutoCancelPing":
-            self.palette.changeAutoCancelPing(data["condition"])
-        elif command == "changeShowPingOnPrinter":
-            self.palette.changeShowPingOnPrinter(data["condition"])
-        elif command == "changeFeedRateControl":
-            self.palette.changeFeedRateControl(data["condition"])
-        elif command == "changeFeedRateNormalPct":
-            self.palette.changeFeedRateNormalPct(data["value"])
-        elif command == "changeFeedRateSlowPct":
-            self.palette.changeFeedRateSlowPct(data["value"])
-        elif command == "downloadPingHistory":
-            return flask.jsonify(response=self.palette.downloadPingHistory())
-        return flask.jsonify(foo="bar")
-
-    def on_api_get(self, request):
-        self._plugin_manager.send_plugin_message(self._identifier, "Omega Message")
-        return flask.jsonify(foo="bar")
+        try:
+            data = None
+            if command == "connectOmega":
+                self.palette.connectOmega(payload["port"])
+            elif command == "disconnectPalette2":
+                self.palette.disconnect()
+            elif command == "sendCutCmd":
+                self.palette.cut()
+            elif command == "clearPalette2":
+                self.palette.clear()
+            elif command == "sendOmegaCmd":
+                self.palette.enqueueCmd(payload["cmd"])
+            elif command == "uiUpdate":
+                self.palette.updateUIAll()
+            elif command == "changeAlertSettings":
+                self.palette.changeAlertSettings(payload["condition"])
+            elif command == "displayPorts":
+                self.palette.displayPorts(payload["condition"])
+            elif command == "sendErrorReport":
+                self.palette.sendErrorReport(payload["errorNumber"], payload["description"])
+            elif command == "startPrint":
+                self.palette.startPrintFromHub()
+            elif command == "connectWifi":
+                self.palette.connectWifi(payload["wifiSSID"], payload["wifiPASS"])
+            elif command == "startAutoLoad":
+                self.palette.startAutoLoadThread()
+                self.palette.enqueueCmd("O102 D0")
+            elif command == "changeAutoCancelPing":
+                self.palette.changeAutoCancelPing(payload["condition"])
+            elif command == "changeShowPingOnPrinter":
+                self.palette.changeShowPingOnPrinter(payload["condition"])
+            elif command == "changeFeedRateControl":
+                self.palette.changeFeedRateControl(payload["condition"])
+            elif command == "changeFeedRateNormalPct":
+                self.palette.changeFeedRateNormalPct(payload["value"])
+            elif command == "changeFeedRateSlowPct":
+                self.palette.changeFeedRateSlowPct(payload["value"])
+            elif command == "downloadPingHistory":
+                data = self.palette.downloadPingHistory()
+            response = "POST request (%s) successful" % command
+            return flask.jsonify(response=response, data=data, status=constants.API_SUCCESS), constants.API_SUCCESS
+        except Exception as e:
+            error = str(e)
+            self._logger.info("Exception message: %s" % str(e))
+            return flask.jsonify(error=error, status=constants.API_FAILURE), constants.API_FAILURE
 
     def on_event(self, event, payload):
         try:

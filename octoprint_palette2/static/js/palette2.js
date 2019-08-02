@@ -134,7 +134,10 @@ function OmegaViewModel(parameters) {
       command: "connectOmega",
       port: self.selectedPort() || ""
     }
-    self.ajaxRequest(payload);
+    self.ajaxRequest(payload).always(value => {
+      self.tryingToConnect = false;
+      UI.loadingOverlay(false);
+    });
   };
 
   self.disconnectPalette2 = () => {
@@ -142,7 +145,9 @@ function OmegaViewModel(parameters) {
     self.connected(false);
     self.removeNotification();
     const payload = { command: "disconnectPalette2" };
-    self.ajaxRequest(payload);
+    self.ajaxRequest(payload).always(value => {
+      UI.loadingOverlay(false);
+    });
   };
 
   self.changeAlertSettings = condition => {
@@ -206,8 +211,8 @@ function OmegaViewModel(parameters) {
   self.downloadPingHistory = (data, event) => {
     event.stopPropagation();
     self.ajaxRequest({ command: "downloadPingHistory" }).then(result => {
-      const filename = result.response.filename;
-      const data = result.response.data;
+      const filename = result.data.filename;
+      const data = result.data.data;
 
       const blob = new Blob([data], { type: "text/plain" });
       if (window.navigator.msSaveOrOpenBlob) {
@@ -415,7 +420,11 @@ function OmegaViewModel(parameters) {
       Alerts.cannotConnectAlert();
     } else if (command === "heartbeat") {
       UI.loadingOverlay(false);
-      Alerts.displayHeartbeatAlert(condition);
+      if (condition === "P2NotConnected") {
+        Alerts.displayHeartbeatAlert();
+      } else if (condition === "P2Responded") {
+        Alerts.palette2PrintStartAlert()
+      }
     } else if (command === "error") {
       Alerts.errorAlert(condition).then(result => {
         // if user clicks yes
@@ -642,18 +651,9 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "totalSplices") {
         self.nSplices(message.data);
       } else if (message.command === "p2Connection") {
-        if (self.tryingToConnect) {
-          UI.loadingOverlay(false);
-        }
         self.connected(message.data);
-        if (self.connected()) {
-          self.tryingToConnect = false;
-        } else {
-          UI.loadingOverlay(false);
-          if (self.tryingToConnect) {
-            self.tryingToConnect = false;
-            self.showAlert("cannotConnect");
-          }
+        if (self.tryingToConnect && !self.connected()) {
+          self.showAlert("cannotConnect");
         }
       } else if (message.command === "filamentLength") {
         self.filaLength(message.data);

@@ -9,7 +9,10 @@ import binascii
 import sys
 import json
 import requests
-from ruamel.yaml import YAML
+try:
+    from ruamel.yaml import YAML
+except ImportError:
+    from ruamel.yaml.main import YAML
 from dotenv import load_dotenv
 yaml = YAML(typ="safe")
 env_path = os.path.abspath(".") + "/.env"
@@ -19,6 +22,7 @@ load_dotenv(env_path)
 BASE_URL_API = os.getenv("DEV_BASE_URL_API", "api.canvas3d.io/")
 from subprocess import call
 from Queue import Queue, Empty
+from . import constants
 
 
 class Omega():
@@ -31,7 +35,6 @@ class Omega():
         self._settings = plugin._settings
 
         self.ports = []
-        self.selectedPort = ""
 
         self.writeQueue = Queue()
 
@@ -41,6 +44,22 @@ class Omega():
         # Tries to automatically connect to palette first
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
+
+    def checkForRuamelVersion(self):
+        paths = [
+            "/home/pi/oprint/lib/python2.7/site-packages/_ruamel_yaml.so",
+            "/home/pi/oprint/lib/python2.7/site-packages/ruamel.yaml.clib-0.1.0-py2.7-nspkg.pth",
+            "/home/pi/oprint/lib/python2.7/site-packages/ruamel.yaml.clib-0.1.0-py2.7.egg-info",
+        ]
+        for path in paths:
+            if os.path.exists(path):
+                self._logger.info("Deleting file/directory")
+                call(["rm -rf %s" % path], shell=True)
+
+    def getSelectedPort(self):
+        if self.ports and not self._settings.get(["selectedPort"]):
+            self._settings.set(["selectedPort"], self.ports[0], force=True)
+            self._settings.save(force=True)
 
     def getAllPorts(self):
         baselist = []
@@ -68,12 +87,13 @@ class Omega():
             self._settings.save(force=True)
             self.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
         self.ports = self.getAllPorts()
+        self.getSelectedPort()
         self._logger.info("All ports: %s" % self.ports)
-        if self.ports and not self.selectedPort:
-            self.selectedPort = self.ports[0]
-        self._logger.info("Selected port: %s" % self.selectedPort)
+        self._logger.info("Selected port: %s" % self._settings.get(["selectedPort"]))
         self.updateUI({"command": "ports", "data": self.ports})
-        self.updateUI({"command": "selectedPort", "data": self.selectedPort})
+        self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
+        if not self.ports:
+            raise Exception(constants.NO_SERIAL_PORTS_FOUND)
 
     def getRealPaths(self, ports):
         self._logger.info("Paths: %s" % ports)
@@ -108,10 +128,11 @@ class Omega():
             self._logger.info("Potential ports: %s" % self.ports)
             if len(self.ports) > 0:
                 if not port:
-                    port = self.ports[0]
+                    self.getSelectedPort()
+                    port = self._settings.get(["selectedPort"])
                 if self.isPrinterPort(port):
-                    self._logger.info("This is the printer port. Will not connect to this.")
                     self.updateUIAll()
+                    raise Exception(constants.PRINTER_ON_CURRENT_PORT)
                 else:
                     default_baudrate = self._settings.get(["baudrate"])
                     second_baudrate = self.getSecondBaudrate(default_baudrate)
@@ -123,15 +144,16 @@ class Omega():
                             if not self.tryHeartbeatBeforeConnect(port, second_baudrate):
                                 self._logger.info("Not the %s baudrate" % second_baudrate)
                                 self.updateUIAll()
+                                raise
                     except:
-                        self._logger.info("Another resource is connected to port")
                         self.updateUIAll()
+                        raise Exception(constants.HEARTBEAT_CONNECT_FAILURE)
             else:
-                self._logger.info("Unable to find port")
                 self.updateUIAll()
+                raise Exception(constants.NO_SERIAL_PORTS_FOUND)
         else:
-            self._logger.info("Already Connected")
             self.updateUIAll()
+            raise Exception(constants.P2_ALREADY_CONNECTED)
 
     def getSecondBaudrate(self, default_baudrate):
         if default_baudrate == 115200:
@@ -153,16 +175,15 @@ class Omega():
             if self.heartbeat:
                 self.connected = True
                 self._logger.info("Connected to Omega")
-                self.selectedPort = port
+                self._settings.set(["selectedPort"], port, force=True)
                 self._settings.set(["baudrate"], baudrate, force=True)
                 self._settings.save(force=True)
-                self.updateUI({"command": "selectedPort", "data": self.selectedPort})
+                self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
                 self.updateUIAll()
                 return True
             else:
                 time.sleep(0.01)
         if not self.heartbeat:
-            self._logger.info("Palette is not turned on OR this is not the serial port for Palette OR this is the wrong baudrate.")
             self.resetOmega()
             return False
 
@@ -189,7 +210,9 @@ class Omega():
         if self.readThread is None:
             self.readThreadStop = False
             self.readThread = threading.Thread(
-                target=self.omegaReadThread, args=(self.omegaSerial,))
+                target=self.omegaReadThread,
+                args=(self.omegaSerial,)
+            )
             self.readThread.daemon = True
             self.readThread.start()
 
@@ -197,7 +220,9 @@ class Omega():
         if self.writeThread is None:
             self.writeThreadStop = False
             self.writeThread = threading.Thread(
-                target=self.omegaWriteThread, args=(self.omegaSerial,))
+                target=self.omegaWriteThread,
+                args=(self.omegaSerial,)
+            )
             self.writeThread.daemon = True
             self.writeThread.start()
 
@@ -205,7 +230,8 @@ class Omega():
         if self.connectionThread is None:
             self.connectionThreadStop = False
             self.connectionThread = threading.Thread(
-                target=self.omegaConnectionThread)
+                target=self.omegaConnectionThread
+            )
             self.connectionThread.daemon = True
             self.connectionThread.start()
 
@@ -342,7 +368,7 @@ class Omega():
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
             if self.connected is False and not self._printer.is_printing():
-                self.connectOmega(self.selectedPort)
+                self.connectOmega(self._settings.get(["selectedPort"]))
             time.sleep(1)
 
     def enqueueCmd(self, line):
