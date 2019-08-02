@@ -31,6 +31,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             call(["sudo rm -rf /home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"], shell=True)
             call(["sudo chown -R pi:pi /home/pi/OctoPrint/venv/lib/python2.7/site-packages/"], shell=True)
         self.palette = Omega.Omega(self)
+        self.palette.checkForRuamelVersion()
         self.palette.ports = self.palette.getAllPorts()
         self.palette.getSelectedPort()
 

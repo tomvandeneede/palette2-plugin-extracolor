@@ -45,6 +45,17 @@ class Omega():
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
 
+    def checkForRuamelVersion(self):
+        paths = [
+            "/home/pi/oprint/lib/python2.7/site-packages/_ruamel_yaml.so",
+            "/home/pi/oprint/lib/python2.7/site-packages/ruamel.yaml.clib-0.1.0-py2.7-nspkg.pth",
+            "/home/pi/oprint/lib/python2.7/site-packages/ruamel.yaml.clib-0.1.0-py2.7.egg-info",
+        ]
+        for path in paths:
+            if os.path.exists(path):
+                self._logger.info("Deleting file/directory")
+                call(["rm -rf %s" % path], shell=True)
+
     def getSelectedPort(self):
         if self.ports and not self._settings.get(["selectedPort"]):
             self._settings.set(["selectedPort"], self.ports[0], force=True)
