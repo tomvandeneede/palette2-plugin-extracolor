@@ -78,7 +78,7 @@ const Alerts = {
   errorAlert: errorNumber => {
     return swal({
       title: `Error ${errorNumber} detected`,
-      text: `An error occured on Palette 2. Your print has been paused. Would you like to send a crash report to Mosaic for investigation?`,
+      text: `An error occurred on Palette 2. Your print has been paused. Would you like to send a crash report to Mosaic for investigation?`,
       confirmButtonText: "Yes",
       showCancelButton: true,
       cancelButtonText: "No",
