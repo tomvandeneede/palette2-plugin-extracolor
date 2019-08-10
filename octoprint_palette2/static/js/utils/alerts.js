@@ -90,7 +90,7 @@ const Alerts = {
     return swal({
       title: "Please provide additional details (OPTIONAL)",
       text:
-        "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occured, etc)",
+        "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occurred, etc)",
       customClass: "error-container",
       input: "textarea",
       inputClass: "error-textarea",
