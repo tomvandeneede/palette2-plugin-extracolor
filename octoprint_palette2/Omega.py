@@ -487,10 +487,10 @@ class Omega():
         self.spliceCounter = 0
 
         self.msfCU = ""
-        self.msfNS = "0"
+        self.msfNS = 0
         self.msfNA = "0"
         self.nAlgorithms = 0
-        self.currentSplice = "0"
+        self.currentSplice = 0
         self.header = [None] * 9
         self.splices = []
         self.algorithms = []
@@ -498,7 +498,7 @@ class Omega():
         self.currentStatus = ""
         self.drivesInUse = []
         self.amountLeftToExtrude = ""
-        self.printPaused = ""
+        self.printPaused = False
         self.firstTime = False
         self.lastCommandSent = ""
         self.currentPingCmd = ""
@@ -536,10 +536,10 @@ class Omega():
         self.spliceCounter = 0
 
         self.msfCU = ""
-        self.msfNS = "0"
+        self.msfNS = 0
         self.msfNA = "0"
         self.nAlgorithms = 0
-        self.currentSplice = "0"
+        self.currentSplice = 0
         self.header = [None] * 9
         self.splices = []
         self.algorithms = []
@@ -547,7 +547,7 @@ class Omega():
         self.currentStatus = ""
         self.drivesInUse = []
         self.amountLeftToExtrude = ""
-        self.printPaused = ""
+        self.printPaused = False
         self.firstTime = False
         self.lastCommandSent = ""
         self.currentPingCmd = ""
