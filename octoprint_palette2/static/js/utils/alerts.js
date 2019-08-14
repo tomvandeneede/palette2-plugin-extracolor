@@ -12,7 +12,7 @@ if (!document.getElementById("sweetalert2-script")) {
   document.head.appendChild(script);
 }
 
-const Alerts = {
+const Palette2Alerts = {
   cannotConnectAlert: () => {
     return swal({
       title: "Could not connect to Palette 2",
