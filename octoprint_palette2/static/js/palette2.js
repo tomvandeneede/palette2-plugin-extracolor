@@ -129,24 +129,24 @@ function OmegaViewModel(parameters) {
 
   self.connectOmega = () => {
     self.tryingToConnect = true;
-    UI.loadingOverlay(true, "connect");
+    Palette2UI.loadingOverlay(true, "connect");
     const payload = {
       command: "connectOmega",
       port: self.selectedPort() || ""
     }
     self.ajaxRequest(payload).always(value => {
       self.tryingToConnect = false;
-      UI.loadingOverlay(false);
+      Palette2UI.loadingOverlay(false);
     });
   };
 
   self.disconnectPalette2 = () => {
-    UI.loadingOverlay(true, "disconnect");
+    Palette2UI.loadingOverlay(true, "disconnect");
     self.connected(false);
     self.removeNotification();
     const payload = { command: "disconnectPalette2" };
     self.ajaxRequest(payload).always(value => {
-      UI.loadingOverlay(false);
+      Palette2UI.loadingOverlay(false);
     });
   };
 
@@ -170,7 +170,7 @@ function OmegaViewModel(parameters) {
   };
 
   self.uiUpdate = () => {
-    console.log("Requesting BE to update UI");
+    console.log("Requesting BE to update Palette2UI");
     const payload = { command: "uiUpdate" };
     self.ajaxRequest(payload);
   };
@@ -297,7 +297,7 @@ function OmegaViewModel(parameters) {
 
   self.fromResponse = () => { };
 
-  /* UI FUNCTIONS */
+  /* Palette2UI FUNCTIONS */
 
   self.checkIfCountdownExists = () => {
     if ($("body").find("#load-filament-notification").length === 0) {
@@ -354,7 +354,7 @@ function OmegaViewModel(parameters) {
 
   self.updateFilamentCountdown = firstValue => {
     if (self.amountLeftToExtrude() < 0) {
-      UI.closeAlert();
+      Palette2UI.closeAlert();
       $(self.notificationId)
         .find(".load-filament-value")
         .addClass("negative-number");
@@ -386,50 +386,50 @@ function OmegaViewModel(parameters) {
       if (self.displaySetupAlerts) {
         const base_url = window.location.origin;
         window.location.href = `${base_url}/#temp`;
-        UI.temperatureHighlight();
-        Alerts.preheatAlert();
+        Palette2UI.temperatureHighlight();
+        Palette2Alerts.preheatAlert();
       }
     } else if (command === "extruder") {
       if (self.displaySetupAlerts) {
         const base_url = window.location.origin;
         window.location.href = `${base_url}/#control`;
-        UI.extrusionHighlight();
-        Alerts.extrusionAlert(self.firstTime);
+        Palette2UI.extrusionHighlight();
+        Palette2Alerts.extrusionAlert(self.firstTime);
       }
     } else if (command === "cancelling") {
       self.removeNotification();
-      Alerts.printCancellingAlert();
+      Palette2Alerts.printCancellingAlert();
     } else if (command === "printStarted") {
       // if user presses start from P2
-      UI.closeAlert();
+      Palette2UI.closeAlert();
     } else if (command === "cancelled") {
       self.removeNotification();
-      Alerts.printCancelledAlert();
+      Palette2Alerts.printCancelledAlert();
     } else if (command === "startPrint") {
       if (self.displaySetupAlerts) {
         $("body").on("click", ".setup-checkbox input", event => {
           self.changeAlertSettings(event.target.checked);
         });
       }
-      Alerts.readyToStartAlert(self.displaySetupAlerts).then(result => {
+      Palette2Alerts.readyToStartAlert(self.displaySetupAlerts).then(result => {
         if (result.hasOwnProperty("value")) {
           self.startPrintFromHub();
         }
       });
     } else if (command === "cannotConnect") {
-      Alerts.cannotConnectAlert();
+      Palette2Alerts.cannotConnectAlert();
     } else if (command === "heartbeat") {
-      UI.loadingOverlay(false);
+      Palette2UI.loadingOverlay(false);
       if (condition === "P2NotConnected") {
-        Alerts.displayHeartbeatAlert();
+        Palette2Alerts.displayHeartbeatAlert();
       } else if (condition === "P2Responded") {
-        Alerts.palette2PrintStartAlert()
+        Palette2Alerts.palette2PrintStartAlert()
       }
     } else if (command === "error") {
-      Alerts.errorAlert(condition).then(result => {
+      Palette2Alerts.errorAlert(condition).then(result => {
         // if user clicks yes
         if (result.value) {
-          Alerts.errorTextAlert().then(result => {
+          Palette2Alerts.errorTextAlert().then(result => {
             if (result.dismiss === Swal.DismissReason.cancel) {
             } else {
               description = "";
@@ -445,13 +445,13 @@ function OmegaViewModel(parameters) {
         }
       });
     } else if (command === "noSerialPorts") {
-      Alerts.noSerialPortsAlert();
+      Palette2Alerts.noSerialPortsAlert();
     } else if (command === "turnOnP2") {
-      Alerts.palette2NotConnectedAlert();
+      Palette2Alerts.palette2NotConnectedAlert();
     } else if (command === "autoLoadIncomplete") {
-      Alerts.autoLoadFailAlert();
+      Palette2Alerts.autoLoadFailAlert();
     } else if (command === "threadError") {
-      Alerts.P2SerialConnectionErrorAlert()
+      Palette2Alerts.P2SerialConnectionErrorAlert()
     }
   };
 
@@ -604,7 +604,7 @@ function OmegaViewModel(parameters) {
 
   self.onEventPrintStarted = payload => {
     if (payload.name.includes(".mcf.gcode") && self.connected()) {
-      UI.loadingOverlay(true, "heartbeat");
+      Palette2UI.loadingOverlay(true, "heartbeat");
     }
   };
 
@@ -661,7 +661,7 @@ function OmegaViewModel(parameters) {
         if (message.data && message.data !== self.currentStatus()) {
           self.currentStatus(message.data);
           if (self.currentStatus() === "Loading filament into extruder") {
-            UI.addNotificationList();
+            Palette2UI.addNotificationList();
             self.checkIfCountdownExists();
           } else if (self.currentStatus() === "Print started: preparing splices") {
             self.removeNotification();
