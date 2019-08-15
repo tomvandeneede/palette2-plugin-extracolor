@@ -12,7 +12,7 @@ if (!document.getElementById("sweetalert2-script")) {
   document.head.appendChild(script);
 }
 
-const Alerts = {
+const Palette2Alerts = {
   cannotConnectAlert: () => {
     return swal({
       title: "Could not connect to Palette 2",
@@ -78,7 +78,7 @@ const Alerts = {
   errorAlert: errorNumber => {
     return swal({
       title: `Error ${errorNumber} detected`,
-      text: `An error occured on Palette 2. Your print has been paused. Would you like to send a crash report to Mosaic for investigation?`,
+      text: `An error occurred on Palette 2. Your print has been paused. Would you like to send a crash report to Mosaic for investigation?`,
       confirmButtonText: "Yes",
       showCancelButton: true,
       cancelButtonText: "No",
@@ -90,7 +90,7 @@ const Alerts = {
     return swal({
       title: "Please provide additional details (OPTIONAL)",
       text:
-        "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occured, etc)",
+        "(E.g: what part of the print you were at, what is displayed on your Palette 2 screen, is this the first time this has occurred, etc)",
       customClass: "error-container",
       input: "textarea",
       inputClass: "error-textarea",

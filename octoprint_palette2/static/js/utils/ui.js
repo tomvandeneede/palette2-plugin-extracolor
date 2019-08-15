@@ -6,7 +6,7 @@ if (!document.getElementById("material-icons")) {
   document.head.appendChild(link);
 }
 
-const UI = {
+const Palette2UI = {
   /* LOADER */
   loadingOverlay: (condition, status) => {
     if (condition) {
