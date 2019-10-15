@@ -1208,7 +1208,7 @@ class Omega():
             error = int(command["params"][0][1:], 16)
             self._logger.info("ERROR %d DETECTED" % error)
             if os.path.isdir(os.path.expanduser('~') + "/.mosaicdata/"):
-                self._printer.pause_print()
+                self._printer.cancel_print()
                 self.updateUI({"command": "error", "data": error})
         except:
             self._logger.info("Error command invalid: %s" % command)
