@@ -35,6 +35,8 @@ class Omega():
         self._settings = plugin._settings
 
         self.ports = []
+        self.ledThread = None
+        self.isHubS = self.determineHubVersion()
 
         self.writeQueue = Queue()
 
@@ -44,6 +46,19 @@ class Omega():
         # Tries to automatically connect to palette first
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
+
+    def determineHubVersion(self):
+        hub_file_path = os.path.expanduser('~') + "/.mosaicdata/canvas-hub-data.yml"
+
+        if os.path.exists(hub_file_path):
+            hub_data = open(hub_file_path, "r")
+            hub_yaml = yaml.load(hub_data)
+            hub_data.close()
+
+            hub_rank = hub_yaml["versions"]["global"]
+            if hub_rank == "0.2.0":
+                return True
+        return False
 
     def checkForRuamelVersion(self):
         paths = [
@@ -371,6 +386,45 @@ class Omega():
                 self.connectOmega(self._settings.get(["selectedPort"]))
             time.sleep(1)
 
+    def startLedThread(self):
+        if self.isHubS:
+            if self.ledThread is not None:
+                self.stopLedThread()
+            self._logger.info("Starting Led Thread")
+            self.ledThreadStop = False
+            self.ledThread = threading.Thread(target=self.omegaLedThread)
+            self.ledThread.daemon = True
+            self.ledThread.start()
+
+    def stopLedThread(self):
+        if self.isHubS:
+            self.ledThreadStop = True
+            if self.ledThread and threading.current_thread() != self.ledThread:
+                self.ledThread.join()
+            self.ledThread = None
+
+    def omegaLedThread(self):
+        palette_flag_path = "/home/pi/.mosaicdata/palette_flag"
+        printer_flag_path = "/home/pi/.mosaicdata/printer_flag"
+        try:
+            while not self.ledThreadStop:
+                if self.connected:
+                    if not os.path.exists(palette_flag_path):
+                        call(["touch %s" % palette_flag_path], shell=True)
+                else:
+                    if os.path.exists(palette_flag_path):
+                        call(["rm %s" % palette_flag_path], shell=True)
+                if self._printer.get_state_id() in ["OPERATIONAL", "PRINTING", "PAUSED"]:
+                    if not os.path.exists(printer_flag_path):
+                        call(["touch %s" % printer_flag_path], shell=True)
+                else:
+                    if os.path.exists(printer_flag_path):
+                        call(["rm %s" % printer_flag_path], shell=True)
+                time.sleep(2)
+        except Exception as e:
+                self._logger.info("Palette 2 Led Thread Error")
+                self._logger.info(e)
+
     def enqueueCmd(self, line):
         self.writeQueue.put(line)
 
@@ -575,6 +629,7 @@ class Omega():
     def shutdown(self):
         self._logger.info("Shutdown")
         self.disconnect()
+        self.stopLedThread()
 
     def disconnect(self):
         self._logger.info("Disconnecting from Palette")
