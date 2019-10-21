@@ -304,7 +304,8 @@ class Omega():
                 if line:
                     command = self.parseLine(line)
                     if command != None:
-                        self._logger.info("Omega: read in line: %s" % line.strip())
+                        if command["command"] not in [99, 101]:
+                            self._logger.info("Omega: read in line: %s" % line.strip())
                         if command["command"] == 20:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D5":
@@ -378,7 +379,6 @@ class Omega():
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D0":
                                     self.handleSmartLoadRequest()
-
             except Exception as e:
                 # Something went wrong with the connection to Palette2
                 self._logger.info("Palette 2 Read Thread error")
@@ -398,11 +398,9 @@ class Omega():
                     self.lastCommandSent = line
                     line = line.strip()
                     line = line + "\n"
-                    self._logger.info("Omega Write Thread: Sending: %s" % line)
+                    if "O99" not in line and "O101" not in line and "\n" not in line:
+                        self._logger.info("Omega Write Thread: Sending: %s" % line.strip())
                     serialConnection.write(line.encode())
-                    self._logger.info(line.encode())
-                    if "O99" in line:
-                        self._logger.info("O99 sent to P2")
                 else:
                     self._logger.info("Line is NONE")
             except Empty:
