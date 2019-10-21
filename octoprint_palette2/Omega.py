@@ -219,6 +219,7 @@ class Omega():
                 self._settings.set(["selectedPort"], port, force=True)
                 self._settings.set(["baudrate"], baudrate, force=True)
                 self._settings.save(force=True)
+                self.startHeartbeatThread()
                 self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
                 self.updateUIAll()
                 return True
@@ -370,6 +371,9 @@ class Omega():
                                         self.handleFilamentOutgoingTube()
                         elif command["command"] == 100:
                             self.handlePauseRequest()
+                        elif command["command"] == 101:
+                            self.heartbeatReceived = True
+                            self.heartbeatSent = False
                         elif command["command"] == 102:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D0":
@@ -453,6 +457,41 @@ class Omega():
                 time.sleep(2)
         except Exception as e:
                 self._logger.info("Palette 2 Led Thread Error")
+                self._logger.info(e)
+
+    def startHeartbeatThread(self):
+        if self.heartbeatThread is not None:
+            self.stopHeartbeatThread()
+        self._logger.info("Starting Heartbeat Thread")
+        self.heartbeatThreadStop = False
+        self.heartbeatSent = False
+        self.heartbeatReceived = False
+        self.heartbeatThread = threading.Thread(target=self.omegaHeartbeatThread)
+        self.heartbeatThread.daemon = True
+        self.heartbeatThread.start()
+
+    def stopHeartbeatThread(self):
+        self.heartbeatThreadStop = True
+        if self.heartbeatThread and threading.current_thread() != self.heartbeatThread:
+            self.heartbeatThread.join()
+        self.heartbeatThread = None
+
+    def omegaHeartbeatThread(self):
+        try:
+            while not self.heartbeatThreadStop:
+                if self.heartbeatSent and not self.heartbeatReceived:
+                    self._logger.info("Did not receive heartbeat response")
+                    break
+                self.heartbeatSent = True
+                self.heartbeatReceived = False
+                if not self.palette2SetupStarted and not self.actualPrintStarted:
+                    self.enqueueCmd("O99")
+                else:
+                    self.enqueueCmd("O101")
+                time.sleep(2)
+            self.disconnect()
+        except Exception as e:
+                self._logger.info("Palette 2 Heartbeat Thread Error")
                 self._logger.info(e)
 
     def enqueueCmd(self, line):
@@ -549,6 +588,7 @@ class Omega():
         self.stopReadThread()
         self.stopWriteThread()
         self.stopAutoLoadThread()
+        self.stopHeartbeatThread()
         if not self._settings.get(["autoconnect"]):
             self.stopConnectionThread()
 
@@ -596,6 +636,8 @@ class Omega():
         self.printHeartbeatCheck = ""
         self.cancelFromHub = False
         self.cancelFromP2 = False
+        self.heartbeatSent = False
+        self.heartbeatReceived = False
 
         self.filename = ""
 
@@ -604,6 +646,7 @@ class Omega():
         self.writeThread = None
         self.readThreadError = None
         self.connectionThread = None
+        self.heartbeatThread = None
         self.connectionStop = False
         self.heartbeat = False
 
@@ -645,6 +688,8 @@ class Omega():
         self.printHeartbeatCheck = ""
         self.cancelFromHub = False
         self.cancelFromP2 = False
+        self.heartbeatSent = False
+        self.heartbeatReceived = False
 
         self.filename = ""
 
@@ -754,6 +799,8 @@ class Omega():
                 self.enqueueCmd(cmd)
                 self.currentStatus = "Initializing ..."
                 self.palette2SetupStarted = True
+                if self.heartbeatSent:
+                    self.heartbeatReceived = True
                 self.printHeartbeatCheck = "P2Responded"
                 self.printPaused = True
                 self.updateUI({"command": "currentStatus", "data": self.currentStatus})
@@ -926,6 +973,8 @@ class Omega():
         # otherwise, is this line the heartbeat response?
         elif line == "Connection Okay":
             self.heartbeat = True
+            self.heartbeatReceived = True
+            self.heartbeatSent = False
             return None
         else:
             # Invalid first character (IFC). Don't need to do anything, but log out for potential troubleshooting.
