@@ -219,7 +219,7 @@ class Omega():
                 self._settings.set(["selectedPort"], port, force=True)
                 self._settings.set(["baudrate"], baudrate, force=True)
                 self._settings.save(force=True)
-                self.startHeartbeatThread()
+                self.enqueueCmd("O50")
                 self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
                 self.updateUIAll()
                 return True
@@ -327,7 +327,12 @@ class Omega():
                         elif command["command"] == 40:
                             self.handleResumeRequest()
                         elif command["command"] == 50:
-                            self.sendAllMCFFilenamesToOmega()
+                            if command["total_params"] > 0:
+                                firmware_version = command["params"][0]
+                                if firmware_version >= "7.0.6":
+                                    self.startHeartbeatThread()
+                            else:
+                                self.sendAllMCFFilenamesToOmega()
                         elif command["command"] == 53:
                             if command["total_params"] > 1:
                                 if command["params"][0] == "D1":
