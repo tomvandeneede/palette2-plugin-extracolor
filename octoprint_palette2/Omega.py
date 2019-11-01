@@ -488,6 +488,7 @@ class Omega():
         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
         self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
         self.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])}, True)
+        self.updateUI({"command": "ports", "data": self.getAllPorts()}, True)
         self.advanced_updateUI()
 
 

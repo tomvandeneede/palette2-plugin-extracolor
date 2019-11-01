@@ -124,6 +124,11 @@ function OmegaViewModel(parameters) {
     };
     self.ajaxRequest(payload).then(() => {
       self.settings.requestData();
+      if (condition === "closing") {
+        $(".serial-ports-list").hide(125);
+      } else if (condition === "opening") {
+        $(".serial-ports-list").toggle(125);
+      }
     });
   };
 
@@ -637,10 +642,8 @@ function OmegaViewModel(parameters) {
         allPorts = message.data;
         if (allPorts.length === 0) {
           self.showAlert("noSerialPorts");
-          $(".serial-ports-list").hide(125);
         } else {
           self.ports(allPorts);
-          $(".serial-ports-list").toggle(125);
         }
       } else if (message.command === "currentSplice") {
         self.currentSplice(message.data);
@@ -650,6 +653,9 @@ function OmegaViewModel(parameters) {
         self.nSplices(message.data);
       } else if (message.command === "p2Connection") {
         self.connected(message.data);
+        if (self.connected() && !$(".serial-ports-list").is(":visible")) {
+          $(".serial-ports-list").show(125);
+        }
         if (self.tryingToConnect && !self.connected()) {
           self.showAlert("cannotConnect");
         }
