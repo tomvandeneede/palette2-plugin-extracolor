@@ -35,6 +35,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         self.palette.checkForRuamelVersion()
         self.palette.ports = self.palette.getAllPorts()
         self.palette.getSelectedPort()
+        self.palette.updateHubSLedScript()
 
     def get_settings_defaults(self):
         return dict(autoconnect=False,
