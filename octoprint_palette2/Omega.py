@@ -47,6 +47,21 @@ class Omega():
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
 
+    def checkLedScriptFlag(self):
+        led_script_flag = "/home/pi/.mosaicdata/led_flag"
+        return os.path.isfile(led_script_flag)
+
+    def updateHubSLedScript(self):
+        if self.isHubS and not self.checkLedScriptFlag():
+            self._logger.info("Updating LED script")
+            updated_script_path = "/home/pi/OctoPrint/venv/lib/python2.7/site-packages/octoprint_palette2/led.py"
+            led_script_path = "/home/pi/led.py"
+            call(["cp %s %s" % (updated_script_path, led_script_path)], shell=True)
+
+            script_flag_path = "/home/pi/.mosaicdata/led_flag"
+            call(["touch %s" % script_flag_path], shell=True)
+            self._logger.info("LED script updated. Please restart the CANVAS Hub S")
+
     def determineHubVersion(self):
         hub_file_path = os.path.expanduser('~') + "/.mosaicdata/canvas-hub-data.yml"
 
