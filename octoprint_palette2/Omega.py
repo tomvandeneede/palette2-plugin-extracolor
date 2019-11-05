@@ -153,7 +153,11 @@ class Omega():
                 # if manual port given, try that first
                 if port:
                     self._logger.info("Attempting manually selected port")
-                    self.attemptSerialConnection(port)
+                    if not self.isPrinterPort(port):
+                        self.attemptSerialConnection(port)
+                    else:
+                        self.updateUIAll()
+                        raise Exception(constants.PRINTER_ON_CURRENT_PORT)
                 else:
                     # try the last successfully connected port first, if any
                     lastConnectedP2Port = self._settings.get(["selectedPort"])
@@ -189,9 +193,7 @@ class Omega():
                     break
             except Exception as e:
                 self._logger.info(e)
-        if self.connected:
-            return True
-        return False
+        return self.connected
 
     def getSecondBaudrate(self, default_baudrate):
         if default_baudrate == 115200:
@@ -217,6 +219,7 @@ class Omega():
                 self._settings.set(["selectedPort"], port, force=True)
                 self._settings.set(["baudrate"], baudrate, force=True)
                 self._settings.save(force=True)
+                self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
                 self.updateUIAll()
                 return True
             else:
