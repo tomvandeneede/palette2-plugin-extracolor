@@ -10,7 +10,6 @@ function OmegaViewModel(parameters) {
   /* GLOBAL VARIABLES */
   self.notificationId = "";
   self.displaySetupAlerts = true;
-  self.tryingToConnect = false;
   self.firstTime = false;
   self.actualPrintStarted = false;
   self.autoconnect = ko.observable(false);
@@ -122,26 +121,36 @@ function OmegaViewModel(parameters) {
       command: "displayPorts",
       condition: condition
     };
-    self.ajaxRequest(payload).then(() => {
+    self.ajaxRequest(payload).done(() => {
       self.settings.requestData();
       if (condition === "closing") {
         $(".serial-ports-list").hide(125);
       } else if (condition === "opening") {
         $(".serial-ports-list").toggle(125);
       }
+    }).always(() => {
+      if (self.ports().length === 0) {
+        $(".serial-ports-list").hide(125);
+        self.showAlert("noSerialPorts");
+      }
     });
   };
 
   self.connectOmega = () => {
-    self.tryingToConnect = true;
     Palette2UI.loadingOverlay(true, "connect");
     const condition = $(".serial-ports-list").is(":visible");
     const payload = {
       command: "connectOmega",
       port: condition ? self.selectedPort() || "" : ""
     }
-    self.ajaxRequest(payload).always(value => {
-      self.tryingToConnect = false;
+    self.ajaxRequest(payload).fail(() => {
+      if (self.ports().length === 0) {
+        $(".serial-ports-list").hide(125);
+        self.showAlert("noSerialPorts");
+      } else {
+        self.showAlert("cannotConnect");
+      }
+    }).always(value => {
       Palette2UI.loadingOverlay(false);
     });
   };
@@ -639,12 +648,7 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "selectedPort") {
         self.selectedPort(message.data);
       } else if (message.command === "ports") {
-        allPorts = message.data;
-        if (allPorts.length === 0) {
-          self.showAlert("noSerialPorts");
-        } else {
-          self.ports(allPorts);
-        }
+        self.ports(message.data)
       } else if (message.command === "currentSplice") {
         self.currentSplice(message.data);
       } else if (message.command === "displaySetupAlerts") {
@@ -655,9 +659,6 @@ function OmegaViewModel(parameters) {
         self.connected(message.data);
         if (self.connected() && !$(".serial-ports-list").is(":visible")) {
           $(".serial-ports-list").show(125);
-        }
-        if (self.tryingToConnect && !self.connected()) {
-          self.showAlert("cannotConnect");
         }
       } else if (message.command === "filamentLength") {
         self.filaLength(message.data);
