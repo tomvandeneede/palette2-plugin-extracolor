@@ -329,7 +329,7 @@ class Omega():
                         elif command["command"] == 50:
                             if command["total_params"] > 0:
                                 firmware_version = command["params"][0]
-                                if firmware_version >= "7.0.6":
+                                if firmware_version >= "8.2.8":
                                     self.startHeartbeatThread()
                             else:
                                 self.sendAllMCFFilenamesToOmega()
