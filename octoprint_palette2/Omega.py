@@ -86,11 +86,6 @@ class Omega():
                 self._logger.info("Deleting file/directory")
                 call(["rm -rf %s" % path], shell=True)
 
-    def getSelectedPort(self):
-        if self.ports and not self._settings.get(["selectedPort"]):
-            self._settings.set(["selectedPort"], self.ports[0], force=True)
-            self._settings.save(force=True)
-
     def getAllPorts(self):
         baselist = []
 
@@ -117,7 +112,6 @@ class Omega():
             self._settings.save(force=True)
             self.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
         self.ports = self.getAllPorts()
-        self.getSelectedPort()
         self._logger.info("All ports: %s" % self.ports)
         self._logger.info("Selected port: %s" % self._settings.get(["selectedPort"]))
         self.updateUI({"command": "ports", "data": self.ports})
@@ -135,7 +129,6 @@ class Omega():
     def isPrinterPort(self, selected_port):
         selected_port = os.path.realpath(selected_port)
         printer_port = self._printer.get_current_connection()[1]
-        self._logger.info("Trying port: %s" % selected_port)
         self._logger.info("Printer port: %s" % printer_port)
         # because ports usually have a second available one (.tty or .cu)
         printer_port_alt = ""
@@ -157,33 +150,50 @@ class Omega():
             self.ports = self.getAllPorts()
             self._logger.info("Potential ports: %s" % self.ports)
             if len(self.ports) > 0:
-                if not port:
-                    self.getSelectedPort()
-                    port = self._settings.get(["selectedPort"])
-                if self.isPrinterPort(port):
-                    self.updateUIAll()
-                    raise Exception(constants.PRINTER_ON_CURRENT_PORT)
-                else:
-                    default_baudrate = self._settings.get(["baudrate"])
-                    second_baudrate = self.getSecondBaudrate(default_baudrate)
-                    try:
-                        self.omegaSerial = serial.Serial(port, default_baudrate, timeout=0.5)
-                        if not self.tryHeartbeatBeforeConnect(port, default_baudrate):
-                            self._logger.info("Not the %s baudrate" % default_baudrate)
-                            self.omegaSerial = serial.Serial(port, second_baudrate, timeout=0.5)
-                            if not self.tryHeartbeatBeforeConnect(port, second_baudrate):
-                                self._logger.info("Not the %s baudrate" % second_baudrate)
-                                self.updateUIAll()
-                                raise
-                    except:
+                # if manual port given, try that first
+                if port:
+                    self._logger.info("Attempting manually selected port")
+                    if not self.isPrinterPort(port):
+                        self.attemptSerialConnection(port)
+                    else:
                         self.updateUIAll()
-                        raise Exception(constants.HEARTBEAT_CONNECT_FAILURE)
+                        raise Exception(constants.PRINTER_ON_CURRENT_PORT)
+                else:
+                    # try the last successfully connected port first, if any
+                    lastConnectedP2Port = self._settings.get(["selectedPort"])
+                    if lastConnectedP2Port:
+                        self._logger.info("Attempting last successfully connected port")
+                        self.attemptSerialConnection(lastConnectedP2Port)
+
+                    # loop through all ports
+                    for serialPort in self.ports:
+                        if self.isPrinterPort(serialPort) or lastConnectedP2Port:
+                            continue
+                        if self.attemptSerialConnection(serialPort):
+                            break
+                if not self.connected:
+                    self._settings.set(["selectedPort"], None, force=True)
+                    self._settings.save(force=True)
+                    self.updateUIAll()
+                    raise Exception(constants.HEARTBEAT_CONNECT_FAILURE)
             else:
                 self.updateUIAll()
                 raise Exception(constants.NO_SERIAL_PORTS_FOUND)
         else:
             self.updateUIAll()
             raise Exception(constants.P2_ALREADY_CONNECTED)
+
+    def attemptSerialConnection(self, port):
+        default_baudrate = self._settings.get(["baudrate"])
+        second_baudrate = self.getSecondBaudrate(default_baudrate)
+        baudrates = [default_baudrate, second_baudrate]
+        for baudrate in baudrates:
+            try:
+                if self.tryHeartbeatBeforeConnect(port, baudrate):
+                    break
+            except Exception as e:
+                self._logger.info(e)
+        return self.connected
 
     def getSecondBaudrate(self, default_baudrate):
         if default_baudrate == 115200:
@@ -192,11 +202,12 @@ class Omega():
             return 115200
 
     def tryHeartbeatBeforeConnect(self, port, baudrate):
-        self._logger.info("Trying baudrate: %s" % baudrate)
+        self._logger.info("Trying: port (%s) and baudrate (%s)" %(port, baudrate))
+        self.omegaSerial = serial.Serial(port, baudrate, timeout=0.5)
         self.startReadThread()
         self.startWriteThread()
         self.enqueueCmd("\n")
-        self.enqueueCmd("O99")
+        self.enqueueCmd("O99") # heartbeat
 
         timeout = 3
         timeout_start = time.time()
@@ -215,6 +226,7 @@ class Omega():
                 time.sleep(0.01)
         if not self.heartbeat:
             self.resetOmega()
+            self._logger.info("Not the %s baudrate" % baudrate)
             return False
 
     def tryHeartbeatBeforePrint(self):
@@ -398,7 +410,10 @@ class Omega():
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
             if self.connected is False and not self._printer.is_printing():
-                self.connectOmega(self._settings.get(["selectedPort"]))
+                try:
+                    self.connectOmega("")
+                except Exception as e:
+                    self._logger.info(e)
             time.sleep(1)
 
     def startLedThread(self):
@@ -476,6 +491,7 @@ class Omega():
         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
         self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
         self.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])}, True)
+        self.updateUI({"command": "ports", "data": self.getAllPorts()}, True)
         self.advanced_updateUI()
 
 

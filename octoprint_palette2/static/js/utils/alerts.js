@@ -16,7 +16,7 @@ const Palette2Alerts = {
   cannotConnectAlert: () => {
     return swal({
       title: "Could not connect to Palette 2",
-      text: `Please make sure Palette 2 is turned on and that the selected port corresponds to it. Please wait 5 seconds before trying again.`,
+      text: `Please make sure Palette 2 is turned on and try manual port selection if problems persist. Please wait 5 seconds before trying again.`,
       type: "error"
     });
   },
