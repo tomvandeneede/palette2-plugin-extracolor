@@ -328,7 +328,7 @@ class Omega():
                             self.handleResumeRequest()
                         elif command["command"] == 50:
                             if command["total_params"] > 0:
-                                firmware_version = command["params"][0]
+                                firmware_version = command["params"][0].replace("D","")
                                 if firmware_version >= "9.0.9":
                                     self.startHeartbeatThread()
                             else:
@@ -482,18 +482,15 @@ class Omega():
     def omegaHeartbeatThread(self):
         try:
             while not self.heartbeatThreadStop:
-                if self.heartbeatSent and not self.heartbeatReceived:
-                    self._logger.info("Did not receive heartbeat response")
-                    break
-                self.heartbeatSent = True
-                self.heartbeatReceived = False
                 if not self.palette2SetupStarted and not self.actualPrintStarted:
+                    if self.heartbeatSent and not self.heartbeatReceived:
+                        self._logger.info("Did not receive heartbeat response")
+                        self.disconnect()
+                        break
+                    self.heartbeatSent = True
+                    self.heartbeatReceived = False
                     self.enqueueCmd("O99")
-                else:
-                    self.enqueueCmd("O101")
                 time.sleep(2)
-            self._printer.cancel_print()
-            self.disconnect()
         except Exception as e:
                 self._logger.info("Palette 2 Heartbeat Thread Error")
                 self._logger.info(e)
