@@ -492,6 +492,7 @@ class Omega():
                 else:
                     self.enqueueCmd("O101")
                 time.sleep(2)
+            self._printer.cancel_print()
             self.disconnect()
         except Exception as e:
                 self._logger.info("Palette 2 Heartbeat Thread Error")
