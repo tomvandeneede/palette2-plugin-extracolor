@@ -1,6 +1,6 @@
 # PALETTE 2 PLUGIN
 
-This OctoPrint plugin enables connection and communication between OctoPrint and your [Palette 2](https://www.mosaicmfg.com/products/palette-2).
+This OctoPrint plugin enables connection and communication between OctoPrint and your [Palette 2 products](https://www.mosaicmfg.com/pages/products). Palette 2 products include Palette 2S and Palette 2S Pro, Palette 2, and Palette 2 Pro.
 
 ## Installing
 
@@ -35,6 +35,8 @@ On your OctoPrint server, manually install this plugin via the Plugin Manager us
 [Mosaic Manufacturing Ltd.](https://www.mosaicmfg.com/)
 
 [Tim Brookman](https://gitlab.com/skellatore) - Minor Modifications
+
+[Clifford Roche](https://gitlab.com/clifford.roche) - Minor Modifications
 
 ## License
 

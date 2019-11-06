@@ -35,6 +35,8 @@ class Omega():
         self._settings = plugin._settings
 
         self.ports = []
+        self.ledThread = None
+        self.isHubS = self.determineHubVersion()
 
         self.writeQueue = Queue()
 
@@ -44,6 +46,34 @@ class Omega():
         # Tries to automatically connect to palette first
         if self._settings.get(["autoconnect"]):
             self.startConnectionThread()
+
+    def checkLedScriptFlag(self):
+        led_script_flag = "/home/pi/.mosaicdata/led_flag"
+        return os.path.isfile(led_script_flag)
+
+    def updateHubSLedScript(self):
+        if self.isHubS and not self.checkLedScriptFlag():
+            self._logger.info("Updating LED script")
+            updated_script_path = "/home/pi/OctoPrint/venv/lib/python2.7/site-packages/octoprint_palette2/led.py"
+            led_script_path = "/home/pi/led.py"
+            call(["cp %s %s" % (updated_script_path, led_script_path)], shell=True)
+
+            script_flag_path = "/home/pi/.mosaicdata/led_flag"
+            call(["touch %s" % script_flag_path], shell=True)
+            self._logger.info("LED script updated. Please restart the CANVAS Hub S")
+
+    def determineHubVersion(self):
+        hub_file_path = os.path.expanduser('~') + "/.mosaicdata/canvas-hub-data.yml"
+
+        if os.path.exists(hub_file_path):
+            hub_data = open(hub_file_path, "r")
+            hub_yaml = yaml.load(hub_data)
+            hub_data.close()
+
+            hub_rank = hub_yaml["versions"]["global"]
+            if hub_rank == "0.2.0":
+                return True
+        return False
 
     def checkForRuamelVersion(self):
         paths = [
@@ -55,11 +85,6 @@ class Omega():
             if os.path.exists(path):
                 self._logger.info("Deleting file/directory")
                 call(["rm -rf %s" % path], shell=True)
-
-    def getSelectedPort(self):
-        if self.ports and not self._settings.get(["selectedPort"]):
-            self._settings.set(["selectedPort"], self.ports[0], force=True)
-            self._settings.save(force=True)
 
     def getAllPorts(self):
         baselist = []
@@ -87,7 +112,6 @@ class Omega():
             self._settings.save(force=True)
             self.updateUI({"command": "autoConnect", "data": self._settings.get(["autoconnect"])})
         self.ports = self.getAllPorts()
-        self.getSelectedPort()
         self._logger.info("All ports: %s" % self.ports)
         self._logger.info("Selected port: %s" % self._settings.get(["selectedPort"]))
         self.updateUI({"command": "ports", "data": self.ports})
@@ -105,7 +129,6 @@ class Omega():
     def isPrinterPort(self, selected_port):
         selected_port = os.path.realpath(selected_port)
         printer_port = self._printer.get_current_connection()[1]
-        self._logger.info("Trying port: %s" % selected_port)
         self._logger.info("Printer port: %s" % printer_port)
         # because ports usually have a second available one (.tty or .cu)
         printer_port_alt = ""
@@ -127,33 +150,50 @@ class Omega():
             self.ports = self.getAllPorts()
             self._logger.info("Potential ports: %s" % self.ports)
             if len(self.ports) > 0:
-                if not port:
-                    self.getSelectedPort()
-                    port = self._settings.get(["selectedPort"])
-                if self.isPrinterPort(port):
-                    self.updateUIAll()
-                    raise Exception(constants.PRINTER_ON_CURRENT_PORT)
-                else:
-                    default_baudrate = self._settings.get(["baudrate"])
-                    second_baudrate = self.getSecondBaudrate(default_baudrate)
-                    try:
-                        self.omegaSerial = serial.Serial(port, default_baudrate, timeout=0.5)
-                        if not self.tryHeartbeatBeforeConnect(port, default_baudrate):
-                            self._logger.info("Not the %s baudrate" % default_baudrate)
-                            self.omegaSerial = serial.Serial(port, second_baudrate, timeout=0.5)
-                            if not self.tryHeartbeatBeforeConnect(port, second_baudrate):
-                                self._logger.info("Not the %s baudrate" % second_baudrate)
-                                self.updateUIAll()
-                                raise
-                    except:
+                # if manual port given, try that first
+                if port:
+                    self._logger.info("Attempting manually selected port")
+                    if not self.isPrinterPort(port):
+                        self.attemptSerialConnection(port)
+                    else:
                         self.updateUIAll()
-                        raise Exception(constants.HEARTBEAT_CONNECT_FAILURE)
+                        raise Exception(constants.PRINTER_ON_CURRENT_PORT)
+                else:
+                    # try the last successfully connected port first, if any
+                    lastConnectedP2Port = self._settings.get(["selectedPort"])
+                    if lastConnectedP2Port:
+                        self._logger.info("Attempting last successfully connected port")
+                        self.attemptSerialConnection(lastConnectedP2Port)
+
+                    # loop through all ports
+                    for serialPort in self.ports:
+                        if self.isPrinterPort(serialPort) or lastConnectedP2Port:
+                            continue
+                        if self.attemptSerialConnection(serialPort):
+                            break
+                if not self.connected:
+                    self._settings.set(["selectedPort"], None, force=True)
+                    self._settings.save(force=True)
+                    self.updateUIAll()
+                    raise Exception(constants.HEARTBEAT_CONNECT_FAILURE)
             else:
                 self.updateUIAll()
                 raise Exception(constants.NO_SERIAL_PORTS_FOUND)
         else:
             self.updateUIAll()
             raise Exception(constants.P2_ALREADY_CONNECTED)
+
+    def attemptSerialConnection(self, port):
+        default_baudrate = self._settings.get(["baudrate"])
+        second_baudrate = self.getSecondBaudrate(default_baudrate)
+        baudrates = [default_baudrate, second_baudrate]
+        for baudrate in baudrates:
+            try:
+                if self.tryHeartbeatBeforeConnect(port, baudrate):
+                    break
+            except Exception as e:
+                self._logger.info(e)
+        return self.connected
 
     def getSecondBaudrate(self, default_baudrate):
         if default_baudrate == 115200:
@@ -162,11 +202,12 @@ class Omega():
             return 115200
 
     def tryHeartbeatBeforeConnect(self, port, baudrate):
-        self._logger.info("Trying baudrate: %s" % baudrate)
+        self._logger.info("Trying: port (%s) and baudrate (%s)" %(port, baudrate))
+        self.omegaSerial = serial.Serial(port, baudrate, timeout=0.5)
         self.startReadThread()
         self.startWriteThread()
         self.enqueueCmd("\n")
-        self.enqueueCmd("O99")
+        self.enqueueCmd("O99") # heartbeat
 
         timeout = 3
         timeout_start = time.time()
@@ -178,6 +219,7 @@ class Omega():
                 self._settings.set(["selectedPort"], port, force=True)
                 self._settings.set(["baudrate"], baudrate, force=True)
                 self._settings.save(force=True)
+                self.enqueueCmd("O50")
                 self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
                 self.updateUIAll()
                 return True
@@ -185,6 +227,7 @@ class Omega():
                 time.sleep(0.01)
         if not self.heartbeat:
             self.resetOmega()
+            self._logger.info("Not the %s baudrate" % baudrate)
             return False
 
     def tryHeartbeatBeforePrint(self):
@@ -261,7 +304,8 @@ class Omega():
                 if line:
                     command = self.parseLine(line)
                     if command != None:
-                        self._logger.info("Omega: read in line: %s" % line.strip())
+                        if command["command"] not in [99, 101]:
+                            self._logger.info("Omega: read in line: %s" % line.strip())
                         if command["command"] == 20:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D5":
@@ -283,7 +327,12 @@ class Omega():
                         elif command["command"] == 40:
                             self.handleResumeRequest()
                         elif command["command"] == 50:
-                            self.sendAllMCFFilenamesToOmega()
+                            if command["total_params"] > 0:
+                                firmware_version = command["params"][0].replace("D","")
+                                if firmware_version >= "9.0.9":
+                                    self.startHeartbeatThread()
+                            else:
+                                self.sendAllMCFFilenamesToOmega()
                         elif command["command"] == 53:
                             if command["total_params"] > 1:
                                 if command["params"][0] == "D1":
@@ -328,11 +377,13 @@ class Omega():
                                         self.handleFilamentOutgoingTube()
                         elif command["command"] == 100:
                             self.handlePauseRequest()
+                        elif command["command"] == 101:
+                            self.heartbeatReceived = True
+                            self.heartbeatSent = False
                         elif command["command"] == 102:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D0":
                                     self.handleSmartLoadRequest()
-
             except Exception as e:
                 # Something went wrong with the connection to Palette2
                 self._logger.info("Palette 2 Read Thread error")
@@ -352,11 +403,9 @@ class Omega():
                     self.lastCommandSent = line
                     line = line.strip()
                     line = line + "\n"
-                    self._logger.info("Omega Write Thread: Sending: %s" % line)
+                    if "O99" not in line and "O101" not in line and "\n" not in line:
+                        self._logger.info("Omega Write Thread: Sending: %s" % line.strip())
                     serialConnection.write(line.encode())
-                    self._logger.info(line.encode())
-                    if "O99" in line:
-                        self._logger.info("O99 sent to P2")
                 else:
                     self._logger.info("Line is NONE")
             except Empty:
@@ -368,8 +417,83 @@ class Omega():
     def omegaConnectionThread(self):
         while self.connectionThreadStop is False:
             if self.connected is False and not self._printer.is_printing():
-                self.connectOmega(self._settings.get(["selectedPort"]))
+                try:
+                    self.connectOmega("")
+                except Exception as e:
+                    self._logger.info(e)
             time.sleep(1)
+
+    def startLedThread(self):
+        if self.isHubS:
+            if self.ledThread is not None:
+                self.stopLedThread()
+            self._logger.info("Starting Led Thread")
+            self.ledThreadStop = False
+            self.ledThread = threading.Thread(target=self.omegaLedThread)
+            self.ledThread.daemon = True
+            self.ledThread.start()
+
+    def stopLedThread(self):
+        if self.isHubS:
+            self.ledThreadStop = True
+            if self.ledThread and threading.current_thread() != self.ledThread:
+                self.ledThread.join()
+            self.ledThread = None
+
+    def omegaLedThread(self):
+        palette_flag_path = "/home/pi/.mosaicdata/palette_flag"
+        printer_flag_path = "/home/pi/.mosaicdata/printer_flag"
+        try:
+            while not self.ledThreadStop:
+                if self.connected:
+                    if not os.path.exists(palette_flag_path):
+                        call(["touch %s" % palette_flag_path], shell=True)
+                else:
+                    if os.path.exists(palette_flag_path):
+                        call(["rm %s" % palette_flag_path], shell=True)
+                if self._printer.get_state_id() in ["OPERATIONAL", "PRINTING", "PAUSED"]:
+                    if not os.path.exists(printer_flag_path):
+                        call(["touch %s" % printer_flag_path], shell=True)
+                else:
+                    if os.path.exists(printer_flag_path):
+                        call(["rm %s" % printer_flag_path], shell=True)
+                time.sleep(2)
+        except Exception as e:
+                self._logger.info("Palette 2 Led Thread Error")
+                self._logger.info(e)
+
+    def startHeartbeatThread(self):
+        if self.heartbeatThread is not None:
+            self.stopHeartbeatThread()
+        self._logger.info("Starting Heartbeat Thread")
+        self.heartbeatThreadStop = False
+        self.heartbeatSent = False
+        self.heartbeatReceived = False
+        self.heartbeatThread = threading.Thread(target=self.omegaHeartbeatThread)
+        self.heartbeatThread.daemon = True
+        self.heartbeatThread.start()
+
+    def stopHeartbeatThread(self):
+        self.heartbeatThreadStop = True
+        if self.heartbeatThread and threading.current_thread() != self.heartbeatThread:
+            self.heartbeatThread.join()
+        self.heartbeatThread = None
+
+    def omegaHeartbeatThread(self):
+        try:
+            while not self.heartbeatThreadStop:
+                if not self.palette2SetupStarted and not self.actualPrintStarted:
+                    if self.heartbeatSent and not self.heartbeatReceived:
+                        self._logger.info("Did not receive heartbeat response")
+                        self.disconnect()
+                        break
+                    self.heartbeatSent = True
+                    self.heartbeatReceived = False
+                    self.enqueueCmd("O99")
+                time.sleep(2)
+        except Exception as e:
+                self._logger.info("Palette 2 Heartbeat Thread Error")
+                self._logger.info(e)
 
     def enqueueCmd(self, line):
         self.writeQueue.put(line)
@@ -407,6 +531,7 @@ class Omega():
         self.updateUI({"command": "amountLeftToExtrude", "data": self.amountLeftToExtrude}, True)
         self.updateUI({"command": "printPaused", "data": self._printer.is_paused()}, True)
         self.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])}, True)
+        self.updateUI({"command": "ports", "data": self.getAllPorts()}, True)
         self.advanced_updateUI()
 
 
@@ -464,6 +589,7 @@ class Omega():
         self.stopReadThread()
         self.stopWriteThread()
         self.stopAutoLoadThread()
+        self.stopHeartbeatThread()
         if not self._settings.get(["autoconnect"]):
             self.stopConnectionThread()
 
@@ -511,6 +637,8 @@ class Omega():
         self.printHeartbeatCheck = ""
         self.cancelFromHub = False
         self.cancelFromP2 = False
+        self.heartbeatSent = False
+        self.heartbeatReceived = False
 
         self.filename = ""
 
@@ -519,6 +647,7 @@ class Omega():
         self.writeThread = None
         self.readThreadError = None
         self.connectionThread = None
+        self.heartbeatThread = None
         self.connectionStop = False
         self.heartbeat = False
 
@@ -560,6 +689,8 @@ class Omega():
         self.printHeartbeatCheck = ""
         self.cancelFromHub = False
         self.cancelFromP2 = False
+        self.heartbeatSent = False
+        self.heartbeatReceived = False
 
         self.filename = ""
 
@@ -575,6 +706,7 @@ class Omega():
     def shutdown(self):
         self._logger.info("Shutdown")
         self.disconnect()
+        self.stopLedThread()
 
     def disconnect(self):
         self._logger.info("Disconnecting from Palette")
@@ -668,6 +800,8 @@ class Omega():
                 self.enqueueCmd(cmd)
                 self.currentStatus = "Initializing ..."
                 self.palette2SetupStarted = True
+                if self.heartbeatSent:
+                    self.heartbeatReceived = True
                 self.printHeartbeatCheck = "P2Responded"
                 self.printPaused = True
                 self.updateUI({"command": "currentStatus", "data": self.currentStatus})
@@ -840,6 +974,8 @@ class Omega():
         # otherwise, is this line the heartbeat response?
         elif line == "Connection Okay":
             self.heartbeat = True
+            self.heartbeatReceived = True
+            self.heartbeatSent = False
             return None
         else:
             # Invalid first character (IFC). Don't need to do anything, but log out for potential troubleshooting.
@@ -1208,7 +1344,7 @@ class Omega():
             error = int(command["params"][0][1:], 16)
             self._logger.info("ERROR %d DETECTED" % error)
             if os.path.isdir(os.path.expanduser('~') + "/.mosaicdata/"):
-                self._printer.pause_print()
+                self._printer.cancel_print()
                 self.updateUI({"command": "error", "data": error})
         except:
             self._logger.info("Error command invalid: %s" % command)

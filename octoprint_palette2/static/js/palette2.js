@@ -10,10 +10,9 @@ function OmegaViewModel(parameters) {
   /* GLOBAL VARIABLES */
   self.notificationId = "";
   self.displaySetupAlerts = true;
-  self.tryingToConnect = false;
   self.firstTime = false;
   self.actualPrintStarted = false;
-  self.autoconnect = false;
+  self.autoconnect = ko.observable(false);
 
   /* KNOCKOUT DATA-BINDINGS */
   self.omegaCommand = ko.observable();
@@ -41,7 +40,7 @@ function OmegaViewModel(parameters) {
     if (self.connected()) {
       return "Connected";
     } else {
-      return self.autoconnect ? "Not Connected - Trying To Connect..." : "Not Connected";
+      return self.autoconnect() ? "Not Connected - Trying To Connect..." : "Not Connected";
     }
   });
   self.filaLength = ko.observable();
@@ -122,20 +121,36 @@ function OmegaViewModel(parameters) {
       command: "displayPorts",
       condition: condition
     };
-    self.ajaxRequest(payload).then(() => {
+    self.ajaxRequest(payload).done(() => {
       self.settings.requestData();
+      if (condition === "closing") {
+        $(".serial-ports-list").hide(125);
+      } else if (condition === "opening") {
+        $(".serial-ports-list").toggle(125);
+      }
+    }).always(() => {
+      if (self.ports().length === 0) {
+        $(".serial-ports-list").hide(125);
+        self.showAlert("noSerialPorts");
+      }
     });
   };
 
   self.connectOmega = () => {
-    self.tryingToConnect = true;
     Palette2UI.loadingOverlay(true, "connect");
+    const condition = $(".serial-ports-list").is(":visible");
     const payload = {
       command: "connectOmega",
-      port: self.selectedPort() || ""
+      port: condition ? self.selectedPort() || "" : ""
     }
-    self.ajaxRequest(payload).always(value => {
-      self.tryingToConnect = false;
+    self.ajaxRequest(payload).fail(() => {
+      if (self.ports().length === 0) {
+        $(".serial-ports-list").hide(125);
+        self.showAlert("noSerialPorts");
+      } else {
+        self.showAlert("cannotConnect");
+      }
+    }).always(value => {
       Palette2UI.loadingOverlay(false);
     });
   };
@@ -631,19 +646,9 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "pongs") {
         self.pongs(message.data.reverse());
       } else if (message.command === "selectedPort") {
-        selectedPort = message.data;
-        if (selectedPort) {
-          self.selectedPort(selectedPort);
-        }
+        self.selectedPort(message.data);
       } else if (message.command === "ports") {
-        allPorts = message.data;
-        if (allPorts.length === 0) {
-          self.showAlert("noSerialPorts");
-          $(".serial-ports-list").hide(125);
-        } else {
-          self.ports(allPorts);
-          $(".serial-ports-list").toggle(125);
-        }
+        self.ports(message.data)
       } else if (message.command === "currentSplice") {
         self.currentSplice(message.data);
       } else if (message.command === "displaySetupAlerts") {
@@ -652,8 +657,8 @@ function OmegaViewModel(parameters) {
         self.nSplices(message.data);
       } else if (message.command === "p2Connection") {
         self.connected(message.data);
-        if (self.tryingToConnect && !self.connected()) {
-          self.showAlert("cannotConnect");
+        if (self.connected() && !$(".serial-ports-list").is(":visible")) {
+          $(".serial-ports-list").show(125);
         }
       } else if (message.command === "filamentLength") {
         self.filaLength(message.data);
@@ -683,7 +688,7 @@ function OmegaViewModel(parameters) {
       } else if (message.command === "firstTime") {
         self.firstTime = message.data;
       } else if (message.command === "autoConnect") {
-        self.autoconnect = message.data;
+        self.autoconnect(message.data);
       } else if (message.command === "palette2SetupStarted") {
         self.palette2SetupStarted(message.data);
       } else if (message.command === "actualPrintStarted") {
