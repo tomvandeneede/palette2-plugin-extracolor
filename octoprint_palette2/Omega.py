@@ -481,14 +481,15 @@ class Omega():
 
     def omegaHeartbeatThread(self):
         try:
-            while not self.heartbeatThreadStop and not self.palette2SetupStarted and not self.actualPrintStarted:
-                if self.heartbeatSent and not self.heartbeatReceived:
-                    self._logger.info("Did not receive heartbeat response")
-                    self.disconnect()
-                    break
-                self.heartbeatSent = True
-                self.heartbeatReceived = False
-                self.enqueueCmd("O99")
+            while not self.heartbeatThreadStop:
+                if not self.palette2SetupStarted and not self.actualPrintStarted:
+                    if self.heartbeatSent and not self.heartbeatReceived:
+                        self._logger.info("Did not receive heartbeat response")
+                        self.disconnect()
+                        break
+                    self.heartbeatSent = True
+                    self.heartbeatReceived = False
+                    self.enqueueCmd("O99")
                 time.sleep(2)
         except Exception as e:
                 self._logger.info("Palette 2 Heartbeat Thread Error")
