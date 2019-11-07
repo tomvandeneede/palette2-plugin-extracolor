@@ -36,7 +36,7 @@ class Omega():
 
         self.ports = []
         self.ledThread = None
-        self.isHubS = self.determineHubVersion()
+        self.isHubS = False
 
         self.writeQueue = Queue()
 
