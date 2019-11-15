@@ -1041,7 +1041,7 @@ class Omega():
         self.feedRateControl = self._settings.get(["feedRateControl"])
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
-        self.autoCancelPing = self._settings.get(["autoCancelPing"])
+        self.autoVariationCancelPing = self._settings.get(["autoVariationCancelPing"])
         self.showPingOnPrinter = self._settings.get(["showPingOnPrinter"])
         self.advanced_reset_print_values()
 
@@ -1053,7 +1053,7 @@ class Omega():
     def advanced_updateUI(self):
         self._logger.info("ADVANCED UPDATE UI")
         try:
-            self.updateUI({"command": "advanced", "subCommand": "autoCancelPing", "data": self._settings.get(["autoCancelPing"])}, True)
+            self.updateUI({"command": "advanced", "subCommand": "autoVariationCancelPing", "data": self._settings.get(["autoVariationCancelPing"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "showPingOnPrinter", "data": self._settings.get(["showPingOnPrinter"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateControl", "data": self._settings.get(["feedRateControl"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowed", "data": self.feedRateSlowed}, True)
@@ -1063,12 +1063,12 @@ class Omega():
         except Exception as e:
             self._logger.info(e)
 
-    def changeAutoCancelPing(self, condition):
+    def changeAutoVariationCancelPing(self, condition):
         try:
-            self._settings.set(["autoCancelPing"], condition, force=True)
+            self._settings.set(["autoVariationCancelPing"], condition, force=True)
             self._settings.save(force=True)
-            self._logger.info("ADVANCED: autoCancelPing -> '%s' '%s'" % (condition, self._settings.get(["autoCancelPing"])))
-            self.autoCancelPing = self._settings.get(["autoCancelPing"])
+            self._logger.info("ADVANCED: autoVariationCancelPing -> '%s' '%s'" % (condition, self._settings.get(["autoVariationCancelPing"])))
+            self.autoVariationCancelPing = self._settings.get(["autoVariationCancelPing"])
         except Exception as e:
             self._logger.info(e)
 
@@ -1157,7 +1157,7 @@ class Omega():
 
 
     def advanced_update_variables(self):
-        self.autoCancelPing = self._settings.get(["autoCancelPing"])
+        self.autoVariationCancelPing = self._settings.get(["autoVariationCancelPing"])
         self.showPingOnPrinter = self._settings.get(["showPingOnPrinter"])
         self.feedRateControl = self._settings.get(["feedRateControl"])
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
@@ -1314,7 +1314,7 @@ class Omega():
         self.pings.append(current)
         self.updateUI({"command": "pings", "data": self.pings})
         self.sendPingToPrinter(current["number"], current["percent"])
-        if self.autoCancelPing:
+        if self.autoVariationCancelPing:
             self.cancel()
 
     def handleFirstTimePrint(self):

@@ -46,7 +46,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                     feedRateControl=False,
                     feedRateNormalPct=100,
                     feedRateSlowPct=75,
-                    autoCancelPing=False,
+                    autoVariationCancelPing=False,
                     showPingOnPrinter=False
                     )
 
@@ -76,7 +76,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             displayPorts=["condition"],
             sendErrorReport=["errorNumber", "description"],
             startPrint=[],
-            changeAutoCancelPing=["condition"],
+            changeAutoVariationCancelPing=["condition"],
             changeShowPingOnPrinter=["condition"],
             changeFeedRateControl=["condition"],
             changeFeedRateSlowed=["condition"],
@@ -115,8 +115,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             elif command == "startAutoLoad":
                 self.palette.startAutoLoadThread()
                 self.palette.enqueueCmd("O102 D0")
-            elif command == "changeAutoCancelPing":
-                self.palette.changeAutoCancelPing(payload["condition"])
+            elif command == "changeAutoVariationCancelPing":
+                self.palette.changeAutoVariationCancelPing(payload["condition"])
             elif command == "changeShowPingOnPrinter":
                 self.palette.changeShowPingOnPrinter(payload["condition"])
             elif command == "changeFeedRateControl":
@@ -178,7 +178,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
                 self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])})
                 if not self._settings.get(["advancedOptions"]):
-                    self.palette.changeAutoCancelPing(False)
+                    self.palette.changeAutoVariationCancelPing(False)
                     self.palette.changeShowPingOnPrinter(False)
                     self.palette.changeFeedRateControl(False)
                 self.palette.advanced_update_variables()

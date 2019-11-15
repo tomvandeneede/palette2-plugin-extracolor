@@ -87,7 +87,7 @@ function OmegaViewModel(parameters) {
     return self.pongsDisplay()[0] ? self.pongsDisplay()[0].percent : "%";
   });
 
-  self.autoCancelPing = ko.observable(true);
+  self.autoVariationCancelPing = ko.observable(true);
   self.showPingOnPrinter = ko.observable(true);
   self.feedRateControl = ko.observable(true);
   self.feedRateSlowed = ko.observable(false);
@@ -251,8 +251,8 @@ function OmegaViewModel(parameters) {
   self.feedRateControl.subscribe(function () {
     self.ajaxRequest({ command: "changeFeedRateControl", condition: self.feedRateControl() });
   });
-  self.autoCancelPing.subscribe(function () {
-    self.ajaxRequest({ command: "changeAutoCancelPing", condition: self.autoCancelPing() });
+  self.autoVariationCancelPing.subscribe(function () {
+    self.ajaxRequest({ command: "changeautoVariationCancelPing", condition: self.autoVariationCancelPing() });
   });
   self.showPingOnPrinter.subscribe(function () {
     self.ajaxRequest({ command: "changeShowPingOnPrinter", condition: self.showPingOnPrinter() });
@@ -285,8 +285,8 @@ function OmegaViewModel(parameters) {
       case "feedRateSlowed":
         self.feedRateSlowed(data);
         break;
-      case "autoCancelPing":
-        self.autoCancelPing(data);
+      case "autoVariationCancelPing":
+        self.autoVariationCancelPing(data);
         break;
       case "showPingOnPrinter":
         self.showPingOnPrinter(data);

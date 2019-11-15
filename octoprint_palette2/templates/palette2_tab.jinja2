@@ -81,16 +81,16 @@
 			<div class="row advanced_options" data-bind="visible: connected() && advancedOptions()">
 				<h4>Advanced Options</h4>
 				<ul class="list-advanced-options">
-						<li class="single-advanced-option ping-auto-cancel">
+						<li class="single-advanced-option ping-variation-cancel">
 							<div class="input-container">
-								<label for="ping-auto-cancel-input"><span>Enable Cancel Print On Missed Ping:</span></label>
+								<label for="ping-variation-cancel-input"><span>Enable Cancel Print On Last Ping Variation:</span></label>
 								<div class="interaction-container">
-									<input class="single-advanced-option-input" id="ping-auto-cancel-input" type="checkbox" data-bind="checked: autoCancelPing">
+									<input class="single-advanced-option-input" id="ping-variation-cancel-input" type="checkbox" data-bind="checked: autoVariationCancelPing">
 									<div class="advanced-info-container">
 										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
-										<div class="advanced-info-text" id="ping-auto-cancel-text">
-											<h6 class="advanced-info-heading">Automatically cancel print when ping is missed</h6>
-											<div class="advanced-info-body"><p>By enabling this option, your Hub will cancel the print when it detects a missed ping from Palette 2. A missed ping may be an indication of jammed/broken filament or of something wrong with your printer.<br><br><span class="contributors">Special thank you to <a target="_blank" href="https://gitlab.com/clifford.roche">Clifford Roche</a>.</span></p></div>
+										<div class="advanced-info-text" id="ping-variation-cancel-text">
+											<h6 class="advanced-info-heading">Automatically cancel print when ping variation is too high</h6>
+											<div class="advanced-info-body"><p>By enabling this option, your Hub will cancel the print when it detects a ping that has varied beyond your acceptable variation range from the last ping. A large variation may be an indication of jammed/broken filament or of something wrong with your printer.<br><br><span class="contributors">Special thank you to <a target="_blank" href="https://gitlab.com/clifford.roche">Clifford Roche</a>.</span></p></div>
 										</div>
 									</div>
 								</div>
