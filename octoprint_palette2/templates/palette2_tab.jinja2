@@ -83,7 +83,7 @@
 				<ul class="list-advanced-options">
 						<li class="single-advanced-option ping-variation-cancel">
 							<div class="input-container">
-								<label for="ping-variation-cancel-input"><span>Enable Cancel Print On Last Ping Variation:</span></label>
+								<label for="ping-variation-cancel-input"><span>Enable Cancel Print On Ping Variation:</span></label>
 								<div class="interaction-container">
 									<input class="single-advanced-option-input" id="ping-variation-cancel-input" type="checkbox" data-bind="checked: autoVariationCancelPing">
 									<div class="advanced-info-container">
@@ -92,6 +92,26 @@
 											<h6 class="advanced-info-heading">Automatically cancel print when ping variation is too high</h6>
 											<div class="advanced-info-body"><p>By enabling this option, your Hub will cancel the print when it detects a ping that has varied beyond your acceptable variation range from the last ping. A large variation may be an indication of jammed/broken filament or of something wrong with your printer.<br><br><span class="contributors">Special thank you to <a target="_blank" href="https://gitlab.com/clifford.roche">Clifford Roche</a>.</span></p></div>
 										</div>
+									</div>
+								</div>
+							</div>
+								<div class="variation-inputs-options additional-options" data-bind="visible: autoVariationCancelPing">
+								<div class="variation-inputs">
+									<div class="input-container">
+											<label for="upper-variation-input"><span>Max Upper Variation:</span></label>
+											<div class="input-append">
+												<input id="upper-variation-input" class="input-mini" type="number" min="1" max="100" data-bind="value: upperVariationPct, enable: autoVariationCancelPing">
+												<span class="add-on">%</span>
+											</div>
+									</div>
+									<div class="input-container">
+										<label for="lower-variation-input"><span>Max Lower Variation:</span></label>
+										<label>
+												<div class="input-append">
+													<input id="lower-variation-input" class="input-mini" type="number" min="1" max="100" data-bind="value: lowerVariationPct, enable: autoVariationCancelPing">
+													<span class="add-on">%</span>
+												</div>
+										</label>
 									</div>
 								</div>
 							</div>

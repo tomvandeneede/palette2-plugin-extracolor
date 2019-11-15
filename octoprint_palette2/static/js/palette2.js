@@ -88,6 +88,8 @@ function OmegaViewModel(parameters) {
   });
 
   self.autoVariationCancelPing = ko.observable(true);
+  self.upperVariationPct = ko.observable(3);
+  self.lowerVariationPct = ko.observable(3);
   self.showPingOnPrinter = ko.observable(true);
   self.feedRateControl = ko.observable(true);
   self.feedRateSlowed = ko.observable(false);
@@ -263,6 +265,12 @@ function OmegaViewModel(parameters) {
   self.feedRateSlowPct.subscribe(function () {
     self.ajaxRequest({ command: "changeFeedRateSlowPct", value: self.feedRateSlowPct() });
   });
+  self.upperVariationPct.subscribe(function () {
+    self.ajaxRequest({ command: "changeUpperVariationPct", value: self.upperVariationPct() });
+  });
+  self.lowerVariationPct.subscribe(function () {
+    self.ajaxRequest({ command: "changeUpperVariationPct", value: self.lowerVariationPct() });
+  });
 
   self.ajaxRequest = payload => {
     return $.ajax({
@@ -287,6 +295,12 @@ function OmegaViewModel(parameters) {
         break;
       case "autoVariationCancelPing":
         self.autoVariationCancelPing(data);
+        break;
+      case "upperVariationPct":
+        self.upperVariationPct(data);
+        break;
+      case "lowerVariationPct":
+        self.lowerVariationPct(data);
         break;
       case "showPingOnPrinter":
         self.showPingOnPrinter(data);
