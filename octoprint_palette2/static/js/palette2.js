@@ -236,13 +236,6 @@ function OmegaViewModel(parameters) {
     self.ajaxRequest(payload);
   };
 
-  self.feedRateControl.subscribe(function () {
-    const payload = {
-      command: "changeFeedRateControl",
-      condition: self.feedRateControl()
-    };
-    self.ajaxRequest(payload);
-  });
   self.autoVariationCancelPing.subscribe(function () {
     const payload = {
       command: "changeAutoVariationCancelPing",
@@ -250,10 +243,24 @@ function OmegaViewModel(parameters) {
     };
     self.ajaxRequest(payload);
   });
+  self.variationPct.subscribe(function () {
+    const payload = {
+      command: "changeVariationPct",
+      value: self.variationPct()
+    }
+    self.ajaxRequest(payload);
+  });
   self.showPingOnPrinter.subscribe(function () {
     const payload = {
       command: "changeShowPingOnPrinter",
       condition: self.showPingOnPrinter()
+    };
+    self.ajaxRequest(payload);
+  });
+  self.feedRateControl.subscribe(function () {
+    const payload = {
+      command: "changeFeedRateControl",
+      condition: self.feedRateControl()
     };
     self.ajaxRequest(payload);
   });
@@ -270,9 +277,6 @@ function OmegaViewModel(parameters) {
       value: self.feedRateSlowPct()
     };
     self.ajaxRequest(payload);
-  });
-  self.variationPct.subscribe(function () {
-    self.ajaxRequest({ command: "changeVariationPct", value: self.variationPct() });
   });
 
   self.ajaxRequest = payload => {
