@@ -110,7 +110,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.startPrintFromHub()
             elif command == "startAutoLoad":
                 self.palette.startAutoLoadThread()
-                self.palette.enqueueCmd("O102 D0")
+                self.palette.enqueueCmd(constants.COMMANDS.SMART_LOAD_START)
             elif command == "changeAutoVariationCancelPing":
                 self.palette.changeAutoVariationCancelPing(payload["condition"])
             elif command == "changeVariationPct":
@@ -193,7 +193,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode=None, tags=None):
         if cmd is not None and len(cmd) > 1:
             # pings in GCODE
-            if "O31" in cmd:
+            if constants.COMMANDS.PING in cmd:
                 self.palette.savePing(cmd.strip())
                 return "G4 P10",
             # header information
