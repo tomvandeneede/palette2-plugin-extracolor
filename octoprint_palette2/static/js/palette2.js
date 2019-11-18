@@ -12,12 +12,9 @@ function OmegaViewModel(parameters) {
   self.displaySetupAlerts = true;
   self.firstTime = false;
   self.actualPrintStarted = false;
-  self.autoconnect = ko.observable(false);
 
   /* KNOCKOUT DATA-BINDINGS */
-  self.omegaCommand = ko.observable();
-  self.omegaPort = ko.observable();
-
+  self.autoconnect = ko.observable(false);
   self.currentSplice = ko.observable();
   self.nSplices = ko.observable();
   self.totalSplicesDisplay = ko.computed(function () {
