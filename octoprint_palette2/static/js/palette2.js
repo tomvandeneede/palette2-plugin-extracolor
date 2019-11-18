@@ -52,16 +52,12 @@ function OmegaViewModel(parameters) {
   self.selectedPort = ko.observable();
   self.pings = ko.observableArray([]);
   self.pingsDisplay = ko.computed(function () {
-    if (self.pings()) {
-      return self.pings().map(ping => {
-        if (ping.percent !== "MISSED") {
-          ping.percent = ping.percent + "%";
-        }
-        return ping;
-      });
-    } else {
-      return [];
-    }
+    return self.pings().map(ping => {
+      return {
+        number: ping.number,
+        percent: ping.percent !== "MISSED" ? `${ping.percent}%` : 'MISSED',
+      };
+    });
   });
   self.latestPing = ko.computed(function () {
     return self.pingsDisplay()[0] ? self.pingsDisplay()[0].number : 0;
@@ -90,10 +86,11 @@ function OmegaViewModel(parameters) {
   self.autoVariationCancelPing = ko.observable(true);
   self.variationPct = ko.observable(3);
   self.variationPctStatus = ko.computed(function () {
-    if (self.latestPing()) {
-      const upperBound = self.latestPing() + self.variationPct();
-      const lowerBound = self.latestPing() - self.variationPct();
-      return `A ping variation greater than ${upperBound}% or lower than ${lowerBound}% will automatically cancel your print`;
+    if (self.pings().length > 0) {
+      const variation = Number(self.variationPct());
+      const upperBound = self.pings()[0].percent + variation;
+      const lowerBound = self.pings()[0].percent - variation;
+      return `An upcoming ping greater than ${upperBound}% or lower than ${lowerBound}% will cancel your print`;
     } else {
       return `No pings detected yet. Waiting for first ping...`
     }
