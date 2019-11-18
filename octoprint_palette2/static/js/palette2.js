@@ -62,14 +62,12 @@ function OmegaViewModel(parameters) {
   });
   self.pongs = ko.observableArray([]);
   self.pongsDisplay = ko.computed(function () {
-    if (self.pongs()) {
-      return self.pongs().map(pong => {
-        pong.percent = pong.percent + "%";
-        return pong;
-      });
-    } else {
-      return [];
-    }
+    return self.pongs().map(pong => {
+      return {
+        number: pong.number,
+        percent: `${pong.percent}%`,
+      };
+    });
   });
   self.latestPong = ko.computed(function () {
     return self.pongsDisplay()[0] ? self.pongsDisplay()[0].number : 0;
@@ -78,8 +76,9 @@ function OmegaViewModel(parameters) {
     return self.pongsDisplay()[0] ? self.pongsDisplay()[0].percent : "%";
   });
 
+  // Advanced options observables
   self.autoVariationCancelPing = ko.observable(true);
-  self.variationPct = ko.observable(3);
+  self.variationPct = ko.observable(8);
   self.variationPctStatus = ko.computed(function () {
     if (self.pings().length > 0) {
       const variation = Number(self.variationPct());
@@ -117,19 +116,6 @@ function OmegaViewModel(parameters) {
       return "No loading offset detected";
     }
   });
-
-  // Advanced options observables
-  self.autoCancelPing = ko.observable(true);
-  self.showPingOnPrinter = ko.observable(true);
-  self.feedRateControl = ko.observable(true);
-  self.feedRateSlowed = ko.observable(false);
-  self.feedRateSlowedText = ko.computed(function () {
-    return self.feedRateSlowed() && self.printerState.isPrinting() ? "Yes" : "No";
-  });
-  self.feedRateNormalPct = ko.observable(100);
-  self.feedRateSlowPct = ko.observable(50);
-  self.feedRateStatus = ko.observable("Awaiting Update...");
-  self.advancedOptions = ko.observable();
 
   /* COMMUNICATION TO BACK-END FUNCTIONS */
   self.displayPorts = () => {
