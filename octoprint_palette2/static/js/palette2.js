@@ -180,14 +180,6 @@ function OmegaViewModel(parameters) {
     });
   };
 
-  self.sendOmegaCmd = (command) => {
-    const payload = {
-      command: "sendOmegaCmd",
-      cmd: command,
-    };
-    self.ajaxRequest(payload);
-  };
-
   self.uiUpdate = () => {
     console.log("Requesting BE to update Palette2UI");
     const payload = { command: "uiUpdate" };

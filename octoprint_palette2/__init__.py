@@ -70,7 +70,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             connectOmega=["port"],
             disconnectPalette2=[],
             sendCutCmd=[],
-            sendOmegaCmd=["cmd"],
             uiUpdate=[],
             changeAlertSettings=["condition"],
             displayPorts=["condition"],
@@ -99,8 +98,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.cut()
             elif command == "clearPalette2":
                 self.palette.clear()
-            elif command == "sendOmegaCmd":
-                self.palette.enqueueCmd(payload["cmd"])
             elif command == "uiUpdate":
                 self.palette.updateUIAll()
             elif command == "changeAlertSettings":
