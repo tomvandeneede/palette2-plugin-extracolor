@@ -1312,7 +1312,7 @@ class Omega():
 
     def handlePing(self, command):
         try:
-            percent = int(command["params"][1][1:])
+            percent = float(command["params"][1][1:])
             number = int(command["params"][2][1:], 16) + self.missedPings
             current = {"number": number, "percent": percent}
             self.pings.append(current)
@@ -1324,7 +1324,7 @@ class Omega():
 
     def handlePong(self, command):
         try:
-            percent = int(command["params"][1][1:])
+            percent = float(command["params"][1][1:])
             number = int(command["params"][2][1:], 16)
             current = {"number": number, "percent": percent}
             self.pongs.append(current)
