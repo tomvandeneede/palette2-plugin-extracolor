@@ -1333,14 +1333,14 @@ class Omega():
             self._logger.info("Pong number invalid: %s" % command)
 
     def handleRejectedPing(self):
+        # as of P2 FW version 9.0.9, pings are no longer "rejected"
+        # this method will be kept for backwards compatibility purposes
         self._logger.info("REJECTING PING")
         self.missedPings = self.missedPings + 1
         current = {"number": len(self.pings) + 1, "percent": "MISSED"}
         self.pings.append(current)
         self.updateUI({"command": "pings", "data": self.pings})
         self.sendPingToPrinter(current["number"], current["percent"])
-        if self.autoVariationCancelPing:
-            self.cancel()
 
     def handleFirstTimePrint(self):
         self._logger.info("FIRST TIME USE WITH PALETTE")
