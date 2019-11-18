@@ -1311,19 +1311,20 @@ class Omega():
                 self._logger.info("Splices being prepared.")
 
     def handlePing(self, command):
-        percent = command["params"][1][1:]
         try:
+            percent = int(command["params"][1][1:])
             number = int(command["params"][2][1:], 16) + self.missedPings
             current = {"number": number, "percent": percent}
             self.pings.append(current)
             self.updateUI({"command": "pings", "data": self.pings})
             self.sendPingToPrinter(number, percent)
+            self.handlePingVariation()
         except:
             self._logger.info("Ping number invalid: %s" % command)
 
     def handlePong(self, command):
-        percent = command["params"][1][1:]
         try:
+            percent = int(command["params"][1][1:])
             number = int(command["params"][2][1:], 16)
             current = {"number": number, "percent": percent}
             self.pongs.append(current)
@@ -1461,3 +1462,15 @@ class Omega():
     def handleSmartLoadRequest(self):
         if not self.isAutoLoading:
             self.startAutoLoadThread()
+
+    def handlePingVariation(self):
+        if self.autoVariationCancelPing and len(self.pings) > 1:
+            try:
+                currentPing = self.pings[-1].percent
+                pingBefore = self.pings[-2].percent
+                variation = abs(currentPing - pingBefore)
+                if variation > self.variationPct:
+                    self._logger.info("%s is significantly greater than %s. Cancelling print" % (currentPing, pingBefore))
+                    self.cancel()
+            except Exception as e:
+                self._logger.info(e)
