@@ -847,13 +847,6 @@ class Omega():
                 else:
                     cumulative_folder_name = file
                 self.allMCFFiles.append(cumulative_folder_name)
-            # If file is a folder, go through that folder again
-            # elif os.path.isdir(file_path):
-            #     if folder_name != "":
-            #         cumulative_folder_name = folder_name + "/" + file
-            #     else:
-            #         cumulative_folder_name = file
-            #     self.iterateThroughFolder(file_path, cumulative_folder_name)
 
     def startPrintFromP2(self, file):
         self._logger.info("Received print command from P2")
