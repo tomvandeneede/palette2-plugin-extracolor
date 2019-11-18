@@ -1043,8 +1043,7 @@ class Omega():
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
         self.autoVariationCancelPing = self._settings.get(["autoVariationCancelPing"])
         self.showPingOnPrinter = self._settings.get(["showPingOnPrinter"])
-        self.upperVariationPct = self._settings.get(["upperVariationPct"])
-        self.lowerVariationPct = self._settings.get(["lowerVariationPct"])
+        self.variationPct = self._settings.get(["variationPct"])
         self.advanced_reset_print_values()
 
     def advanced_reset_print_values(self):
@@ -1061,8 +1060,7 @@ class Omega():
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowed", "data": self.feedRateSlowed}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateNormalPct", "data": self._settings.get(["feedRateNormalPct"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowPct", "data": self._settings.get(["feedRateSlowPct"])}, True)
-            self.updateUI({"command": "advanced", "subCommand": "upperVariationPct", "data": self._settings.get(["upperVariationPct"])}, True)
-            self.updateUI({"command": "advanced", "subCommand": "lowerVariationPct", "data": self._settings.get(["lowerVariationPct"])}, True)
+            self.updateUI({"command": "advanced", "subCommand": "variationPct", "data": self._settings.get(["variationPct"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading}, True)
         except Exception as e:
             self._logger.info(e)
@@ -1159,53 +1157,27 @@ class Omega():
             self._logger.info("Not positive integer")
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowPct", "data": self._settings.get(["feedRateSlowPct"])})
 
-    def changeUpperVariationPct(self, value):
+    def changeVariationPct(self, value):
         if self.isPositiveInteger(value):
             clean_value = int(value)
             advanced_status = ""
-            if clean_value == self.upperVariationPct:
-                self._logger.info("Upper variation percent did not change. Do nothing")
+            if clean_value == self.variationPct:
+                self._logger.info("Variation percent did not change. Do nothing")
             elif clean_value > 100:
-                self._logger.info("Cannot set normal feed rate above 100%.")
-                advanced_status = 'Cannot set normal feed rate above 100%%. Keeping speed at (%s%%).' % self.upperVariationPct
-                self.updateUI({"command": "advanced", "subCommand": "upperVariationPct", "data": self._settings.get(["upperVariationPct"])})
+                self._logger.info("Cannot set variation percent above 100%.")
+                advanced_status = 'Cannot set variation percent above 100%%. Keeping variation range at +/- (%s%%).' % self.variationPct
+                self.updateUI({"command": "advanced", "subCommand": "variationPct", "data": self._settings.get(["variationPct"])})
             else:
                 try:
-                    self._settings.set(["upperVariationPct"], clean_value)
+                    self._settings.set(["variationPct"], clean_value)
                     self._settings.save(force=True)
-                    self._logger.info("ADVANCED: upperVariationPct -> '%s' '%s'" % (clean_value, self._settings.get(["upperVariationPct"])))
-                    self.upperVariationPct = self._settings.get(["upperVariationPct"])
+                    self._logger.info("ADVANCED: variationPct -> '%s' '%s'" % (clean_value, self._settings.get(["variationPct"])))
+                    self.variationPct = self._settings.get(["variationPct"])
                 except Exception as e:
                     self._logger.info(e)
-            if advanced_status != "":
-                self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
         else:
             self._logger.info("Not positive integer")
-            self.updateUI({"command": "advanced", "subCommand": "upperVariationPct", "data": self._settings.get(["upperVariationPct"])})
-
-    def changelowerVariationPct(self, value):
-        if self.isPositiveInteger(value):
-            clean_value = int(value)
-            advanced_status = ""
-            if clean_value == self.lowerVariationPct:
-                self._logger.info("Upper variation percent did not change. Do nothing")
-            elif clean_value > 100:
-                self._logger.info("Cannot set normal feed rate above 100%.")
-                advanced_status = 'Cannot set normal feed rate above 100%%. Keeping speed at (%s%%).' % self.lowerVariationPct
-                self.updateUI({"command": "advanced", "subCommand": "lowerVariationPct", "data": self._settings.get(["lowerVariationPct"])})
-            else:
-                try:
-                    self._settings.set(["lowerVariationPct"], clean_value)
-                    self._settings.save(force=True)
-                    self._logger.info("ADVANCED: lowerVariationPct -> '%s' '%s'" % (clean_value, self._settings.get(["lowerVariationPct"])))
-                    self.lowerVariationPct = self._settings.get(["lowerVariationPct"])
-                except Exception as e:
-                    self._logger.info(e)
-            if advanced_status != "":
-                self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
-        else:
-            self._logger.info("Not positive integer")
-            self.updateUI({"command": "advanced", "subCommand": "lowerVariationPct", "data": self._settings.get(["lowerVariationPct"])})
+            self.updateUI({"command": "advanced", "subCommand": "variationPct", "data": self._settings.get(["variationPct"])})
 
     def advanced_update_variables(self):
         self.autoVariationCancelPing = self._settings.get(["autoVariationCancelPing"])
@@ -1213,8 +1185,7 @@ class Omega():
         self.feedRateControl = self._settings.get(["feedRateControl"])
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
-        self.upperVariationPct = self._settings.get(["upperVariationPct"])
-        self.lowerVariationPct = self._settings.get(["lowerVariationPct"])
+        self.variationPct = self._settings.get(["variationPct"])
         self.advanced_updateUI()
 
     def isPositiveInteger(self, value):

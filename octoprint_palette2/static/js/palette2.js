@@ -88,8 +88,7 @@ function OmegaViewModel(parameters) {
   });
 
   self.autoVariationCancelPing = ko.observable(true);
-  self.upperVariationPct = ko.observable(3);
-  self.lowerVariationPct = ko.observable(3);
+  self.variationPct = ko.observable(3);
   self.showPingOnPrinter = ko.observable(true);
   self.feedRateControl = ko.observable(true);
   self.feedRateSlowed = ko.observable(false);
@@ -254,7 +253,7 @@ function OmegaViewModel(parameters) {
     self.ajaxRequest({ command: "changeFeedRateControl", condition: self.feedRateControl() });
   });
   self.autoVariationCancelPing.subscribe(function () {
-    self.ajaxRequest({ command: "changeautoVariationCancelPing", condition: self.autoVariationCancelPing() });
+    self.ajaxRequest({ command: "changeAutoVariationCancelPing", condition: self.autoVariationCancelPing() });
   });
   self.showPingOnPrinter.subscribe(function () {
     self.ajaxRequest({ command: "changeShowPingOnPrinter", condition: self.showPingOnPrinter() });
@@ -265,11 +264,8 @@ function OmegaViewModel(parameters) {
   self.feedRateSlowPct.subscribe(function () {
     self.ajaxRequest({ command: "changeFeedRateSlowPct", value: self.feedRateSlowPct() });
   });
-  self.upperVariationPct.subscribe(function () {
-    self.ajaxRequest({ command: "changeUpperVariationPct", value: self.upperVariationPct() });
-  });
-  self.lowerVariationPct.subscribe(function () {
-    self.ajaxRequest({ command: "changeUpperVariationPct", value: self.lowerVariationPct() });
+  self.variationPct.subscribe(function () {
+    self.ajaxRequest({ command: "changeVariationPct", value: self.variationPct() });
   });
 
   self.ajaxRequest = payload => {
@@ -296,11 +292,8 @@ function OmegaViewModel(parameters) {
       case "autoVariationCancelPing":
         self.autoVariationCancelPing(data);
         break;
-      case "upperVariationPct":
-        self.upperVariationPct(data);
-        break;
-      case "lowerVariationPct":
-        self.lowerVariationPct(data);
+      case "variationPct":
+        self.variationPct(data);
         break;
       case "showPingOnPrinter":
         self.showPingOnPrinter(data);
