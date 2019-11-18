@@ -14,23 +14,9 @@ function OmegaViewModel(parameters) {
   self.actualPrintStarted = false;
 
   /* KNOCKOUT DATA-BINDINGS */
+  // Connection observables
   self.autoconnect = ko.observable(false);
-  self.currentSplice = ko.observable();
-  self.nSplices = ko.observable();
-  self.totalSplicesDisplay = ko.computed(function () {
-    return " / " + self.nSplices() + " Splices";
-  });
   self.connected = ko.observable(false);
-  self.connectPaletteText = ko.computed(function () {
-    return self.connected() ? "Connected" : "Connect to Palette 2";
-  });
-  self.disconnectPaletteText = ko.computed(function () {
-    return self.connected() ? "Disconnect" : "Disconnected";
-  });
-
-  self.currentStatus = ko.observable();
-  self.amountLeftToExtrude = ko.observable();
-  self.palette2SetupStarted = ko.observable();
   self.connectionStateMsg = ko.computed(function () {
     if (self.connected()) {
       return "Connected";
@@ -38,13 +24,27 @@ function OmegaViewModel(parameters) {
       return self.autoconnect() ? "Not Connected - Trying To Connect..." : "Not Connected";
     }
   });
+  self.connectPaletteText = ko.computed(function () {
+    return self.connected() ? "Connected" : "Connect to Palette 2";
+  });
+  self.disconnectPaletteText = ko.computed(function () {
+    return self.connected() ? "Disconnect" : "Disconnected";
+  });
+  self.ports = ko.observableArray([]);
+  self.selectedPort = ko.observable();
+
+  // General status observables
+  self.currentStatus = ko.observable();
+  self.palette2SetupStarted = ko.observable();
   self.filaLength = ko.observable();
   self.filaLengthDisplay = ko.computed(function () {
     return (Number(self.filaLength()) / 1000.0).toFixed(2) + "m";
   });
-
-  self.ports = ko.observableArray([]);
-  self.selectedPort = ko.observable();
+  self.currentSplice = ko.observable();
+  self.nSplices = ko.observable();
+  self.totalSplicesDisplay = ko.computed(function () {
+    return " / " + self.nSplices() + " Splices";
+  });
   self.pings = ko.observableArray([]);
   self.pingsDisplay = ko.computed(function () {
     return self.pings().map(ping => {
@@ -101,11 +101,13 @@ function OmegaViewModel(parameters) {
   self.feedRateStatus = ko.observable("Awaiting Update...");
   self.advancedOptions = ko.observable();
 
+  // Side notification list observables
   self.autoLoad = ko.observable(false);
   self.isAutoLoading = ko.observable(false);
   self.autoLoadButtonText = ko.computed(function () {
     return self.isAutoLoading() ? "Loading..." : "Smart Load";
   });
+  self.amountLeftToExtrude = ko.observable();
   self.amountLeftToExtrudeText = ko.computed(function () {
     if (self.amountLeftToExtrude() > 0 || self.amountLeftToExtrude() < 0) {
       return `${self.amountLeftToExtrude()}mm`;
