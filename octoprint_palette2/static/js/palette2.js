@@ -16,8 +16,6 @@ function OmegaViewModel(parameters) {
 
   /* KNOCKOUT DATA-BINDINGS */
   self.omegaCommand = ko.observable();
-  self.wifiSSID = ko.observable();
-  self.wifiPASS = ko.observable();
   self.omegaPort = ko.observable();
 
   self.currentSplice = ko.observable();
@@ -194,15 +192,6 @@ function OmegaViewModel(parameters) {
   self.uiUpdate = () => {
     console.log("Requesting BE to update Palette2UI");
     const payload = { command: "uiUpdate" };
-    self.ajaxRequest(payload);
-  };
-
-  self.connectWifi = () => {
-    const payload = {
-      command: "connectWifi",
-      wifiSSID: self.wifiSSID(),
-      wifiPASS: self.wifiPASS()
-    };
     self.ajaxRequest(payload);
   };
 

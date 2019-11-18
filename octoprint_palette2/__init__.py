@@ -72,7 +72,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             sendCutCmd=[],
             sendOmegaCmd=["cmd"],
             uiUpdate=[],
-            connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
             displayPorts=["condition"],
             sendErrorReport=["errorNumber", "description"],
@@ -112,8 +111,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.sendErrorReport(payload["errorNumber"], payload["description"])
             elif command == "startPrint":
                 self.palette.startPrintFromHub()
-            elif command == "connectWifi":
-                self.palette.connectWifi(payload["wifiSSID"], payload["wifiPASS"])
             elif command == "startAutoLoad":
                 self.palette.startAutoLoadThread()
                 self.palette.enqueueCmd("O102 D0")

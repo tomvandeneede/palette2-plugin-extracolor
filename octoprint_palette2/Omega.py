@@ -239,16 +239,6 @@ class Omega():
     def setFilename(self, name):
         self.filename = name
 
-    def connectWifi(self, wifiSSID, wifiPASS):
-        lines = open('/etc/wpa_supplicant/wpa_supplicant.conf').readlines()
-        open('/etc/wpa_supplicant/wpa_supplicant.conf', 'w').writelines(lines[0:-5])
-
-        with open("/etc/wpa_supplicant/wpa_supplicant.conf", "a") as myfile:
-            myfile.write('network={\n        ssid="' + wifiSSID +
-                         '"\n        psk="' + wifiPASS + '"\n        key_mgmt=WPA-PSK\n}\n')
-
-        os.system("sudo reboot")
-
     def startReadThread(self):
         if self.readThread is None:
             self.readThreadStop = False
