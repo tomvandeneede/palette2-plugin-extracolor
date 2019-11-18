@@ -47,7 +47,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                     feedRateNormalPct=100,
                     feedRateSlowPct=75,
                     autoVariationCancelPing=False,
-                    variationPct=3,
+                    variationPct=8,
                     showPingOnPrinter=False
                     )
 
