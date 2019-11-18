@@ -118,6 +118,19 @@ function OmegaViewModel(parameters) {
     }
   });
 
+  // Advanced options observables
+  self.autoCancelPing = ko.observable(true);
+  self.showPingOnPrinter = ko.observable(true);
+  self.feedRateControl = ko.observable(true);
+  self.feedRateSlowed = ko.observable(false);
+  self.feedRateSlowedText = ko.computed(function () {
+    return self.feedRateSlowed() && self.printerState.isPrinting() ? "Yes" : "No";
+  });
+  self.feedRateNormalPct = ko.observable(100);
+  self.feedRateSlowPct = ko.observable(50);
+  self.feedRateStatus = ko.observable("Awaiting Update...");
+  self.advancedOptions = ko.observable();
+
   /* COMMUNICATION TO BACK-END FUNCTIONS */
   self.displayPorts = () => {
     const condition = $(".serial-ports-list").is(":visible") ? "closing" : "opening";
@@ -212,7 +225,8 @@ function OmegaViewModel(parameters) {
 
   self.downloadPingHistory = (data, event) => {
     event.stopPropagation();
-    self.ajaxRequest({ command: "downloadPingHistory" }).then(result => {
+    const payload = { command: "downloadPingHistory" }
+    self.ajaxRequest(payload).then(result => {
       const filename = result.data.filename;
       const data = result.data.data;
 
@@ -232,23 +246,44 @@ function OmegaViewModel(parameters) {
   };
 
   self.startAutoLoad = () => {
-    self.ajaxRequest({ command: "startAutoLoad" });
+    const payload = { command: "startAutoLoad" };
+    self.ajaxRequest(payload);
   };
 
   self.feedRateControl.subscribe(function () {
-    self.ajaxRequest({ command: "changeFeedRateControl", condition: self.feedRateControl() });
+    const payload = {
+      command: "changeFeedRateControl",
+      condition: self.feedRateControl()
+    };
+    self.ajaxRequest(payload);
   });
   self.autoVariationCancelPing.subscribe(function () {
-    self.ajaxRequest({ command: "changeAutoVariationCancelPing", condition: self.autoVariationCancelPing() });
+    const payload = {
+      command: "changeAutoVariationCancelPing",
+      condition: self.autoVariationCancelPing()
+    };
+    self.ajaxRequest(payload);
   });
   self.showPingOnPrinter.subscribe(function () {
-    self.ajaxRequest({ command: "changeShowPingOnPrinter", condition: self.showPingOnPrinter() });
+    const payload = {
+      command: "changeShowPingOnPrinter",
+      condition: self.showPingOnPrinter()
+    };
+    self.ajaxRequest(payload);
   });
   self.feedRateNormalPct.subscribe(function () {
-    self.ajaxRequest({ command: "changeFeedRateNormalPct", value: self.feedRateNormalPct() });
+    const payload = {
+      command: "changeFeedRateNormalPct",
+      value: self.feedRateNormalPct()
+    }
+    self.ajaxRequest(payload);
   });
   self.feedRateSlowPct.subscribe(function () {
-    self.ajaxRequest({ command: "changeFeedRateSlowPct", value: self.feedRateSlowPct() });
+    const payload = {
+      command: "changeFeedRateSlowPct",
+      value: self.feedRateSlowPct()
+    };
+    self.ajaxRequest(payload);
   });
   self.variationPct.subscribe(function () {
     self.ajaxRequest({ command: "changeVariationPct", value: self.variationPct() });
