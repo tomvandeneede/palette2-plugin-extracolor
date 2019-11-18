@@ -15,17 +15,23 @@
       .additional-options {
         margin-top: 10px;
         margin-left: 10px;
+
+        .input-append {
+          margin-bottom: 0;
+          margin-right: 5px;
+        }
       }
 
       .advanced-single-status {
         .single-status;
 
         &-title {
-          margin-right: 0;
+          margin: 10px 0 10px 0;
         }
 
         &-value {
           margin-left: 10px;
+          font-weight: 500;
         }
       }
     }
@@ -35,6 +41,10 @@
       align-items: center;
       width: 60%;
       justify-content: space-between;
+
+      .advanced-option-title {
+        font-weight: 700;
+      }
 
       label {
         margin-bottom: 0;
@@ -115,22 +125,14 @@
     }
 
     .feed-rate-control-options {
-      label {
-        font-weight: 700;
-      }
-
       .feed-rate-speeds {
         display: flex;
         flex-direction: column;
 
         .input-container {
           margin-bottom: 5px;
-
-          .feedrate-advanced-option-input-container {
-            margin-bottom: 0;
-            margin-right: 5px;
-          }
         }
+
         .input-container:last-child {
           margin-bottom: 0;
         }
@@ -157,6 +159,13 @@
 
       .loading-offset-value {
         margin-right: 5px;
+      }
+    }
+
+    .ping-variation-cancel {
+
+      .variation-input-status {
+        margin-top: 10px;
       }
     }
   }

@@ -81,35 +81,9 @@
 			<div class="row advanced_options" data-bind="visible: connected() && advancedOptions()">
 				<h4>Advanced Options</h4>
 				<ul class="list-advanced-options">
-						<li class="single-advanced-option ping-variation-cancel">
-							<div class="input-container">
-								<label for="ping-variation-cancel-input"><span>Enable Cancel Print On Ping Variation:</span></label>
-								<div class="interaction-container">
-									<input class="single-advanced-option-input" id="ping-variation-cancel-input" type="checkbox" data-bind="checked: autoVariationCancelPing">
-									<div class="advanced-info-container">
-										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
-										<div class="advanced-info-text" id="ping-variation-cancel-text">
-											<h6 class="advanced-info-heading">Automatically cancel print when ping variation is too high</h6>
-											<div class="advanced-info-body"><p>By enabling this option, your Hub will cancel the print when it detects a ping that has varied beyond your acceptable variation range from the last ping. A large variation may be an indication of jammed/broken filament or of something wrong with your printer.<br><br><span class="contributors">Special thank you to <a target="_blank" href="https://gitlab.com/clifford.roche">Clifford Roche</a>.</span></p></div>
-										</div>
-									</div>
-								</div>
-							</div>
-								<div class="variation-inputs-options additional-options" data-bind="visible: autoVariationCancelPing">
-								<div class="variation-inputs">
-									<div class="input-container">
-											<label for="variation-input"><span>Acceptable Variation Range (+/-):</span></label>
-											<div class="input-append">
-												<input id="variation-input" class="input-mini" type="number" min="1" max="100" data-bind="value: variationPct, enable: autoVariationCancelPing">
-												<span class="add-on">%</span>
-											</div>
-									</div>
-								</div>
-							</div>
-						</li>
 						<li class="single-advanced-option ping-printer-display">
 							<div class="input-container">
-								<label for="ping-printer-display-input"><span>Enable Ping Display On Printer:</span></label>
+								<label class="advanced-option-title" for="ping-printer-display-input"><span>Enable Ping Display On Printer:</span></label>
 								<div class="interaction-container">
 									<input class="single-advanced-option-input" id="ping-printer-display-input" type="checkbox" data-bind="checked: showPingOnPrinter">
 									<div class="advanced-info-container">
@@ -122,9 +96,34 @@
 								</div>
 							</div>
 						</li>
+						<li class="single-advanced-option ping-variation-cancel">
+							<div class="input-container">
+								<label class="advanced-option-title" for="ping-variation-cancel-input"><span>Enable Cancel Print On Ping Variation:</span></label>
+								<div class="interaction-container">
+									<input class="single-advanced-option-input" id="ping-variation-cancel-input" type="checkbox" data-bind="checked: autoVariationCancelPing">
+									<div class="advanced-info-container">
+										<i class="material-icons advanced-info-icon" data-bind="click: toggleAdvancedOptionInfo">info_outline</i>
+										<div class="advanced-info-text" id="ping-variation-cancel-text">
+											<h6 class="advanced-info-heading">Automatically CANCEL print when ping variation is too large</h6>
+											<div class="advanced-info-body"><p>By enabling this option, your Hub will cancel the print when it detects a ping that has varied beyond your accepted range from the most recent ping. A large variation may be an indication of jammed/broken filament or of something wrong with your printer.<br><br><span class="contributors">Special thank you to <a target="_blank" href="https://gitlab.com/clifford.roche">Clifford Roche</a>.</span></p></div>
+										</div>
+									</div>
+								</div>
+							</div>
+								<div class="variation-input additional-options" data-bind="visible: autoVariationCancelPing">
+									<div class="input-container">
+											<label for="variation-input"><span>Acceptable Variation Range (+/-):</span></label>
+											<div class="input-append">
+												<input id="variation-input" class="input-mini" type="number" min="1" max="100" data-bind="value: variationPct, enable: autoVariationCancelPing">
+												<span class="add-on">%</span>
+											</div>
+									</div>
+									<div class="variation-input-status" data-bind="text: variationPctStatus"></div>
+								</div>
+						</li>
 						<li class="single-advanced-option feed-rate-control">
 							<div class="input-container">
-								<label for="feed-rate-control-input"><span>Enable Print Speed Control During Splices:</span></label>
+								<label class="advanced-option-title" for="feed-rate-control-input"><span>Enable Print Speed Control During Splices:</span></label>
 								<div class="interaction-container">
 									<input class="single-advanced-option-input" id="feed-rate-control-input" type="checkbox" data-bind="checked: feedRateControl">
 									<div class="advanced-info-container">
@@ -140,7 +139,7 @@
 								<div class="feed-rate-speeds">
 									<div class="input-container">
 											<label for="normal-feedrate-input"><span>Normal Feed Rate:</span></label>
-											<div class="input-append feedrate-advanced-option-input-container">
+											<div class="input-append">
 												<input id="normal-feedrate-input" class="input-mini" type="number" min="1" max="150" data-bind="value: feedRateNormalPct, enable: feedRateControl">
 												<span class="add-on">%</span>
 											</div>
@@ -148,7 +147,7 @@
 									<div class="input-container">
 										<label for="splicing-feedrate-input"><span>Splicing Feed Rate:</span></label>
 										<label>
-												<div class="input-append feedrate-advanced-option-input-container">
+												<div class="input-append">
 													<input id="splicing-feedrate-input" class="input-mini" type="number" min="1" max="100" data-bind="value: feedRateSlowPct, enable: feedRateControl">
 													<span class="add-on">%</span>
 												</div>
@@ -156,10 +155,10 @@
 									</div>
 								</div>
 								<div class="advanced-single-status feed-rate-status-container">
-									<h5 class="advanced-single-status-title">Feed Rate Status: <span class="advanced-single-status-value feed-rate-status" data-bind="text: feedRateStatus">Awaiting Update..</span></h5>
+									<div class="advanced-single-status-title">Feed Rate Status: <span class="advanced-single-status-value feed-rate-status" data-bind="text: feedRateStatus">Awaiting Update..</span></div>
 								</div>
 								<div class="advanced-single-status feed-rate-slowed-container">
-									<h5 class="advanced-single-status-title">Feed Rate Currently Slowed? <span class="advanced-single-status-value" data-bind="text: feedRateSlowedText"></span></h5>
+									<div class="advanced-single-status-title">Feed Rate Currently Slowed? <span class="advanced-single-status-value" data-bind="text: feedRateSlowedText"></span></div>
 								</div>
 							</div>
 						</li>

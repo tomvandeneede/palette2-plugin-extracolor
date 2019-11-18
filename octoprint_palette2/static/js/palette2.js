@@ -89,6 +89,15 @@ function OmegaViewModel(parameters) {
 
   self.autoVariationCancelPing = ko.observable(true);
   self.variationPct = ko.observable(3);
+  self.variationPctStatus = ko.computed(function () {
+    if (self.latestPing()) {
+      const upperBound = self.latestPing() + self.variationPct();
+      const lowerBound = self.latestPing() - self.variationPct();
+      return `A ping variation greater than ${upperBound}% or lower than ${lowerBound}% will automatically cancel your print`;
+    } else {
+      return `No pings detected yet. Waiting for first ping...`
+    }
+  });
   self.showPingOnPrinter = ko.observable(true);
   self.feedRateControl = ko.observable(true);
   self.feedRateSlowed = ko.observable(false);
