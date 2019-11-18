@@ -1467,10 +1467,10 @@ class Omega():
         if self.autoVariationCancelPing and len(self.pings) > 1:
             try:
                 currentPing = self.pings[-1]["percent"]
-                pingBefore = self.pings[-2]["percent"]
-                variation = abs(currentPing - pingBefore)
+                previousPing = self.pings[-2]["percent"]
+                variation = abs(currentPing - previousPing)
                 if variation > self.variationPct:
-                    self._logger.info("Variation (%s%% - current: %s%% vs before: %s%%) is significantly greater than %s%%. Cancelling print" % (variation, currentPing, pingBefore, self.variationPct))
+                    self._logger.info("Variation (%s%% - current: %s%% vs before: %s%%) is significantly greater than %s%%. Cancelling print" % (variation, currentPing, previousPing, self.variationPct))
                     self.cancel()
             except Exception as e:
                 self._logger.info(e)
