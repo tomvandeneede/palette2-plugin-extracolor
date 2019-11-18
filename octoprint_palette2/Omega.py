@@ -1041,8 +1041,9 @@ class Omega():
         self.feedRateControl = self._settings.get(["feedRateControl"])
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
-        self.autoCancelPing = self._settings.get(["autoCancelPing"])
+        self.autoVariationCancelPing = self._settings.get(["autoVariationCancelPing"])
         self.showPingOnPrinter = self._settings.get(["showPingOnPrinter"])
+        self.variationPct = self._settings.get(["variationPct"])
         self.advanced_reset_print_values()
 
     def advanced_reset_print_values(self):
@@ -1053,22 +1054,23 @@ class Omega():
     def advanced_updateUI(self):
         self._logger.info("ADVANCED UPDATE UI")
         try:
-            self.updateUI({"command": "advanced", "subCommand": "autoCancelPing", "data": self._settings.get(["autoCancelPing"])}, True)
+            self.updateUI({"command": "advanced", "subCommand": "autoVariationCancelPing", "data": self._settings.get(["autoVariationCancelPing"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "showPingOnPrinter", "data": self._settings.get(["showPingOnPrinter"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateControl", "data": self._settings.get(["feedRateControl"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowed", "data": self.feedRateSlowed}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateNormalPct", "data": self._settings.get(["feedRateNormalPct"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowPct", "data": self._settings.get(["feedRateSlowPct"])}, True)
+            self.updateUI({"command": "advanced", "subCommand": "variationPct", "data": self._settings.get(["variationPct"])}, True)
             self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading}, True)
         except Exception as e:
             self._logger.info(e)
 
-    def changeAutoCancelPing(self, condition):
+    def changeAutoVariationCancelPing(self, condition):
         try:
-            self._settings.set(["autoCancelPing"], condition, force=True)
+            self._settings.set(["autoVariationCancelPing"], condition, force=True)
             self._settings.save(force=True)
-            self._logger.info("ADVANCED: autoCancelPing -> '%s' '%s'" % (condition, self._settings.get(["autoCancelPing"])))
-            self.autoCancelPing = self._settings.get(["autoCancelPing"])
+            self._logger.info("ADVANCED: autoVariationCancelPing -> '%s' '%s'" % (condition, self._settings.get(["autoVariationCancelPing"])))
+            self.autoVariationCancelPing = self._settings.get(["autoVariationCancelPing"])
         except Exception as e:
             self._logger.info(e)
 
@@ -1155,13 +1157,35 @@ class Omega():
             self._logger.info("Not positive integer")
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowPct", "data": self._settings.get(["feedRateSlowPct"])})
 
+    def changeVariationPct(self, value):
+        if self.isPositiveInteger(value):
+            clean_value = int(value)
+            advanced_status = ""
+            if clean_value == self.variationPct:
+                self._logger.info("Variation percent did not change. Do nothing")
+            elif clean_value > 100:
+                self._logger.info("Cannot set variation percent above 100%.")
+                advanced_status = 'Cannot set variation percent above 100%%. Keeping variation range at +/- (%s%%).' % self.variationPct
+                self.updateUI({"command": "advanced", "subCommand": "variationPct", "data": self._settings.get(["variationPct"])})
+            else:
+                try:
+                    self._settings.set(["variationPct"], clean_value)
+                    self._settings.save(force=True)
+                    self._logger.info("ADVANCED: variationPct -> '%s' '%s'" % (clean_value, self._settings.get(["variationPct"])))
+                    self.variationPct = self._settings.get(["variationPct"])
+                except Exception as e:
+                    self._logger.info(e)
+        else:
+            self._logger.info("Not positive integer")
+            self.updateUI({"command": "advanced", "subCommand": "variationPct", "data": self._settings.get(["variationPct"])})
 
     def advanced_update_variables(self):
-        self.autoCancelPing = self._settings.get(["autoCancelPing"])
+        self.autoVariationCancelPing = self._settings.get(["autoVariationCancelPing"])
         self.showPingOnPrinter = self._settings.get(["showPingOnPrinter"])
         self.feedRateControl = self._settings.get(["feedRateControl"])
         self.feedRateNormalPct = self._settings.get(["feedRateNormalPct"])
         self.feedRateSlowPct = self._settings.get(["feedRateSlowPct"])
+        self.variationPct = self._settings.get(["variationPct"])
         self.advanced_updateUI()
 
     def isPositiveInteger(self, value):
@@ -1287,19 +1311,20 @@ class Omega():
                 self._logger.info("Splices being prepared.")
 
     def handlePing(self, command):
-        percent = command["params"][1][1:]
         try:
+            percent = float(command["params"][1][1:])
             number = int(command["params"][2][1:], 16) + self.missedPings
             current = {"number": number, "percent": percent}
             self.pings.append(current)
             self.updateUI({"command": "pings", "data": self.pings})
             self.sendPingToPrinter(number, percent)
+            self.handlePingVariation()
         except:
             self._logger.info("Ping number invalid: %s" % command)
 
     def handlePong(self, command):
-        percent = command["params"][1][1:]
         try:
+            percent = float(command["params"][1][1:])
             number = int(command["params"][2][1:], 16)
             current = {"number": number, "percent": percent}
             self.pongs.append(current)
@@ -1308,14 +1333,14 @@ class Omega():
             self._logger.info("Pong number invalid: %s" % command)
 
     def handleRejectedPing(self):
+        # as of P2 FW version 9.0.9, pings are no longer "rejected"
+        # this method will be kept for backwards compatibility purposes
         self._logger.info("REJECTING PING")
         self.missedPings = self.missedPings + 1
         current = {"number": len(self.pings) + 1, "percent": "MISSED"}
         self.pings.append(current)
         self.updateUI({"command": "pings", "data": self.pings})
         self.sendPingToPrinter(current["number"], current["percent"])
-        if self.autoCancelPing:
-            self.cancel()
 
     def handleFirstTimePrint(self):
         self._logger.info("FIRST TIME USE WITH PALETTE")
@@ -1437,3 +1462,15 @@ class Omega():
     def handleSmartLoadRequest(self):
         if not self.isAutoLoading:
             self.startAutoLoadThread()
+
+    def handlePingVariation(self):
+        if self.autoVariationCancelPing and len(self.pings) > 1:
+            try:
+                currentPing = self.pings[-1]["percent"]
+                previousPing = self.pings[-2]["percent"]
+                variation = abs(currentPing - previousPing)
+                if variation > self.variationPct:
+                    self._logger.info("Variation (%s%% - current: %s%% vs before: %s%%) is significantly greater than %s%%. Cancelling print" % (variation, currentPing, previousPing, self.variationPct))
+                    self.cancel()
+            except Exception as e:
+                self._logger.info(e)

@@ -52,16 +52,12 @@ function OmegaViewModel(parameters) {
   self.selectedPort = ko.observable();
   self.pings = ko.observableArray([]);
   self.pingsDisplay = ko.computed(function () {
-    if (self.pings()) {
-      return self.pings().map(ping => {
-        if (ping.percent !== "MISSED") {
-          ping.percent = ping.percent + "%";
-        }
-        return ping;
-      });
-    } else {
-      return [];
-    }
+    return self.pings().map(ping => {
+      return {
+        number: ping.number,
+        percent: ping.percent !== "MISSED" ? `${ping.percent}%` : 'MISSED',
+      };
+    });
   });
   self.latestPing = ko.computed(function () {
     return self.pingsDisplay()[0] ? self.pingsDisplay()[0].number : 0;
@@ -87,7 +83,18 @@ function OmegaViewModel(parameters) {
     return self.pongsDisplay()[0] ? self.pongsDisplay()[0].percent : "%";
   });
 
-  self.autoCancelPing = ko.observable(true);
+  self.autoVariationCancelPing = ko.observable(true);
+  self.variationPct = ko.observable(3);
+  self.variationPctStatus = ko.computed(function () {
+    if (self.pings().length > 0) {
+      const variation = Number(self.variationPct());
+      const upperBound = self.pings()[0].percent + variation;
+      const lowerBound = self.pings()[0].percent - variation;
+      return `An upcoming ping greater than ${upperBound}% or lower than ${lowerBound}% will cancel your print`;
+    } else {
+      return `No pings detected yet. Waiting for first ping...`
+    }
+  });
   self.showPingOnPrinter = ko.observable(true);
   self.feedRateControl = ko.observable(true);
   self.feedRateSlowed = ko.observable(false);
@@ -251,8 +258,8 @@ function OmegaViewModel(parameters) {
   self.feedRateControl.subscribe(function () {
     self.ajaxRequest({ command: "changeFeedRateControl", condition: self.feedRateControl() });
   });
-  self.autoCancelPing.subscribe(function () {
-    self.ajaxRequest({ command: "changeAutoCancelPing", condition: self.autoCancelPing() });
+  self.autoVariationCancelPing.subscribe(function () {
+    self.ajaxRequest({ command: "changeAutoVariationCancelPing", condition: self.autoVariationCancelPing() });
   });
   self.showPingOnPrinter.subscribe(function () {
     self.ajaxRequest({ command: "changeShowPingOnPrinter", condition: self.showPingOnPrinter() });
@@ -262,6 +269,9 @@ function OmegaViewModel(parameters) {
   });
   self.feedRateSlowPct.subscribe(function () {
     self.ajaxRequest({ command: "changeFeedRateSlowPct", value: self.feedRateSlowPct() });
+  });
+  self.variationPct.subscribe(function () {
+    self.ajaxRequest({ command: "changeVariationPct", value: self.variationPct() });
   });
 
   self.ajaxRequest = payload => {
@@ -285,8 +295,11 @@ function OmegaViewModel(parameters) {
       case "feedRateSlowed":
         self.feedRateSlowed(data);
         break;
-      case "autoCancelPing":
-        self.autoCancelPing(data);
+      case "autoVariationCancelPing":
+        self.autoVariationCancelPing(data);
+        break;
+      case "variationPct":
+        self.variationPct(data);
         break;
       case "showPingOnPrinter":
         self.showPingOnPrinter(data);
