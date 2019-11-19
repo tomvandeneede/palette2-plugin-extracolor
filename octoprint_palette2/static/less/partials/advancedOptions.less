@@ -8,129 +8,137 @@
     margin-left: 0;
     margin-top: 15px;
 
+    // general styling for each advanced option
     .single-advanced-option {
       margin-top: 5px;
       margin-bottom: 15px;
 
+      .input-container {
+        display: flex;
+        align-items: center;
+        width: 60%;
+        justify-content: space-between;
+
+        .advanced-option-title {
+          font-weight: 700;
+        }
+
+        label {
+          margin-bottom: 0;
+        }
+
+        .interaction-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+
+          input[type="checkbox"].single-advanced-option-input {
+            margin: 0;
+            width: 16px;
+            height: 16px;
+          }
+
+          .advanced-info-container {
+            margin-left: 10px;
+            position: relative;
+            display: flex;
+
+            .advanced-info-icon {
+              margin-right: 0;
+              font-size: 20px;
+              cursor: pointer;
+            }
+            .advanced-info-text {
+              display: none;
+              flex-direction: column;
+              position: absolute;
+              width: 250px;
+              left: 35px;
+              top: -30px;
+              background-color: @color-1;
+              border: 1px solid @color-6;
+              border-radius: 3px;
+              padding: 10px;
+
+              &::after,
+              &::before {
+                content: "";
+                position: absolute;
+                display: block;
+                right: 100%;
+                width: 0;
+                height: 0;
+                border-style: solid;
+              }
+
+              // fill
+              &::after {
+                top: 29px;
+                border-color: transparent @color-1 transparent transparent;
+                border-width: 10px;
+              }
+
+              // border
+              &::before {
+                top: 28px;
+                border-color: transparent @color-6 transparent transparent;
+                border-width: 11px;
+              }
+
+              .advanced-info-heading {
+                margin: 0 0 3px 0;
+                font-size: 15px;
+              }
+
+              .advanced-info-body {
+                font-size: 13px;
+                p {
+                  margin: 0;
+                }
+              }
+
+              .contributors {
+                font-style: italic;
+              }
+            }
+          }
+        }
+      }
+
       .additional-options {
         margin-top: 10px;
         margin-left: 10px;
+
+        .input-append {
+          margin-bottom: 0;
+          margin-right: 5px;
+        }
       }
 
       .advanced-single-status {
         .single-status;
 
         &-title {
-          margin-right: 0;
+          margin: 10px 0 10px 0;
         }
 
         &-value {
           margin-left: 10px;
+          font-weight: 500;
         }
       }
     }
 
-    .input-container {
-      display: flex;
-      align-items: center;
-      width: 60%;
-      justify-content: space-between;
-
-      label {
-        margin-bottom: 0;
-      }
-
-      .interaction-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-
-        input[type="checkbox"].single-advanced-option-input {
-          margin: 0;
-          width: 16px;
-          height: 16px;
-        }
-
-        .advanced-info-container {
-          margin-left: 10px;
-          position: relative;
-          display: flex;
-
-          .advanced-info-icon {
-            margin-right: 0;
-            font-size: 20px;
-            cursor: pointer;
-          }
-          .advanced-info-text {
-            display: none;
-            flex-direction: column;
-            position: absolute;
-            width: 250px;
-            left: 35px;
-            top: -30px;
-            background-color: @color-1;
-            border: 1px solid @color-6;
-            border-radius: 3px;
-            padding: 10px;
-
-            &::after,
-            &::before {
-              content: "";
-              position: absolute;
-              display: block;
-              right: 100%;
-              width: 0;
-              height: 0;
-              border-style: solid;
-            }
-
-            // fill
-            &::after {
-              top: 29px;
-              border-color: transparent @color-1 transparent transparent;
-              border-width: 10px;
-            }
-
-            // border
-            &::before {
-              top: 28px;
-              border-color: transparent @color-6 transparent transparent;
-              border-width: 11px;
-            }
-
-            .advanced-info-heading {
-              margin: 0 0 3px 0;
-              font-size: 15px;
-            }
-
-            .advanced-info-body {
-              font-size: 13px;
-              p {
-                margin: 0;
-              }
-            }
-          }
-        }
-      }
-    }
-
+    // specific styling for feed rate control
     .feed-rate-control-options {
-      label {
-        font-weight: 700;
-      }
-
       .feed-rate-speeds {
         display: flex;
         flex-direction: column;
 
         .input-container {
           margin-bottom: 5px;
-
-          .feedrate-advanced-option-input-container {
-            margin-bottom: 0;
-            margin-right: 5px;
-          }
         }
+
         .input-container:last-child {
           margin-bottom: 0;
         }
@@ -145,23 +153,12 @@
       }
     }
 
-    .autoload-filament-options {
-      .loading-offset {
-        margin-top: 0;
-      }
-
-      .autoload-button {
-        padding-left: 20px;
-        padding-right: 20px;
-      }
-
-      .loading-offset-value {
-        margin-right: 5px;
+    // specific styling for ping variation cancel
+    .ping-variation-cancel {
+      .variation-input-status {
+        margin-top: 10px;
+        font-style: italic;
       }
     }
   }
-}
-
-.contributors {
-  font-style: italic;
 }

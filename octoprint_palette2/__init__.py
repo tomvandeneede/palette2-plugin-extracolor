@@ -31,6 +31,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             call(["sudo rm -rf /home/pi/OctoPrint/venv/lib/python2.7/site-packages/Canvas-0.1.0-py2.7.egg-info/"], shell=True)
             call(["sudo chown -R pi:pi /home/pi/OctoPrint/venv/lib/python2.7/site-packages/"], shell=True)
         self.palette = Omega.Omega(self)
+        self.palette.isHubS = self.palette.determineHubVersion()
         self.palette.startLedThread()
         self.palette.checkForRuamelVersion()
         self.palette.ports = self.palette.getAllPorts()
@@ -45,7 +46,8 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                     feedRateControl=False,
                     feedRateNormalPct=100,
                     feedRateSlowPct=75,
-                    autoCancelPing=False,
+                    autoVariationCancelPing=False,
+                    variationPct=8,
                     showPingOnPrinter=False
                     )
 
@@ -68,14 +70,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             connectOmega=["port"],
             disconnectPalette2=[],
             sendCutCmd=[],
-            sendOmegaCmd=["cmd"],
             uiUpdate=[],
-            connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
             displayPorts=["condition"],
             sendErrorReport=["errorNumber", "description"],
             startPrint=[],
-            changeAutoCancelPing=["condition"],
+            changeAutoVariationCancelPing=["condition"],
+            changeVariationPct=["value"],
             changeShowPingOnPrinter=["condition"],
             changeFeedRateControl=["condition"],
             changeFeedRateSlowed=["condition"],
@@ -97,8 +98,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.cut()
             elif command == "clearPalette2":
                 self.palette.clear()
-            elif command == "sendOmegaCmd":
-                self.palette.enqueueCmd(payload["cmd"])
             elif command == "uiUpdate":
                 self.palette.updateUIAll()
             elif command == "changeAlertSettings":
@@ -109,13 +108,13 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.sendErrorReport(payload["errorNumber"], payload["description"])
             elif command == "startPrint":
                 self.palette.startPrintFromHub()
-            elif command == "connectWifi":
-                self.palette.connectWifi(payload["wifiSSID"], payload["wifiPASS"])
             elif command == "startAutoLoad":
                 self.palette.startAutoLoadThread()
-                self.palette.enqueueCmd("O102 D0")
-            elif command == "changeAutoCancelPing":
-                self.palette.changeAutoCancelPing(payload["condition"])
+                self.palette.enqueueCmd(constants.COMMANDS["SMART_LOAD_START"])
+            elif command == "changeAutoVariationCancelPing":
+                self.palette.changeAutoVariationCancelPing(payload["condition"])
+            elif command == "changeVariationPct":
+                self.palette.changeVariationPct(payload["value"])
             elif command == "changeShowPingOnPrinter":
                 self.palette.changeShowPingOnPrinter(payload["condition"])
             elif command == "changeFeedRateControl":
@@ -127,11 +126,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             elif command == "downloadPingHistory":
                 data = self.palette.downloadPingHistory()
             response = "POST request (%s) successful" % command
-            return flask.jsonify(response=response, data=data, status=constants.API_SUCCESS), constants.API_SUCCESS
+            return flask.jsonify(response=response, data=data, status=constants.HTTP["SUCCESS"]), constants.HTTP["SUCCESS"]
         except Exception as e:
             error = str(e)
             self._logger.info("Exception message: %s" % str(e))
-            return flask.jsonify(error=error, status=constants.API_FAILURE), constants.API_FAILURE
+            return flask.jsonify(error=error, status=constants.HTTP["FAILURE"]), constants.HTTP["FAILURE"]
 
     def on_event(self, event, payload):
         try:
@@ -177,7 +176,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.updateUI({"command": "displaySetupAlerts", "data": self._settings.get(["palette2Alerts"])})
                 self.palette.updateUI({"command": "advanced", "subCommand": "displayAdvancedOptions", "data": self._settings.get(["advancedOptions"])})
                 if not self._settings.get(["advancedOptions"]):
-                    self.palette.changeAutoCancelPing(False)
+                    self.palette.changeAutoVariationCancelPing(False)
                     self.palette.changeShowPingOnPrinter(False)
                     self.palette.changeFeedRateControl(False)
                 self.palette.advanced_update_variables()
@@ -194,7 +193,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode=None, tags=None):
         if cmd is not None and len(cmd) > 1:
             # pings in GCODE
-            if "O31" in cmd:
+            if constants.COMMANDS["PING"] in cmd:
                 self.palette.savePing(cmd.strip())
                 return "G4 P10",
             # header information
