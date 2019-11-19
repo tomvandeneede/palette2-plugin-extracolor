@@ -389,9 +389,9 @@ class Omega():
                 if line:
                     self.lastCommandSent = line
                     line = line.strip()
-                    line = line + "\n"
                     if constants.COMMANDS["HEARTBEAT"] not in line and "\n" not in line:
                         self._logger.info("Omega Write Thread: Sending: %s" % line.strip())
+                    line = line + "\n"
                     serialConnection.write(line.encode())
                 else:
                     self._logger.info("Line is NONE")
