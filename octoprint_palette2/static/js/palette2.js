@@ -12,30 +12,11 @@ function OmegaViewModel(parameters) {
   self.displaySetupAlerts = true;
   self.firstTime = false;
   self.actualPrintStarted = false;
-  self.autoconnect = ko.observable(false);
 
   /* KNOCKOUT DATA-BINDINGS */
-  self.omegaCommand = ko.observable();
-  self.wifiSSID = ko.observable();
-  self.wifiPASS = ko.observable();
-  self.omegaPort = ko.observable();
-
-  self.currentSplice = ko.observable();
-  self.nSplices = ko.observable();
-  self.totalSplicesDisplay = ko.computed(function () {
-    return " / " + self.nSplices() + " Splices";
-  });
+  // Connection observables
+  self.autoconnect = ko.observable(false);
   self.connected = ko.observable(false);
-  self.connectPaletteText = ko.computed(function () {
-    return self.connected() ? "Connected" : "Connect to Palette 2";
-  });
-  self.disconnectPaletteText = ko.computed(function () {
-    return self.connected() ? "Disconnect" : "Disconnected";
-  });
-
-  self.currentStatus = ko.observable();
-  self.amountLeftToExtrude = ko.observable();
-  self.palette2SetupStarted = ko.observable();
   self.connectionStateMsg = ko.computed(function () {
     if (self.connected()) {
       return "Connected";
@@ -43,13 +24,27 @@ function OmegaViewModel(parameters) {
       return self.autoconnect() ? "Not Connected - Trying To Connect..." : "Not Connected";
     }
   });
+  self.connectPaletteText = ko.computed(function () {
+    return self.connected() ? "Connected" : "Connect to Palette 2";
+  });
+  self.disconnectPaletteText = ko.computed(function () {
+    return self.connected() ? "Disconnect" : "Disconnected";
+  });
+  self.ports = ko.observableArray([]);
+  self.selectedPort = ko.observable();
+
+  // General status observables
+  self.currentStatus = ko.observable();
+  self.palette2SetupStarted = ko.observable();
   self.filaLength = ko.observable();
   self.filaLengthDisplay = ko.computed(function () {
     return (Number(self.filaLength()) / 1000.0).toFixed(2) + "m";
   });
-
-  self.ports = ko.observableArray([]);
-  self.selectedPort = ko.observable();
+  self.currentSplice = ko.observable();
+  self.nSplices = ko.observable();
+  self.totalSplicesDisplay = ko.computed(function () {
+    return " / " + self.nSplices() + " Splices";
+  });
   self.pings = ko.observableArray([]);
   self.pingsDisplay = ko.computed(function () {
     return self.pings().map(ping => {
@@ -67,14 +62,12 @@ function OmegaViewModel(parameters) {
   });
   self.pongs = ko.observableArray([]);
   self.pongsDisplay = ko.computed(function () {
-    if (self.pongs()) {
-      return self.pongs().map(pong => {
-        pong.percent = pong.percent + "%";
-        return pong;
-      });
-    } else {
-      return [];
-    }
+    return self.pongs().map(pong => {
+      return {
+        number: pong.number,
+        percent: `${pong.percent}%`,
+      };
+    });
   });
   self.latestPong = ko.computed(function () {
     return self.pongsDisplay()[0] ? self.pongsDisplay()[0].number : 0;
@@ -83,8 +76,9 @@ function OmegaViewModel(parameters) {
     return self.pongsDisplay()[0] ? self.pongsDisplay()[0].percent : "%";
   });
 
+  // Advanced options observables
   self.autoVariationCancelPing = ko.observable(true);
-  self.variationPct = ko.observable(3);
+  self.variationPct = ko.observable(8);
   self.variationPctStatus = ko.computed(function () {
     if (self.pings().length > 0) {
       const variation = Number(self.variationPct());
@@ -106,11 +100,13 @@ function OmegaViewModel(parameters) {
   self.feedRateStatus = ko.observable("Awaiting Update...");
   self.advancedOptions = ko.observable();
 
+  // Side notification list observables
   self.autoLoad = ko.observable(false);
   self.isAutoLoading = ko.observable(false);
   self.autoLoadButtonText = ko.computed(function () {
     return self.isAutoLoading() ? "Loading..." : "Smart Load";
   });
+  self.amountLeftToExtrude = ko.observable();
   self.amountLeftToExtrudeText = ko.computed(function () {
     if (self.amountLeftToExtrude() > 0 || self.amountLeftToExtrude() < 0) {
       return `${self.amountLeftToExtrude()}mm`;
@@ -183,26 +179,9 @@ function OmegaViewModel(parameters) {
     });
   };
 
-  self.sendOmegaCmd = (command) => {
-    const payload = {
-      command: "sendOmegaCmd",
-      cmd: command,
-    };
-    self.ajaxRequest(payload);
-  };
-
   self.uiUpdate = () => {
     console.log("Requesting BE to update Palette2UI");
     const payload = { command: "uiUpdate" };
-    self.ajaxRequest(payload);
-  };
-
-  self.connectWifi = () => {
-    const payload = {
-      command: "connectWifi",
-      wifiSSID: self.wifiSSID(),
-      wifiPASS: self.wifiPASS()
-    };
     self.ajaxRequest(payload);
   };
 
@@ -232,7 +211,8 @@ function OmegaViewModel(parameters) {
 
   self.downloadPingHistory = (data, event) => {
     event.stopPropagation();
-    self.ajaxRequest({ command: "downloadPingHistory" }).then(result => {
+    const payload = { command: "downloadPingHistory" }
+    self.ajaxRequest(payload).then(result => {
       const filename = result.data.filename;
       const data = result.data.data;
 
@@ -252,26 +232,51 @@ function OmegaViewModel(parameters) {
   };
 
   self.startAutoLoad = () => {
-    self.ajaxRequest({ command: "startAutoLoad" });
+    const payload = { command: "startAutoLoad" };
+    self.ajaxRequest(payload);
   };
 
-  self.feedRateControl.subscribe(function () {
-    self.ajaxRequest({ command: "changeFeedRateControl", condition: self.feedRateControl() });
-  });
   self.autoVariationCancelPing.subscribe(function () {
-    self.ajaxRequest({ command: "changeAutoVariationCancelPing", condition: self.autoVariationCancelPing() });
-  });
-  self.showPingOnPrinter.subscribe(function () {
-    self.ajaxRequest({ command: "changeShowPingOnPrinter", condition: self.showPingOnPrinter() });
-  });
-  self.feedRateNormalPct.subscribe(function () {
-    self.ajaxRequest({ command: "changeFeedRateNormalPct", value: self.feedRateNormalPct() });
-  });
-  self.feedRateSlowPct.subscribe(function () {
-    self.ajaxRequest({ command: "changeFeedRateSlowPct", value: self.feedRateSlowPct() });
+    const payload = {
+      command: "changeAutoVariationCancelPing",
+      condition: self.autoVariationCancelPing()
+    };
+    self.ajaxRequest(payload);
   });
   self.variationPct.subscribe(function () {
-    self.ajaxRequest({ command: "changeVariationPct", value: self.variationPct() });
+    const payload = {
+      command: "changeVariationPct",
+      value: self.variationPct()
+    }
+    self.ajaxRequest(payload);
+  });
+  self.showPingOnPrinter.subscribe(function () {
+    const payload = {
+      command: "changeShowPingOnPrinter",
+      condition: self.showPingOnPrinter()
+    };
+    self.ajaxRequest(payload);
+  });
+  self.feedRateControl.subscribe(function () {
+    const payload = {
+      command: "changeFeedRateControl",
+      condition: self.feedRateControl()
+    };
+    self.ajaxRequest(payload);
+  });
+  self.feedRateNormalPct.subscribe(function () {
+    const payload = {
+      command: "changeFeedRateNormalPct",
+      value: self.feedRateNormalPct()
+    }
+    self.ajaxRequest(payload);
+  });
+  self.feedRateSlowPct.subscribe(function () {
+    const payload = {
+      command: "changeFeedRateSlowPct",
+      value: self.feedRateSlowPct()
+    };
+    self.ajaxRequest(payload);
   });
 
   self.ajaxRequest = payload => {

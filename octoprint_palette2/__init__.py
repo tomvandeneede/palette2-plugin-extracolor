@@ -70,9 +70,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             connectOmega=["port"],
             disconnectPalette2=[],
             sendCutCmd=[],
-            sendOmegaCmd=["cmd"],
             uiUpdate=[],
-            connectWifi=["wifiSSID", "wifiPASS"],
             changeAlertSettings=["condition"],
             displayPorts=["condition"],
             sendErrorReport=["errorNumber", "description"],
@@ -100,8 +98,6 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.cut()
             elif command == "clearPalette2":
                 self.palette.clear()
-            elif command == "sendOmegaCmd":
-                self.palette.enqueueCmd(payload["cmd"])
             elif command == "uiUpdate":
                 self.palette.updateUIAll()
             elif command == "changeAlertSettings":
@@ -112,11 +108,9 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
                 self.palette.sendErrorReport(payload["errorNumber"], payload["description"])
             elif command == "startPrint":
                 self.palette.startPrintFromHub()
-            elif command == "connectWifi":
-                self.palette.connectWifi(payload["wifiSSID"], payload["wifiPASS"])
             elif command == "startAutoLoad":
                 self.palette.startAutoLoadThread()
-                self.palette.enqueueCmd("O102 D0")
+                self.palette.enqueueCmd(constants.COMMANDS["SMART_LOAD_START"])
             elif command == "changeAutoVariationCancelPing":
                 self.palette.changeAutoVariationCancelPing(payload["condition"])
             elif command == "changeVariationPct":
@@ -132,11 +126,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             elif command == "downloadPingHistory":
                 data = self.palette.downloadPingHistory()
             response = "POST request (%s) successful" % command
-            return flask.jsonify(response=response, data=data, status=constants.API_SUCCESS), constants.API_SUCCESS
+            return flask.jsonify(response=response, data=data, status=constants.HTTP["SUCCESS"]), constants.HTTP["SUCCESS"]
         except Exception as e:
             error = str(e)
             self._logger.info("Exception message: %s" % str(e))
-            return flask.jsonify(error=error, status=constants.API_FAILURE), constants.API_FAILURE
+            return flask.jsonify(error=error, status=constants.HTTP["FAILURE"]), constants.HTTP["FAILURE"]
 
     def on_event(self, event, payload):
         try:
@@ -199,7 +193,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
     def sending_gcode(self, comm_instance, phase, cmd, cmd_type, gcode, subcode=None, tags=None):
         if cmd is not None and len(cmd) > 1:
             # pings in GCODE
-            if "O31" in cmd:
+            if constants.COMMANDS["PING"] in cmd:
                 self.palette.savePing(cmd.strip())
                 return "G4 P10",
             # header information
