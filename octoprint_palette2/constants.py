@@ -25,7 +25,7 @@ STATUS = {
 COMMANDS = {
     "CUT": "O10 D5",
     "CLEAR": [
-        COMMANDS["CUT"],
+        "O10 D5",
         "O10 D0 D0 D0 DFFE1",
         "O10 D1 D0 D0 DFFE1",
         "O10 D2 D0 D0 DFFE1",

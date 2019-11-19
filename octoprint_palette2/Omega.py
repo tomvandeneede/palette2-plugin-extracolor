@@ -207,7 +207,7 @@ class Omega():
         self.startReadThread()
         self.startWriteThread()
         self.enqueueCmd("\n")
-        self.enqueueCmd(constants.COMMANDS.HEARTBEAT)
+        self.enqueueCmd(constants.COMMANDS["HEARTBEAT"])
 
         timeout = 3
         timeout_start = time.time()
@@ -219,7 +219,7 @@ class Omega():
                 self._settings.set(["selectedPort"], port, force=True)
                 self._settings.set(["baudrate"], baudrate, force=True)
                 self._settings.save(force=True)
-                self.enqueueCmd(constants.COMMANDS.GET_FIRMWARE_VERSION)
+                self.enqueueCmd(constants.COMMANDS["GET_FIRMWARE_VERSION"])
                 self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
                 self.updateUIAll()
                 return True
@@ -233,7 +233,7 @@ class Omega():
     def tryHeartbeatBeforePrint(self):
         self.heartbeat = False
         self.enqueueCmd("\n")
-        self.enqueueCmd(constants.COMMANDS.HEARTBEAT)
+        self.enqueueCmd(constants.COMMANDS["HEARTBEAT"])
         self.printHeartbeatCheck = "Checking"
 
     def setFilename(self, name):
@@ -393,7 +393,7 @@ class Omega():
                     self.lastCommandSent = line
                     line = line.strip()
                     line = line + "\n"
-                    if constants.COMMANDS.HEARTBEAT not in line and "\n" not in line:
+                    if constants.COMMANDS["HEARTBEAT"] not in line and "\n" not in line:
                         self._logger.info("Omega Write Thread: Sending: %s" % line.strip())
                     serialConnection.write(line.encode())
                 else:
@@ -479,7 +479,7 @@ class Omega():
                         break
                     self.heartbeatSent = True
                     self.heartbeatReceived = False
-                    self.enqueueCmd(constants.COMMANDS.HEARTBEAT)
+                    self.enqueueCmd(constants.COMMANDS["HEARTBEAT"])
                 time.sleep(2)
         except Exception as e:
                 self._logger.info("Palette 2 Heartbeat Thread Error")
@@ -490,15 +490,15 @@ class Omega():
 
     def cut(self):
         self._logger.info("Omega: Sending Cut command")
-        self.enqueueCmd(constants.COMMANDS.CUT)
+        self.enqueueCmd(constants.COMMANDS["CUT"])
 
     def clear(self):
         self._logger.info("Omega: Sending Clear command")
-        for command in constants.COMMANDS.CLEAR:
+        for command in constants.COMMANDS["CLEAR"]:
             self.enqueueCmd(command)
 
     def cancel(self):
-        self.enqueueCmd(constants.COMMANDS.CANCEL)
+        self.enqueueCmd(constants.COMMANDS["CANCEL"])
 
     def updateUIAll(self):
         self._logger.info("Updating all UI variables")
@@ -543,7 +543,7 @@ class Omega():
             try:
                 self._logger.info("Omega: send splice")
                 splice = self.splices[self.spliceCounter]
-                cmdStr = "%s D%d D%s\n" % (constants.COMMANDS.SPLICE, int(splice[0]), splice[1])
+                cmdStr = "%s D%d D%s\n" % (constants.COMMANDS["SPLICE"], int(splice[0]), splice[1])
                 self.enqueueCmd(cmdStr)
                 self.spliceCounter = self.spliceCounter + 1
             except:
@@ -567,7 +567,7 @@ class Omega():
 
     def savePing(self, pingCmd):
         self.currentPingCmd = pingCmd
-        self.enqueueCmd(constants.COMMANDS.PING)
+        self.enqueueCmd(constants.COMMANDS["PING"])
         self._logger.info("Got a ping cmd, saving it")
 
     def resetConnection(self):
@@ -779,9 +779,9 @@ class Omega():
             while not self.heartbeat and time.time() < timeout_start + timeout:
                 time.sleep(0.01)
             if self.heartbeat:
-                self._logger.info("Palette did respond to %s" % constants.COMMANDS.HEARTBEAT)
+                self._logger.info("Palette did respond to %s" % constants.COMMANDS["HEARTBEAT"])
                 self.enqueueCmd(cmd)
-                self.currentStatus = constants.STATUS.INITIALIZING
+                self.currentStatus = constants.STATUS["INITIALIZING"]
                 self.palette2SetupStarted = True
                 if self.heartbeatSent:
                     self.heartbeatReceived = True
@@ -799,7 +799,7 @@ class Omega():
                 except:
                     self._logger.info("Error getting filename")
             else:
-                self._logger.info("Palette did not respond to %s" % constants.COMMANDS.HEARTBEAT)
+                self._logger.info("Palette did not respond to %s" % constants.COMMANDS["HEARTBEAT"])
                 self.printHeartbeatCheck = "P2NotConnected"
                 self.updateUI({"command": "printHeartbeatCheck", "data": self.printHeartbeatCheck})
                 self.disconnect()
@@ -822,8 +822,8 @@ class Omega():
         self.getAllMCFFilenames()
         for file in self.allMCFFiles:
             filename = file.replace(".mcf.gcode", "")
-            self.enqueueCmd("%s D%s" % (constants.COMMANDS.FILENAME, filename))
-        self.enqueueCmd(constants.COMMANDS.FILENAMES_DONE)
+            self.enqueueCmd("%s D%s" % (constants.COMMANDS["FILENAME"], filename))
+        self.enqueueCmd(constants.COMMANDS["FILENAMES_DONE"])
 
     def getAllMCFFilenames(self):
         self.allMCFFiles = []
@@ -906,7 +906,7 @@ class Omega():
 
     def startPrintFromHub(self):
         self._logger.info("Hub command to start print received")
-        self.enqueueCmd(constants.COMMANDS.START_PRINT_HUB)
+        self.enqueueCmd(constants.COMMANDS["START_PRINT_HUB"])
 
     def getHubData(self):
         hub_file_path = os.path.expanduser('~') + "/.mosaicdata/canvas-hub-data.yml"
@@ -1244,7 +1244,7 @@ class Omega():
                 self.isAutoLoading = False
                 self.updateUI({"command": "advanced", "subCommand": "isAutoLoading", "data": self.isAutoLoading})
                 self.updateUI({"command": "alert", "data": "autoLoadIncomplete"})
-                self.enqueueCmd(constants.COMMANDS.SMART_LOAD_STOP)
+                self.enqueueCmd(constants.COMMANDS["SMART_LOAD_STOP"])
                 return None
         else:
             return None
@@ -1275,10 +1275,10 @@ class Omega():
             self.printPaused = False
             self.updateUI({"command": "printPaused", "data": self.printPaused})
         else:
-            if self.currentStatus == constants.STATUS.LOADING_EXTRUDER:
+            if self.currentStatus == constants.STATUS["LOADING_EXTRUDER"]:
                 self._printer.resume_print()
                 self.printPaused = False
-                self.currentStatus = constants.STATUS.PRINT_STARTED
+                self.currentStatus = constants.STATUS["PRINT_STARTED"]
                 self.actualPrintStarted = True
                 self.updateUI({"command": "currentStatus", "data": self.currentStatus})
                 self.updateUI({"command": "actualPrintStarted", "data": self.actualPrintStarted})
@@ -1351,7 +1351,7 @@ class Omega():
             self._logger.info("Error command invalid: %s" % command)
 
     def handleSpliceCompletion(self):
-        self.currentStatus = constants.STATUS.SPLICES_DONE
+        self.currentStatus = constants.STATUS["SPLICES_DONE"]
         self.updateUI({"command": "currentStatus", "data": self.currentStatus})
         self._logger.info("Palette work is done.")
 
@@ -1360,13 +1360,13 @@ class Omega():
         if not self.cancelFromHub and not self.cancelFromP2:
             self.cancelFromP2 = True
             self._printer.cancel_print()
-        self.currentStatus = constants.STATUS.CANCELLING
+        self.currentStatus = constants.STATUS["CANCELLING"]
         self.updateUI({"command": "currentStatus", "data": self.currentStatus})
         self.updateUI({"command": "alert", "data": "cancelling"})
 
     def handlePrintCancelled(self):
         self._logger.info("P2 CANCELLING END")
-        self.currentStatus = constants.STATUS.CANCELLED
+        self.currentStatus = constants.STATUS["CANCELLED"]
         self.updateUI({"command": "currentStatus", "data": self.currentStatus})
         self.updateUI({"command": "alert", "data": "cancelled"})
         self.cancelFromHub = False
@@ -1389,7 +1389,7 @@ class Omega():
             self._logger.info("Filament length update invalid: %s" % command)
 
     def handleLoadingOffsetStart(self):
-        self.currentStatus = constants.STATUS.LOADING_EXTRUDER
+        self.currentStatus = constants.STATUS["LOADING_EXTRUDER"]
         self.updateUI({"command": "alert", "data": "extruder"})
         self.updateUI({"command": "currentStatus", "data": self.currentStatus})
         self._logger.info("Filament must be loaded into extruder by user")
@@ -1420,12 +1420,12 @@ class Omega():
                     self.updateUI({"command": "alert", "data": "startPrint"})
 
     def handleDrivesLoading(self):
-        self.currentStatus = constants.STATUS.LOADING_DRIVES
+        self.currentStatus = constants.STATUS["LOADING_DRIVES"]
         self.updateUI({"command": "currentStatus", "data": self.currentStatus})
         self._logger.info("STARTING TO LOAD FIRST DRIVE")
 
     def handleFilamentOutgoingTube(self):
-        self.currentStatus = constants.STATUS.LOADING_TUBE
+        self.currentStatus = constants.STATUS["LOADING_TUBE"]
         self.updateUI({"command": "currentStatus", "data": self.currentStatus})
         self.updateUI({"command": "alert", "data": "temperature"})
         self._logger.info("FINISHED LOADING LAST DRIVE")
