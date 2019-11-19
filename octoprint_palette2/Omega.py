@@ -294,7 +294,7 @@ class Omega():
                 if line:
                     command = self.parseLine(line)
                     if command != None:
-                        if command["command"] not in [99, 101]:
+                        if command["command"] != 99:
                             self._logger.info("Omega: read in line: %s" % line.strip())
                         if command["command"] == 20:
                             if command["total_params"] > 0:
@@ -367,9 +367,6 @@ class Omega():
                                         self.handleFilamentOutgoingTube()
                         elif command["command"] == 100:
                             self.handlePauseRequest()
-                        elif command["command"] == 101:
-                            self.heartbeatReceived = True
-                            self.heartbeatSent = False
                         elif command["command"] == 102:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D0":
