@@ -126,11 +126,11 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
             elif command == "downloadPingHistory":
                 data = self.palette.downloadPingHistory()
             response = "POST request (%s) successful" % command
-            return flask.jsonify(response=response, data=data, status=constants.API_SUCCESS), constants.API_SUCCESS
+            return flask.jsonify(response=response, data=data, status=constants.HTTP["SUCCESS"]), constants.HTTP["SUCCESS"]
         except Exception as e:
             error = str(e)
             self._logger.info("Exception message: %s" % str(e))
-            return flask.jsonify(error=error, status=constants.API_FAILURE), constants.API_FAILURE
+            return flask.jsonify(error=error, status=constants.HTTP["FAILURE"]), constants.HTTP["FAILURE"]
 
     def on_event(self, event, payload):
         try:
