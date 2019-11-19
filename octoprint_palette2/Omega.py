@@ -482,7 +482,8 @@ class Omega():
     def omegaHeartbeatThread(self):
         try:
             while not self.heartbeatThreadStop:
-                if not self.palette2SetupStarted and not self.actualPrintStarted:
+                printerIsNotActive = not self._printer.is_printing() and not self._printer.is_paused() and not self._printer.is_pausing()
+                if not self.palette2SetupStarted and not self.actualPrintStarted and printerIsNotActive:
                     if self.heartbeatSent and not self.heartbeatReceived:
                         self._logger.info("Did not receive heartbeat response")
                         self.disconnect()
