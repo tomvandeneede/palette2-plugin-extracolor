@@ -117,7 +117,7 @@ class Omega():
         self.updateUI({"command": "ports", "data": self.ports})
         self.updateUI({"command": "selectedPort", "data": self._settings.get(["selectedPort"])})
         if not self.ports:
-            raise Exception(constants.NO_SERIAL_PORTS_FOUND)
+            raise Exception(constants.P2_CONNECTION["NO_SERIAL_PORTS_FOUND"])
 
     def getRealPaths(self, ports):
         self._logger.info("Paths: %s" % ports)
@@ -157,7 +157,7 @@ class Omega():
                         self.attemptSerialConnection(port)
                     else:
                         self.updateUIAll()
-                        raise Exception(constants.PRINTER_ON_CURRENT_PORT)
+                        raise Exception(constants.P2_CONNECTION["PRINTER_ON_CURRENT_PORT"])
                 else:
                     # try the last successfully connected port first, if any
                     lastConnectedP2Port = self._settings.get(["selectedPort"])
@@ -175,13 +175,13 @@ class Omega():
                     self._settings.set(["selectedPort"], None, force=True)
                     self._settings.save(force=True)
                     self.updateUIAll()
-                    raise Exception(constants.HEARTBEAT_CONNECT_FAILURE)
+                    raise Exception(constants.P2_CONNECTION["HEARTBEAT_CONNECT_FAILURE"])
             else:
                 self.updateUIAll()
-                raise Exception(constants.NO_SERIAL_PORTS_FOUND)
+                raise Exception(constants.P2_CONNECTION["NO_SERIAL_PORTS_FOUND"])
         else:
             self.updateUIAll()
-            raise Exception(constants.P2_ALREADY_CONNECTED)
+            raise Exception(constants.P2_CONNECTION["ALREADY_CONNECTED"])
 
     def attemptSerialConnection(self, port):
         default_baudrate = self._settings.get(["baudrate"])
