@@ -18,7 +18,10 @@ if os.path.abspath(".") is "/":
 load_dotenv(env_path)
 BASE_URL_API = os.getenv("DEV_BASE_URL_API", "api.canvas3d.io/")
 from subprocess import call
-from Queue import Queue, Empty
+try:
+   from queue import Queue, Empty  ## for Python 3
+except ImportError:
+    from Queue import Queue, Empty  ## for Python 2
 from . import constants
 
 

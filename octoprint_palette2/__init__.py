@@ -256,7 +256,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
 
 __plugin_name__ = "Palette 2"
 __plugin_description__ = "A plugin to handle communication with Palette 2"
-
+__plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():
     global __plugin_implementation__
