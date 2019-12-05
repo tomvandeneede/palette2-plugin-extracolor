@@ -294,10 +294,11 @@ class Omega():
             try:
                 line = serialConnection.readline()
                 if line:
-                    command = self.parseLine(line.decode())
+                    line = line.decode().strip()
+                    command = self.parseLine(line)
                     if command != None:
                         if command["command"] != 99:
-                            self._logger.info("Omega: read in line: %s" % line.strip())
+                            self._logger.info("Omega: read in line: %s" % line)
                         if command["command"] == 20:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D5":
@@ -920,8 +921,6 @@ class Omega():
         return hub_id, hub_token
 
     def parseLine(self, line):
-        line = line.strip()
-
         # is the first character O?
         if line[0] == "O":
             tokens = [token.strip() for token in line.split(" ")]
