@@ -874,7 +874,7 @@ class Omega():
 
         # plugins + versions
         error_report_log.write("=== PLUGINS ===\n")
-        plugins = self._plugin_manager.plugins.keys()
+        plugins = list(self._plugin_manager.plugins)
         for plugin in plugins:
             error_report_log.write("%s: %s\n" % (plugin, self._plugin_manager.get_plugin_info(plugin).version))
 
