@@ -292,7 +292,7 @@ class Omega():
             try:
                 line = serialConnection.readline()
                 if line:
-                    command = self.parseLine(line)
+                    command = self.parseLine(line.decode())
                     if command != None:
                         if command["command"] != 99:
                             self._logger.info("Omega: read in line: %s" % line.strip())
