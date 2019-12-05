@@ -6,6 +6,8 @@ import threading
 import os
 import sys
 import requests
+from io import open ## for Python 2 & 3
+
 try:
     from ruamel.yaml import YAML
 except ImportError:
