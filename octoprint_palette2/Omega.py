@@ -3,11 +3,8 @@ import serial.tools.list_ports
 import glob
 import time
 import threading
-import subprocess
 import os
-import binascii
 import sys
-import json
 import requests
 try:
     from ruamel.yaml import YAML
