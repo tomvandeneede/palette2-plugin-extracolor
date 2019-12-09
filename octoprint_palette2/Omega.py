@@ -6,6 +6,8 @@ import threading
 import os
 import sys
 import requests
+from io import open ## for Python 2 & 3
+
 try:
     from ruamel.yaml import YAML
 except ImportError:
@@ -17,8 +19,11 @@ if os.path.abspath(".") is "/":
     env_path = "/home/pi/.env"
 load_dotenv(env_path)
 BASE_URL_API = os.getenv("DEV_BASE_URL_API", "api.canvas3d.io/")
-from subprocess import call
-from Queue import Queue, Empty
+from subprocess import call, check_output
+try:
+   from queue import Queue, Empty  ## for Python 3
+except ImportError:
+    from Queue import Queue, Empty  ## for Python 2
 from . import constants
 
 
@@ -289,10 +294,11 @@ class Omega():
             try:
                 line = serialConnection.readline()
                 if line:
+                    line = line.decode().strip()
                     command = self.parseLine(line)
                     if command != None:
                         if command["command"] != 99:
-                            self._logger.info("Omega: read in line: %s" % line.strip())
+                            self._logger.info("Omega: read in line: %s" % line)
                         if command["command"] == 20:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D5":
@@ -851,8 +857,8 @@ class Omega():
         authorization = "Bearer " + hub_token
         headers = {"Authorization": authorization}
         try:
-            response = requests.post(url, json=payload, headers=headers).json()
-            if response.get("status") >= 300:
+            response = requests.post(url, json=payload, headers=headers)
+            if response.status_code >= 300:
                 self._logger.info(response)
             else:
                 self._logger.info("Email sent successfully")
@@ -860,43 +866,40 @@ class Omega():
             self._logger.info(e)
 
     def prepareErrorReport(self, error_number, description):
-        error_report_path = os.path.expanduser('~') + "/.mosaicdata/error_report.log"
-
         # error number
-        error_report_log = open(error_report_path, "w")
-        error_report_log.write("===== ERROR %s =====\n\n" % error_number)
+        output = "===== ERROR %s =====\n\n" % error_number
 
         # plugins + versions
-        error_report_log.write("=== PLUGINS ===\n")
-        plugins = self._plugin_manager.plugins.keys()
+        output += "=== PLUGINS ===\n"
+        plugins = list(self._plugin_manager.plugins)
         for plugin in plugins:
-            error_report_log.write("%s: %s\n" % (plugin, self._plugin_manager.get_plugin_info(plugin).version))
+            output += "%s: %s\n" % (plugin, self._plugin_manager.get_plugin_info(plugin).version)
 
         # Hub or DIY
-        error_report_log.write("\n=== TYPE ===\n")
+        output += "\n=== TYPE ===\n"
         if os.path.isdir("/home/pi/.mosaicdata/turquoise/"):
-            error_report_log.write("CANVAS HUB\n")
+            output += "CANVAS HUB\n"
         else:
-            error_report_log.write("DIY HUB\n")
+            output += "DIY HUB\n"
 
         # description
         if description:
-            error_report_log.write("\n=== USER ADDITIONAL DESCRIPTION ===\n")
-            error_report_log.write(description + "\n")
+            output += "\n=== USER ADDITIONAL DESCRIPTION ===\n"
+            output += description + "\n"
 
-        error_report_log.write("\n=== OCTOPRINT LOG ===\n")
-        error_report_log.close()
+        output += "\n=== OCTOPRINT LOG ===\n"
 
         # OctoPrint log
         octoprint_log_path = os.path.expanduser('~') + "/.octoprint/logs/octoprint.log"
-        linux_command = "tail -n 1000 %s >> %s" % (octoprint_log_path, error_report_path)
-        call([linux_command], shell=True)
+        octoprint_log = ""
+        try:
+            octoprint_log = check_output(["tail", "-n", "1000", octoprint_log_path]).decode()
+        except Exception as e:
+            self._logger.info(e)
 
-        data = ""
-        with open(error_report_path, "r") as myfile:
-            data = myfile.read()
+        finalized_report = output + octoprint_log
+        return finalized_report
 
-        return data
 
     def startPrintFromHub(self):
         self._logger.info("Hub command to start print received")
@@ -915,8 +918,6 @@ class Omega():
         return hub_id, hub_token
 
     def parseLine(self, line):
-        line = line.strip()
-
         # is the first character O?
         if line[0] == "O":
             tokens = [token.strip() for token in line.split(" ")]
