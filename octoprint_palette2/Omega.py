@@ -217,7 +217,7 @@ class Omega():
         while time.time() < timeout_start + timeout:
             if self.heartbeat:
                 self.connected = True
-                self._logger.info("Connected to Omega")
+                self._logger.info("P2 plugin successfully connected to P2")
                 self._settings.set(["selectedPort"], port, force=True)
                 self._settings.set(["baudrate"], baudrate, force=True)
                 self._settings.save(force=True)
@@ -243,6 +243,7 @@ class Omega():
 
     def startReadThread(self):
         if self.readThread is None:
+            self._logger.info("Omega Read Thread: starting thread")
             self.readThreadStop = False
             self.readThread = threading.Thread(
                 target=self.omegaReadThread,
@@ -253,6 +254,7 @@ class Omega():
 
     def startWriteThread(self):
         if self.writeThread is None:
+            self._logger.info("Omega Write Thread: starting thread")
             self.writeThreadStop = False
             self.writeThread = threading.Thread(
                 target=self.omegaWriteThread,
@@ -263,6 +265,7 @@ class Omega():
 
     def startConnectionThread(self):
         if self.connectionThread is None:
+            self._logger.info("Omega Auto-Connect Thread: starting thread")
             self.connectionThreadStop = False
             self.connectionThread = threading.Thread(
                 target=self.omegaConnectionThread
@@ -289,7 +292,6 @@ class Omega():
         self.connectionThread = None
 
     def omegaReadThread(self, serialConnection):
-        self._logger.info("Omega Read Thread: Starting thread")
         while self.readThreadStop is False:
             try:
                 line = serialConnection.readline()
@@ -298,7 +300,7 @@ class Omega():
                     command = self.parseLine(line)
                     if command != None:
                         if command["command"] != 99:
-                            self._logger.info("Omega: read in line: %s" % line)
+                            self._logger.info("Omega Read Thread: reading: %s" % line)
                         if command["command"] == 20:
                             if command["total_params"] > 0:
                                 if command["params"][0] == "D5":
@@ -385,17 +387,15 @@ class Omega():
             self.updateUI({"command": "alert", "data": "threadError"})
 
     def omegaWriteThread(self, serialConnection):
-        self._logger.info("Omega Write Thread: Starting Thread")
         while self.writeThreadStop is False:
             try:
                 line = self.writeQueue.get(True, 0.5)
                 if line:
                     self.lastCommandSent = line
                     line = line.strip()
-                    if constants.COMMANDS["HEARTBEAT"] not in line and "\n" not in line:
-                        self._logger.info("Omega Write Thread: Sending: %s" % line.strip())
-                    line = line + "\n"
-                    serialConnection.write(line.encode())
+                    if line and constants.COMMANDS["HEARTBEAT"] not in line:
+                        self._logger.info("Omega Write Thread: sending: %s" % line)
+                    serialConnection.write((line + "\n").encode())
                 else:
                     self._logger.info("Line is NONE")
             except Empty:
@@ -417,7 +417,7 @@ class Omega():
         if self.isHubS:
             if self.ledThread is not None:
                 self.stopLedThread()
-            self._logger.info("Starting Led Thread")
+            self._logger.info("Omega Led Thread: starting thread")
             self.ledThreadStop = False
             self.ledThread = threading.Thread(target=self.omegaLedThread)
             self.ledThread.daemon = True
@@ -455,7 +455,7 @@ class Omega():
     def startHeartbeatThread(self):
         if self.heartbeatThread is not None:
             self.stopHeartbeatThread()
-        self._logger.info("Starting Heartbeat Thread")
+        self._logger.info("Omega Heartbeat Thread: starting thread")
         self.heartbeatThreadStop = False
         self.heartbeatSent = False
         self.heartbeatReceived = False
@@ -489,11 +489,9 @@ class Omega():
         self.writeQueue.put(line)
 
     def cut(self):
-        self._logger.info("Omega: Sending Cut command")
         self.enqueueCmd(constants.COMMANDS["CUT"])
 
     def clear(self):
-        self._logger.info("Omega: Sending Clear command")
         for command in constants.COMMANDS["CLEAR"]:
             self.enqueueCmd(command)
 
@@ -533,15 +531,15 @@ class Omega():
     def sendNextData(self, dataNum):
         if dataNum == 0:
             try:
+                self._logger.info("Sending header '%s' to P2" % self.sentCounter)
                 self.enqueueCmd(self.header[self.sentCounter])
-                self._logger.info("Omega: Sent '%s'" % self.sentCounter)
                 self.sentCounter = self.sentCounter + 1
             except:
                 self._logger.info("Incorrect header information: %s" % self.header)
                 self._logger.info("Sent counter: %s" % self.sentCounter)
         elif dataNum == 1:
             try:
-                self._logger.info("Omega: send splice")
+                self._logger.info("Sending splice '%s' info to P2" % self.spliceCounter)
                 splice = self.splices[self.spliceCounter]
                 cmdStr = "%s D%d D%s\n" % (constants.COMMANDS["SPLICE"], int(splice[0]), splice[1])
                 self.enqueueCmd(cmdStr)
@@ -550,28 +548,27 @@ class Omega():
                 self._logger.info("Incorrect splice information: %s" % self.splices)
                 self._logger.info("Splice counter: %s" % self.spliceCounter)
         elif dataNum == 2:
-            self._logger.info("Sending ping: %s to Palette on request" % self.currentPingCmd)
+            self._logger.info("Sending current ping '%s' to P2" % self.currentPingCmd)
             self.enqueueCmd(self.currentPingCmd)
         elif dataNum == 4:
             try:
-                self._logger.info("Omega: send algo")
+                self._logger.info("Sending algo '%s' to P2" % self.algoCounter)
                 self.enqueueCmd(self.algorithms[self.algoCounter])
-                self._logger.info("Omega: Sent '%s'" % self.algorithms[self.algoCounter])
                 self.algoCounter = self.algoCounter + 1
             except:
                 self._logger.info("Incorrect algo information: %s" % self.algorithms)
                 self._logger.info("Algo counter: %s" % self.algoCounter)
         elif dataNum == 8:
-            self._logger.info("Need to resend last line")
+            self._logger.info("Need to resend last line to P2")
             self.enqueueCmd(self.lastCommandSent)
 
     def savePing(self, pingCmd):
+        self._logger.info("Reached a ping in the gcode -- saving it")
         self.currentPingCmd = pingCmd
         self.enqueueCmd(constants.COMMANDS["PING"])
-        self._logger.info("Got a ping cmd, saving it")
 
     def resetConnection(self):
-        self._logger.info("Resetting read and write threads")
+        self._logger.info("Resetting threads")
 
         self.stopReadThread()
         self.stopWriteThread()
@@ -590,8 +587,7 @@ class Omega():
             self.writeQueue.get()
 
     def resetVariables(self):
-        self._logger.info("Omega: Resetting all values - STARTED")
-
+        self._logger.info("Resetting all values")
         self.omegaSerial = None
         self.sentCounter = 0
         self.algoCounter = 0
@@ -640,10 +636,9 @@ class Omega():
 
         self.autoLoadThread = None
         self.isSplicing = False
-        self._logger.info("Omega: Resetting all values - FINISHED")
 
     def resetPrintValues(self):
-        self._logger.info("Omega: Resetting print values - STARTED")
+        self._logger.info("Resetting all print values")
         self.sentCounter = 0
         self.algoCounter = 0
         self.spliceCounter = 0
@@ -680,7 +675,6 @@ class Omega():
         self.missedPings = 0
         self.isSplicing = False
         self.advanced_reset_print_values()
-        self._logger.info("Omega: Resetting print values - FINISHED")
 
     def resetOmega(self):
         self.resetConnection()
@@ -692,7 +686,7 @@ class Omega():
         self.stopLedThread()
 
     def disconnect(self):
-        self._logger.info("Disconnecting from Palette")
+        self._logger.info("Disconnecting from Palette 2")
         self.resetOmega()
         self.updateUIAll()
 
@@ -709,19 +703,19 @@ class Omega():
                 self.initializePrintVariables()
                 self._logger.info("Starting Header Sequence")
                 self.header[0] = cmd
-                self._logger.info("Omega: Got Version: %s" % self.header[0])
+                self._logger.info("Header: Got Version: %s" % self.header[0])
             elif "O22" in cmd:
                 self.header[1] = cmd
-                self._logger.info("Omega: Got Printer Profile: %s" % self.header[1])
+                self._logger.info("Header: Got Printer Profile: %s" % self.header[1])
             elif "O23" in cmd:
                 self.header[2] = cmd
-                self._logger.info("Omega: Got Slicer Profile: %s" % self.header[2])
+                self._logger.info("Header: Got Slicer Profile: %s" % self.header[2])
             elif "O24" in cmd:
                 self.header[3] = cmd
-                self._logger.info("Omega: Got PPM Adjustment: %s" % self.header[3])
+                self._logger.info("Header: Got PPM Adjustment: %s" % self.header[3])
             elif "O25" in cmd:
                 self.header[4] = cmd
-                self._logger.info("Omega: Got MU: %s" % self.header[4])
+                self._logger.info("Header: Got MU: %s" % self.header[4])
                 drives = self.header[4][4:].split(" ")
                 for index, drive in enumerate(drives):
                     if not "D0" in drive:
@@ -734,12 +728,12 @@ class Omega():
                         elif index == 3:
                             drives[index] = "U63"
                 self.drivesInUse = list(filter(lambda drive: drive != "D0", drives))
-                self._logger.info("Used Drives: %s" % self.drivesInUse)
+                self._logger.info("Drives in use: %s" % self.drivesInUse)
             elif "O26" in cmd:
                 self.header[5] = cmd
                 try:
                     self.msfNS = int(cmd[5:], 16)
-                    self._logger.info("Omega: Got NS: %s" % self.header[5])
+                    self._logger.info("Header: Got NS: %s" % self.header[5])
                     self.updateUI({"command": "totalSplices", "data": self.msfNS})
                 except:
                     self._logger.info("NS information not properly formatted: %s" % cmd)
@@ -747,7 +741,7 @@ class Omega():
                 self.header[6] = cmd
                 try:
                     self.totalPings = int(cmd[5:], 16)
-                    self._logger.info("Omega: Got NP: %s" % self.header[6])
+                    self._logger.info("Header: Got NP: %s" % self.header[6])
                     self._logger.info("TOTAL PINGS: %s" % self.totalPings)
                 except:
                     self._logger.info("NP information not properly formatted: %s" % cmd)
@@ -756,22 +750,22 @@ class Omega():
                 try:
                     self.msfNA = cmd[5:]
                     self.nAlgorithms = int(self.msfNA, 16)
-                    self._logger.info("Omega: Got NA: %s" % self.header[7])
+                    self._logger.info("Header: Got NA: %s" % self.header[7])
                 except:
                     self._logger.info("NA information not properly formatted: %s" % cmd)
             elif "O29" in cmd:
                 self.header[8] = cmd
-                self._logger.info("Omega: Got NH: %s" % self.header[8])
+                self._logger.info("Header: Got NH: %s" % self.header[8])
             elif "O30" in cmd:
                 try:
                     splice = (int(cmd[5:6]), cmd[8:])
                     self.splices.append(splice)
-                    self._logger.info("Omega: Got splice D: %s, dist: %s" % (splice[0], splice[1]))
+                    self._logger.info("Got splice: drive: %s, dist: %s" % (splice[0], splice[1]))
                 except:
                     self._logger.info("Splice information not properly formatted: %s" % cmd)
             elif "O32" in cmd:
                 self.algorithms.append(cmd)
-                self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
+                self._logger.info("Got algorithm: %s" % cmd[4:])
         elif "O1" in cmd:
             timeout = 4
             timeout_start = time.time()
@@ -807,10 +801,10 @@ class Omega():
                 self._printer.cancel_print()
         elif cmd == "O9":
             # reset values
-            self._logger.info("Omega: Soft resetting P2: %s" % cmd)
+            self._logger.info("Soft resetting P2: %s" % cmd)
             self.enqueueCmd(cmd)
         else:
-            self._logger.info("Omega: Got another Omega command '%s'" % cmd)
+            self._logger.info("Got another Omega command '%s'" % cmd)
             self.enqueueCmd(cmd)
 
     def changeAlertSettings(self, condition):
@@ -842,7 +836,7 @@ class Omega():
                 self.allMCFFiles.append(cumulative_folder_name)
 
     def startPrintFromP2(self, file):
-        self._logger.info("Received print command from P2")
+        self._logger.info("Received start print command from P2")
         self._printer.select_file(file, False, printAfterSelect=True)
 
     def sendErrorReport(self, error_number, description):
@@ -902,7 +896,6 @@ class Omega():
 
 
     def startPrintFromHub(self):
-        self._logger.info("Hub command to start print received")
         self.enqueueCmd(constants.COMMANDS["START_PRINT_HUB"])
 
     def getHubData(self):
@@ -954,10 +947,9 @@ class Omega():
             return None
 
     def feedRateControlStart(self):
-        self._logger.info('ADVANCED: SPLICE START')
+        self._logger.info('SPLICE START')
         self.isSplicing = True
         if self.feedRateControl and self.actualPrintStarted:
-            self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
             advanced_status = 'Splice (%s) starting: speed -> SLOW (%s%%)' % (self.currentSplice, self.feedRateSlowPct)
             self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
             # Splice Start
@@ -976,11 +968,10 @@ class Omega():
                 except ValueError:
                     self._logger.info('ADVANCED: Unable to Update Feed-Rate -> SLOW :: ' + str(ValueError))
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowed", "data": self.feedRateSlowed}, True)
-        else:
-            self._logger.info('ADVANCED: Feed-rate Control: INACTIVE')
+
 
     def feedRateControlEnd(self):
-        self._logger.info('ADVANCED: SPLICE END')
+        self._logger.info('SPLICE END')
         self.isSplicing = False
         if self.feedRateControl and self.actualPrintStarted:
             self._logger.info('ADVANCED: Feed-rate NORMAL - ACTIVE (%s)' % self.feedRateNormalPct)
@@ -992,14 +983,12 @@ class Omega():
             except ValueError:
                 self._logger.info('ADVANCED: Unable to Update Feed-Rate -> NORMAL :: ' + str(ValueError))
             self.updateUI({"command": "advanced", "subCommand": "feedRateSlowed", "data": self.feedRateSlowed}, True)
-        else:
-            self._logger.info('ADVANCED: Feed-Rate Control: INACTIVE')
+
 
     def sendPingToPrinter(self, ping_number, ping_percent):
-        self._logger.info("ADVANCED: Ping!")
-        self._logger.info("ADVANCED: Show on Printer: %s" % self.showPingOnPrinter)
         # filter out ping offset information
         if self.showPingOnPrinter:
+            self._logger.info("ADVANCED: sending ping '%s' to printer" % ping_number)
             try:
                 if ping_percent == "MISSED":
                     self._printer.commands("M117 Ping %s %s" % (ping_number, ping_percent))

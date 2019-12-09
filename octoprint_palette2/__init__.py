@@ -87,7 +87,7 @@ class P2Plugin(octoprint.plugin.StartupPlugin,
         )
 
     def on_api_command(self, command, payload):
-        self._logger.info("Got a command %s" % command)
+        self._logger.info("Got a command: '%s'" % command)
         try:
             data = None
             if command == "connectOmega":
