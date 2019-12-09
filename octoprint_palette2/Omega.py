@@ -217,7 +217,7 @@ class Omega():
         while time.time() < timeout_start + timeout:
             if self.heartbeat:
                 self.connected = True
-                self._logger.info("Connected to Omega")
+                self._logger.info("P2 plugin successfully connected to P2")
                 self._settings.set(["selectedPort"], port, force=True)
                 self._settings.set(["baudrate"], baudrate, force=True)
                 self._settings.save(force=True)
@@ -638,7 +638,7 @@ class Omega():
         self.isSplicing = False
 
     def resetPrintValues(self):
-        self._logger.info("Resetting all PRINT values")
+        self._logger.info("Resetting all print values")
         self.sentCounter = 0
         self.algoCounter = 0
         self.spliceCounter = 0
@@ -728,7 +728,7 @@ class Omega():
                         elif index == 3:
                             drives[index] = "U63"
                 self.drivesInUse = list(filter(lambda drive: drive != "D0", drives))
-                self._logger.info("Used Drives: %s" % self.drivesInUse)
+                self._logger.info("Drives in use: %s" % self.drivesInUse)
             elif "O26" in cmd:
                 self.header[5] = cmd
                 try:
@@ -760,7 +760,7 @@ class Omega():
                 try:
                     splice = (int(cmd[5:6]), cmd[8:])
                     self.splices.append(splice)
-                    self._logger.info("Got splice D: %s, dist: %s" % (splice[0], splice[1]))
+                    self._logger.info("Got splice: drive: %s, dist: %s" % (splice[0], splice[1]))
                 except:
                     self._logger.info("Splice information not properly formatted: %s" % cmd)
             elif "O32" in cmd:
@@ -836,7 +836,7 @@ class Omega():
                 self.allMCFFiles.append(cumulative_folder_name)
 
     def startPrintFromP2(self, file):
-        self._logger.info("Received print command from P2")
+        self._logger.info("Received start print command from P2")
         self._printer.select_file(file, False, printAfterSelect=True)
 
     def sendErrorReport(self, error_number, description):
@@ -950,7 +950,6 @@ class Omega():
         self._logger.info('SPLICE START')
         self.isSplicing = True
         if self.feedRateControl and self.actualPrintStarted:
-            self._logger.info('ADVANCED: Feed-rate Control: ACTIVATED')
             advanced_status = 'Splice (%s) starting: speed -> SLOW (%s%%)' % (self.currentSplice, self.feedRateSlowPct)
             self.updateUI({"command": "advanced", "subCommand": "advancedStatus", "data": advanced_status})
             # Splice Start
@@ -989,7 +988,7 @@ class Omega():
     def sendPingToPrinter(self, ping_number, ping_percent):
         # filter out ping offset information
         if self.showPingOnPrinter:
-            self._logger.info("ADVANCED: sending ping to printer")
+            self._logger.info("ADVANCED: sending ping '%s' to printer" % ping_number)
             try:
                 if ping_percent == "MISSED":
                     self._printer.commands("M117 Ping %s %s" % (ping_number, ping_percent))
