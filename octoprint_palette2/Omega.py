@@ -672,6 +672,8 @@ class Omega():
         self.heartbeatSent = False
         self.heartbeatReceived = False
 
+        self.autoLoadingExtraFiliment = 0
+
         self.filename = ""
 
         self.missedPings = 0
@@ -769,6 +771,13 @@ class Omega():
             elif "O32" in cmd:
                 self.algorithms.append(cmd)
                 self._logger.info("Omega: Got algorithm: %s" % cmd[4:])
+
+            elif "O40" in cmd
+                p = cmd.find("D")
+                if (p>0):
+                    self.autoLoadingExtraFiliment = int(cmd[p+1:],16)
+                    self._logger.info("Omega:  Added %dmm of filament " % self.autoLoadingExtraFiliment)
+
         elif "O1" in cmd:
             timeout = 4
             timeout_start = time.time()
@@ -1192,6 +1201,8 @@ class Omega():
 
     def autoLoadFilament(self, amount_to_extrude):
         if not self.autoLoadThreadStop:
+
+            amount_to_extrude += self.autoLoadingExtraFiliment
             self._logger.info("Amount to extrude: %s" % amount_to_extrude)
 
             if amount_to_extrude <= 0:
